@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{BRAND}} — {{TAGLINE}}</title>
+  <style>
+    :root {
+      --bg: #f9f5f2;
+      --ink: #0d0d0d;
+      --accent: #f4ed36;
+      --lilac: #8584bd;
+      --mint: #b5c995;
+      --coral: #f8c1ba;
+      --line: 2.5px solid #000;
+      --shadow: 4px 4px 0 #000;
+      --font: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, #fff7a8 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, #d8d7f0 0%, transparent 50%),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1120px, calc(100% - 2rem)); margin-inline: auto; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: .5rem; padding: .85rem 1.25rem; border: var(--line);
+      border-radius: 999px; background: var(--accent); font-weight: 800;
+      box-shadow: 3px 3px 0 #000; transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000; }
+    .btn.ghost { background: #fff; }
+    /* NAV */
+    .nav {
+      position: sticky; top: 0; z-index: 20;
+      border-bottom: var(--line); background: rgba(249,245,242,.92);
+      backdrop-filter: blur(8px);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; padding: .9rem 0;
+    }
+    .brand { font-weight: 900; letter-spacing: -.03em; font-size: 1.15rem; }
+    .brand span {
+      display: inline-block; margin-right: .4rem; width: .85rem; height: .85rem;
+      background: var(--accent); border: 2px solid #000; border-radius: 3px;
+      box-shadow: 2px 2px 0 #000; vertical-align: -1px;
+    }
+    .nav-links { display: flex; gap: 1.1rem; font-weight: 700; font-size: .92rem; }
+    .nav-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+    /* HERO */
+    .hero {
+      display: grid; grid-template-columns: 1.1fr .9fr; gap: 2rem;
+      align-items: end; padding: 3.5rem 0 2.5rem;
+      min-height: min(78vh, 720px);
+    }
+    .eyebrow {
+      display: inline-block; margin-bottom: .85rem; padding: .35rem .7rem;
+      border: 2px solid #000; border-radius: 999px; background: var(--mint);
+      font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.4rem); line-height: .95;
+      letter-spacing: -.045em; max-width: 11ch; margin-bottom: 1rem;
+    }
+    .hero p { max-width: 36ch; font-size: 1.05rem; opacity: .78; margin-bottom: 1.5rem; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: .75rem; }
+    .hero-visual {
+      border: var(--line); border-radius: 18px; background: var(--lilac);
+      box-shadow: var(--shadow); min-height: 320px; position: relative; overflow: hidden;
+    }
+    .hero-visual::after {
+      content: ""; position: absolute; inset: 18% 14%;
+      border: var(--line); border-radius: 14px; background: #fff;
+      box-shadow: 6px 6px 0 #000;
+    }
+    /* SECTIONS */
+    section { padding: 3.25rem 0; }
+    .section-head { max-width: 40rem; margin-bottom: 1.75rem; }
+    .section-head h2 {
+      font-size: clamp(1.7rem, 3.5vw, 2.5rem); letter-spacing: -.035em; line-height: 1.05;
+    }
+    .section-head p { margin-top: .6rem; opacity: .72; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .card {
+      border: var(--line); border-radius: 14px; background: #fff;
+      padding: 1.25rem; box-shadow: 3px 3px 0 #000;
+    }
+    .card h3 { font-size: 1.05rem; margin-bottom: .4rem; letter-spacing: -.02em; }
+    .card p { font-size: .92rem; opacity: .7; }
+    .card .mark {
+      width: 2rem; height: 2rem; margin-bottom: .85rem; border: 2px solid #000;
+      border-radius: 8px; background: var(--accent); box-shadow: 2px 2px 0 #000;
+    }
+    .band {
+      border-block: var(--line); background: #fff;
+    }
+    .band-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;
+    }
+    .band-visual {
+      min-height: 240px; border: var(--line); border-radius: 16px;
+      background: linear-gradient(135deg, var(--coral), var(--accent));
+      box-shadow: var(--shadow);
+    }
+    .cta {
+      text-align: center; padding: 3.5rem 0 4rem;
+    }
+    .cta-box {
+      border: var(--line); border-radius: 20px; background: var(--accent);
+      box-shadow: var(--shadow); padding: 2.25rem 1.5rem;
+    }
+    .cta-box h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.03em; }
+    .cta-box p { margin: .6rem auto 1.25rem; max-width: 36ch; opacity: .75; }
+    footer {
+      border-top: var(--line); padding: 1.25rem 0 2rem;
+      display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      font-size: .85rem; font-weight: 600; opacity: .7;
+    }
+    @media (max-width: 860px) {
+      .nav-links { display: none; }
+      .hero, .band-inner, .grid-3 { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 2rem; }
+      .hero-visual { min-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#"><span></span>{{BRAND}}</a>
+      <nav class="nav-links" aria-label="Principal">
+        <a href="#features">{{NAV_1}}</a>
+        <a href="#story">{{NAV_2}}</a>
+        <a href="#cta">{{NAV_3}}</a>
+      </nav>
+      <a class="btn" href="#cta">{{CTA_PRIMARY}}</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <span class="eyebrow">{{EYEBROW}}</span>
+        <h1>{{HEADLINE}}</h1>
+        <p>{{SUBHEAD}}</p>
+        <div class="hero-cta">
+          <a class="btn" href="#cta">{{CTA_PRIMARY}}</a>
+          <a class="btn ghost" href="#features">{{CTA_SECONDARY}}</a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true"></div>
+    </section>
+
+    <section class="wrap" id="features">
+      <div class="section-head">
+        <h2>{{FEATURES_TITLE}}</h2>
+        <p>{{FEATURES_SUB}}</p>
+      </div>
+      <div class="grid-3">
+        <article class="card"><div class="mark"></div><h3>{{F1_TITLE}}</h3><p>{{F1_BODY}}</p></article>
+        <article class="card"><div class="mark" style="background:var(--mint)"></div><h3>{{F2_TITLE}}</h3><p>{{F2_BODY}}</p></article>
+        <article class="card"><div class="mark" style="background:var(--coral)"></div><h3>{{F3_TITLE}}</h3><p>{{F3_BODY}}</p></article>
+      </div>
+    </section>
+
+    <section class="band" id="story">
+      <div class="wrap band-inner" style="padding:3rem 0">
+        <div>
+          <div class="section-head">
+            <h2>{{STORY_TITLE}}</h2>
+            <p>{{STORY_BODY}}</p>
+          </div>
+          <a class="btn ghost" href="#cta">{{CTA_SECONDARY}}</a>
+        </div>
+        <div class="band-visual" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="wrap cta" id="cta">
+      <div class="cta-box">
+        <h2>{{CTA_TITLE}}</h2>
+        <p>{{CTA_BODY}}</p>
+        <a class="btn ghost" href="#">{{CTA_PRIMARY}}</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <span>© {{YEAR}} {{BRAND}}</span>
+    <span>{{FOOTER_NOTE}}</span>
+  </footer>
+</body>
+</html>

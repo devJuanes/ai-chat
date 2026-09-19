@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{BRAND}} — App</title>
+  <style>
+    :root {
+      --bg: #efeee9; --panel: #fff; --ink: #111; --accent: #f4ed36;
+      --lilac: #8584bd; --line: 2px solid #000; --shadow: 3px 3px 0 #000;
+      --font: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: var(--font); background: var(--bg); color: var(--ink);
+      min-height: 100vh; display: grid; grid-template-columns: 240px 1fr;
+    }
+    a { color: inherit; text-decoration: none; }
+    .side {
+      border-right: var(--line); background: var(--panel); padding: 1rem .85rem;
+      display: flex; flex-direction: column; gap: .75rem;
+    }
+    .logo { font-weight: 900; letter-spacing: -.03em; padding: .35rem .45rem; }
+    .logo i {
+      font-style: normal; display: inline-block; width: .75rem; height: .75rem;
+      background: var(--accent); border: 2px solid #000; border-radius: 3px;
+      box-shadow: 2px 2px 0 #000; margin-right: .35rem;
+    }
+    .nav a {
+      display: block; padding: .65rem .75rem; border-radius: 10px;
+      font-weight: 700; font-size: .92rem;
+    }
+    .nav a.active, .nav a:hover { background: var(--accent); border: 2px solid #000; box-shadow: 2px 2px 0 #000; }
+    .main { display: flex; flex-direction: column; min-width: 0; }
+    .top {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem; padding: .9rem 1.25rem; border-bottom: var(--line); background: var(--panel);
+    }
+    .top h1 { font-size: 1.05rem; letter-spacing: -.02em; }
+    .pill {
+      border: var(--line); border-radius: 999px; padding: .35rem .75rem;
+      background: var(--lilac); color: #fff; font-size: .75rem; font-weight: 800;
+    }
+    .content { padding: 1.25rem; display: grid; gap: 1rem; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; }
+    .stat {
+      border: var(--line); border-radius: 12px; background: var(--panel);
+      padding: 1rem; box-shadow: var(--shadow);
+    }
+    .stat span { display: block; font-size: .75rem; font-weight: 800; opacity: .55; text-transform: uppercase; letter-spacing: .04em; }
+    .stat strong { font-size: 1.6rem; letter-spacing: -.03em; }
+    .panel {
+      border: var(--line); border-radius: 14px; background: var(--panel);
+      box-shadow: var(--shadow); padding: 1rem; min-height: 220px;
+    }
+    .panel h2 { font-size: 1rem; margin-bottom: .75rem; }
+    .row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .7rem 0; border-bottom: 1px solid #00000018; font-size: .92rem;
+    }
+    .row:last-child { border-bottom: 0; }
+    .bar {
+      height: 10px; border: 2px solid #000; border-radius: 999px; background: #f3f1ec; overflow: hidden;
+    }
+    .bar i { display: block; height: 100%; background: var(--accent); width: var(--w, 60%); }
+    @media (max-width: 860px) {
+      body { grid-template-columns: 1fr; }
+      .side { border-right: 0; border-bottom: var(--line); flex-direction: row; align-items: center; overflow-x: auto; }
+      .nav { display: flex; gap: .35rem; }
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="side">
+    <div class="logo"><i></i>{{BRAND}}</div>
+    <nav class="nav">
+      <a class="active" href="#">{{NAV_1}}</a>
+      <a href="#">{{NAV_2}}</a>
+      <a href="#">{{NAV_3}}</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <h1>{{HEADLINE}}</h1>
+      <span class="pill">{{BADGE}}</span>
+    </header>
+    <div class="content">
+      <div class="stats">
+        <div class="stat"><span>{{S1_LABEL}}</span><strong>{{S1_VALUE}}</strong></div>
+        <div class="stat"><span>{{S2_LABEL}}</span><strong>{{S2_VALUE}}</strong></div>
+        <div class="stat"><span>{{S3_LABEL}}</span><strong>{{S3_VALUE}}</strong></div>
+      </div>
+      <section class="panel">
+        <h2>{{LIST_TITLE}}</h2>
+        <div class="row"><span>{{R1_LEFT}}</span><span>{{R1_RIGHT}}</span></div>
+        <div class="row"><span>{{R2_LEFT}}</span><span>{{R2_RIGHT}}</span></div>
+        <div class="row"><span>{{R3_LEFT}}</span><span>{{R3_RIGHT}}</span></div>
+        <div style="margin-top:1rem" class="bar" aria-hidden="true"><i style="--w:72%"></i></div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

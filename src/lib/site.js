@@ -1,0 +1,254 @@
+/** Configuración pública del sitio — SEO, marca y contenido marketing */
+
+export const SITE = {
+  productName: 'Matu AI',
+  productLegal: 'Matu AI SaaS',
+  companyName: 'MatByte S.A.S.',
+  companyShort: 'Matubyte',
+  companyCountry: 'Colombia',
+  domain: 'matubyte.com',
+  url:
+    (typeof import.meta !== 'undefined' &&
+      import.meta.env?.VITE_SITE_URL) ||
+    (typeof import.meta !== 'undefined' &&
+      import.meta.env?.VITE_COMPANY_URL) ||
+    'https://matubyte.com',
+  appUrl:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_URL) ||
+    null,
+  email: 'hola@matubyte.com',
+  contactEmail: 'contacto@matubyte.com',
+  supportEmail: 'soporte@matubyte.com',
+  whatsapp: '+573332771764',
+  whatsappDisplay: '+57 333 277 1764',
+  whatsappUrl: 'https://wa.me/573332771764',
+  locale: 'es_CO',
+  lang: 'es',
+  twitter: '@matubyte',
+  themeColor: '#f4ed36',
+  sameAs: [
+    'https://matubyte.com',
+    'https://www.linkedin.com/company/matubyte',
+  ],
+};
+
+export const MODELS_PUBLIC = [
+  {
+    id: 'matu',
+    name: 'Matu',
+    tag: 'Flagship',
+    niche: 'Negocio general',
+    body: 'Copiloto diario: copy, pricing, GTM y decisiones claras.',
+    search: ['IA para negocios', 'asistente de ventas', 'copiloto SaaS'],
+    color: '#f8c1ba',
+    ink: '#1a1a1a',
+  },
+  {
+    id: 'vo0',
+    name: 'VO0',
+    tag: 'Relámpago',
+    niche: 'Respuestas rápidas',
+    body: 'Borradores y replies en segundos. Listos para pegar.',
+    search: ['IA rápida', 'borrador de email IA'],
+    color: '#b5c995',
+    ink: '#1a1a1a',
+  },
+  {
+    id: 'vo5',
+    name: 'VO5',
+    tag: 'Estrategia',
+    niche: 'Estrategia profunda',
+    body: 'Unit economics, escenarios y roadmaps sin relleno.',
+    search: ['IA estrategia', 'análisis de negocio IA'],
+    color: '#f9cc73',
+    ink: '#1a1a1a',
+  },
+  {
+    id: 'matu-apex',
+    name: 'Matu Forge',
+    tag: '3 en 1',
+    niche: 'Ingeniería · ventas · ops',
+    body: 'Ingeniero + ventas + operaciones. Planes que se ejecutan.',
+    search: ['IA operaciones', 'IA para startups'],
+    color: '#ac4f98',
+    ink: '#f9f5f2',
+  },
+  {
+    id: 'matu-dev-3-5',
+    name: 'Matu Dev 3.5',
+    tag: 'UI elite',
+    niche: 'Diseño web · frontend',
+    body: 'UI/UX y demos HTML listas para vista previa en el chat.',
+    search: ['IA diseño web', 'IA frontend', 'generar landing IA'],
+    color: '#f4ed36',
+    ink: '#1a1a1a',
+  },
+  {
+    id: 'matu-space-ultra',
+    name: 'Matu Space Ultra',
+    tag: 'Frontier',
+    niche: 'Ingeniería · agentes',
+    body: 'Arquitectura, debug, código de producción y ejecución verificada.',
+    search: ['IA programación', 'agente de código', 'IA ingeniería'],
+    color: '#8584bd',
+    ink: '#f9f5f2',
+  },
+  {
+    id: 'matu-commerce',
+    name: 'Matu Commerce',
+    tag: 'Revenue',
+    niche: 'E-commerce · CRM',
+    body: 'Pricing, pipeline, retención y acciones que mueven ingresos.',
+    search: ['IA e-commerce', 'IA CRM', 'IA ventas online'],
+    color: '#c94245',
+    ink: '#f9f5f2',
+  },
+  {
+    id: 'matu-marketing',
+    name: 'Matu Marketing',
+    tag: 'Growth',
+    niche: 'Growth · copy',
+    body: 'Ofertas, landings, ads y adquisición medible — no vanity metrics.',
+    search: ['IA marketing', 'IA copywriting', 'IA growth'],
+    color: '#61609a',
+    ink: '#f9f5f2',
+  },
+];
+
+export const PLANS_PUBLIC = [
+  {
+    id: 'free',
+    name: 'Gratis',
+    price: '$0',
+    period: 'para siempre',
+    highlight: false,
+    features: [
+      '40 mensajes / mes',
+      'Modelos flagship y de nicho',
+      'Proyectos y chats',
+      'Ideal para probar Matu AI',
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '$29',
+    period: '/ mes',
+    highlight: true,
+    features: [
+      '500 mensajes / mes',
+      'VO5 y todos los modelos',
+      'Más tokens y conversaciones',
+      'Para freelancers y founders',
+    ],
+  },
+  {
+    id: 'team',
+    name: 'Team',
+    price: '$99',
+    period: '/ mes',
+    highlight: false,
+    features: [
+      '5.000 mensajes / mes',
+      'Capacidad de equipo',
+      'Límites altos de tokens',
+      'Para operaciones en crecimiento',
+    ],
+  },
+];
+
+export const TESTIMONIALS = [
+  {
+    quote:
+      'Pasamos de borradores eternos a propuestas listas en minutos. Matu se siente hecho para cerrar, no para charlar.',
+    name: 'Camila Restrepo',
+    role: 'CEO',
+    company: 'Nexo Legal',
+    sector: 'Servicios profesionales',
+  },
+  {
+    quote:
+      'Matu Commerce nos ayudó a rearmar el funnel y el CRM. Menos intuición, más acciones que sí mueven revenue.',
+    name: 'Diego Vargas',
+    role: 'Head of Growth',
+    company: 'TiendaAndina',
+    sector: 'E-commerce',
+  },
+  {
+    quote:
+      'Con Matu Dev 3.5 sacamos landings que no parecen “de IA”. El preview en el chat cambió cómo entregamos a clientes.',
+    name: 'Laura Méndez',
+    role: 'Product Designer',
+    company: 'Studio Norte',
+    sector: 'Diseño / producto',
+  },
+  {
+    quote:
+      'VO0 es nuestro atajo diario: replies de soporte y correos sin perder el tono de marca.',
+    name: 'Andrés Quintero',
+    role: 'Customer Success',
+    company: 'PayFlow Latam',
+    sector: 'Fintech',
+  },
+  {
+    quote:
+      'Matubyte construyó algo sectorizado. No es un chat genérico: es un stack de modelos para operar el negocio.',
+    name: 'Valentina Cruz',
+    role: 'COO',
+    company: 'Atlas Ops',
+    sector: 'Operaciones',
+  },
+  {
+    quote:
+      'El plan Pro es honestamente económico frente a lo que usábamos. Matu Forge nos armó SOPs que el equipo sí sigue.',
+    name: 'Julián Pardo',
+    role: 'Founder',
+    company: 'Ruta SaaS',
+    sector: 'Startups',
+  },
+];
+
+export const FAQ = [
+  {
+    q: '¿Qué es Matu AI?',
+    a: 'Matu AI es el copiloto de chat de MatByte S.A.S. (Matubyte): modelos propios sectorizados para negocio, marketing, e-commerce, diseño web e ingeniería — desarrollados en Colombia.',
+  },
+  {
+    q: '¿Quién desarrolla Matu AI?',
+    a: 'Matu AI SaaS es un producto de MatByte S.A.S. (Matubyte). Sitio corporativo: https://matubyte.com.',
+  },
+  {
+    q: '¿En qué se diferencia de un chat genérico?',
+    a: 'Además de un modelo general (Matu), tienes modelos de nicho: Commerce, Marketing, Dev 3.5, Space Ultra, Forge, VO0 y VO5 — pensados para tareas concretas, no solo conversación.',
+  },
+  {
+    q: '¿Hay plan gratis?',
+    a: 'Sí. El plan Free incluye mensajes mensuales y acceso a varios modelos para probar el producto. Pro ($29) y Team ($99) amplían capacidad a precio accesible.',
+  },
+  {
+    q: '¿Puedo usarlo para landings, tablas y exports?',
+    a: 'Sí. El chat renderiza Markdown, tablas con descarga CSV/Excel y vista previa HTML — útil con Matu Dev 3.5 y el resto del stack.',
+  },
+];
+
+export const PUBLIC_PATHS = [
+  { path: '/', priority: '1.0', changefreq: 'weekly' },
+  { path: '/acerca', priority: '0.8', changefreq: 'monthly' },
+  { path: '/contacto', priority: '0.7', changefreq: 'monthly' },
+  { path: '/precios', priority: '0.9', changefreq: 'weekly' },
+  { path: '/modelos', priority: '0.9', changefreq: 'weekly' },
+  { path: '/privacidad', priority: '0.4', changefreq: 'yearly' },
+  { path: '/terminos', priority: '0.4', changefreq: 'yearly' },
+  { path: '/login', priority: '0.5', changefreq: 'monthly' },
+  { path: '/register', priority: '0.8', changefreq: 'monthly' },
+];
+
+export function absoluteUrl(path = '/') {
+  const base = SITE.url.replace(/\/$/, '');
+  if (!path || path === '/') return `${base}/`;
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+export function defaultDescription() {
+  return `Matu AI SaaS by Matubyte (MatByte S.A.S.): chat con modelos propios para negocio, marketing, e-commerce, diseño web e ingeniería. Plan gratis y Pro desde $29. Colombia · ${SITE.domain}`;
+}

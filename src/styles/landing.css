@@ -1,0 +1,406 @@
+/* Flying Papers tokens — landing + auth (.landing / .fp) */
+.landing,
+.fp {
+  --color-dusk-violet: #8584bd;
+  --color-hi-vis-yellow: #f4ed36;
+  --color-buttery-yellow: #f9cc73;
+  --color-lilac-shadow: #61609a;
+  --color-bubblegum-pink: #f8c1ba;
+  --color-matcha-cream: #b5c995;
+  --color-magenta-punch: #ac4f98;
+  --color-firecracker-red: #c94245;
+  --color-bone-white: #f9f5f2;
+  --color-ink-black: #1a1a1a;
+  --color-pure-black: #000000;
+
+  --font-display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --font-ui-bold: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-cards: 6px;
+  --radius-pill: 100px;
+  --card-pad: 17px;
+
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--color-dusk-violet);
+  color: var(--color-bone-white);
+  font-family: var(--font-ui-bold);
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing *,
+.fp * {
+  box-sizing: border-box;
+}
+
+.landing a,
+.fp a {
+  color: inherit;
+}
+
+/* Display type */
+.landing .display,
+.fp .display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  line-height: 0.82;
+  text-transform: uppercase;
+  font-feature-settings: 'calt' 0;
+}
+
+.landing .mono,
+.fp .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 0.9;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.landing .cta-label,
+.fp .cta-label {
+  font-family: var(--font-ui-bold);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+/* Buttons */
+.landing .btn-pill,
+.fp .btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 22px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bone-white);
+  color: var(--color-pure-black);
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.landing .btn-pill:hover,
+.fp .btn-pill:hover {
+  transform: translateY(-2px);
+  background: #fff;
+}
+
+.landing .btn-outline,
+.fp .btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-hi-vis-yellow);
+  border: 2.5px solid var(--color-hi-vis-yellow);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.landing .btn-outline:hover,
+.fp .btn-outline:hover {
+  transform: translateY(-2px);
+  background: rgb(244 237 54 / 0.12);
+}
+
+.landing .link-underline,
+.fp .link-underline {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-bone-white);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.landing .link-underline:hover,
+.fp .link-underline:hover {
+  color: var(--color-hi-vis-yellow);
+}
+
+/* Inputs on bone cards */
+.landing .fp-input,
+.fp .fp-input {
+  height: 44px;
+  width: 100%;
+  border-radius: 6px;
+  border: 2.5px solid var(--color-ink-black);
+  background: #fff;
+  padding: 0 12px;
+  font-family: var(--font-ui-bold);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-ink-black);
+}
+
+.landing .fp-input:focus,
+.fp .fp-input:focus {
+  outline: none;
+  border-color: var(--color-lilac-shadow);
+  box-shadow: 3px 3px 0 var(--color-hi-vis-yellow);
+}
+
+.landing .fp-input::placeholder,
+.fp .fp-input::placeholder {
+  color: rgba(26, 26, 26, 0.4);
+}
+
+/* Cards */
+.landing .card,
+.fp .card {
+  border-radius: var(--radius-cards);
+  padding: clamp(16px, 4vw, 24px);
+}
+
+.landing .card-bone,
+.fp .card-bone {
+  background: var(--color-bone-white);
+  color: var(--color-ink-black);
+}
+
+.landing .card-lilac,
+.fp .card-lilac {
+  background: var(--color-lilac-shadow);
+  color: var(--color-bone-white);
+}
+
+/* Motion */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(6px, -8px);
+  }
+}
+
+.landing .anim-rise,
+.fp .anim-rise {
+  animation: landing-rise 0.7s ease-out both;
+}
+
+.landing .anim-rise-delay-1,
+.fp .anim-rise-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.landing .anim-rise-delay-2,
+.fp .anim-rise-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.landing .anim-rise-delay-3,
+.fp .anim-rise-delay-3 {
+  animation-delay: 0.36s;
+}
+
+.landing .anim-bob,
+.fp .anim-bob {
+  animation: landing-bob 4.5s ease-in-out infinite;
+}
+
+.landing .anim-float,
+.fp .anim-float {
+  animation: landing-float 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .anim-rise,
+  .landing .anim-bob,
+  .landing .anim-float,
+  .fp .anim-rise,
+  .fp .anim-bob,
+  .fp .anim-float {
+    animation: none;
+  }
+}
+
+/* Responsive display sizes */
+.landing .hero-title {
+  font-size: clamp(64px, 18vw, 184px);
+}
+
+.landing .section-title {
+  font-size: clamp(48px, 12vw, 100px);
+}
+
+@media (min-width: 900px) {
+  .landing .hero-title {
+    font-size: clamp(120px, 14vw, 220px);
+  }
+}
+
+/* Testimonials marquee */
+.landing .t-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 4%,
+    #000 96%,
+    transparent
+  );
+}
+
+.landing .t-track {
+  display: flex;
+  width: max-content;
+  gap: 16px;
+  animation: t-scroll 55s linear infinite;
+}
+
+.landing .t-track:hover {
+  animation-play-state: paused;
+}
+
+.landing .t-card {
+  width: min(340px, 78vw);
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 2.5px solid #000;
+  background: var(--color-bone-white);
+  color: var(--color-ink-black);
+  padding: 18px;
+  box-shadow: 4px 4px 0 #000;
+}
+
+@keyframes t-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .t-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.landing .prose-legal {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  color: var(--color-ink-black);
+  font-size: 15px;
+  line-height: 1.6;
+  padding: clamp(18px, 4.5vw, 36px) clamp(16px, 4vw, 36px)
+    clamp(24px, 5vw, 44px);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (min-width: 640px) {
+  .landing .prose-legal {
+    font-size: 16px;
+  }
+}
+
+.landing .legal-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 10.5vw, 3.25rem);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+  margin: 0.65rem 0 1.1rem;
+}
+
+.landing .prose-legal h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 5.5vw, 2.15rem);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 2rem 0 0.85rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.landing .prose-legal h3 {
+  font-weight: 700;
+  font-size: 16px;
+  margin: 1.35rem 0 0.45rem;
+}
+
+.landing .prose-legal p,
+.landing .prose-legal li {
+  margin-bottom: 0.85rem;
+}
+
+.landing .prose-legal ul {
+  padding-left: 1.15rem;
+  list-style: disc;
+}
+
+.landing .prose-legal a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Auth: scroll libre con teclado móvil */
+.landing.auth-page,
+.fp.auth-page {
+  min-height: 100svh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+}
+
+.landing .auth-grid {
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .landing .auth-grid {
+    align-items: center;
+    min-height: calc(100svh - 88px);
+  }
+}

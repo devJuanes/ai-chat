@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /acerca
+Allow: /contacto
+Allow: /modelos
+Allow: /precios
+Allow: /privacidad
+Allow: /terminos
+Allow: /login
+Allow: /register
+Disallow: /c/
+Disallow: /p/
+Disallow: /settings
+Disallow: /library
+Disallow: /search
+Disallow: /usage
+Disallow: /api/
+
+Sitemap: https://matubyte.com/sitemap.xml

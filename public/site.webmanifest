@@ -1,0 +1,22 @@
+{
+  "name": "Matu AI",
+  "short_name": "Matu AI",
+  "description": "Copiloto de IA by Matubyte (MatByte S.A.S.) — modelos sectorizados para negocio.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#8584bd",
+  "theme_color": "#f4ed36",
+  "lang": "es-CO",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
