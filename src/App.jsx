@@ -8,6 +8,7 @@ import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import UsagePage from './pages/UsagePage';
 import BotsPage from './pages/BotsPage';
+import BotDetailPage from './pages/BotDetailPage';
 import InboxPage from './pages/InboxPage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -50,7 +51,12 @@ export default function App() {
           />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/imagine" element={<ImaginePage />} />
-          <Route path="/bots" element={<BotsPage />} />
+          <Route
+            path="/bots"
+            element={<Navigate to="/bots/agentes" replace />}
+          />
+          <Route path="/bots/agentes/:botId" element={<BotDetailPage />} />
+          <Route path="/bots/:tab" element={<BotsPage />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/inbox/:conversationId" element={<InboxPage />} />
           <Route path="/search" element={<SearchPage />} />

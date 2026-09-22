@@ -36,14 +36,15 @@ Devuelves SOLO un JSON válido (sin markdown) con estas claves string:
   "handoff_keywords": "humano,asesor,..."
 }
 Reglas:
-- objective: 1–2 frases, orientado a vender / calificar / atender.
-- instructions: pasos claros del agente (humano, entusiasta, natural).
-- business_context: resume el negocio a partir del brief; no inventes datos críticos.
-- products_services: lista o párrafos de oferta si el brief lo sugiere; si no, "Consultar con el cliente y usar el contexto del negocio".
+- objective: 1–2 frases, orientado a vender / calificar / atender SOLO con el catálogo real del negocio.
+- instructions: pasos claros (humano, entusiasta, natural). Incluye: nunca inventar productos; si no está en catálogo, confirmar con el equipo / handoff.
+- business_context: resume el negocio a partir del brief; no inventes datos críticos (precios, SKUs, cursos inventados).
+- products_services: si el brief menciona oferta, descríbela de forma genérica y aclara que el detalle viene del catálogo configurado. Si no hay detalle, "Usar únicamente el catálogo asignado al agente".
 - welcome_message: un saludo corto en 1ª persona usando el nombre del agente y la empresa.
 - tone: 3–6 palabras (ej. "cálido, cercano y comercial").
 - handoff_keywords: CSV en español para pedir humano.
-- Español latinoamericano. Sin mencionar Matu AI ni proveedores.`;
+- Español latinoamericano. Sin mencionar Matu AI ni proveedores.
+- NUNCA inventes productos o servicios que el brief no mencione (ej. no inventes "cursos de promoción").`;
 
   const user = `Agente: ${agentName}
 Empresa: ${companyName}

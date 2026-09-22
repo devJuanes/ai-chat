@@ -169,6 +169,7 @@ export default function InboxPage() {
   const sendReply = async (e) => {
     e?.preventDefault?.();
     if (!token || !conversationId || !reply.trim()) return;
+    if ((detail?.conversation?.assignee || 'bot') !== 'human') return;
     setSending(true);
     setError(null);
     try {
@@ -206,7 +207,7 @@ export default function InboxPage() {
           <div className="fp-mono text-[12px]">Inbox</div>
         </div>
         <div className="flex-1" />
-        <Link to="/bots" className="fp-mono text-[11px] underline">
+        <Link to="/bots/agentes" className="fp-mono text-[11px] underline">
           Agentes
         </Link>
       </header>
@@ -251,12 +252,19 @@ export default function InboxPage() {
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading && threads.length === 0 ? (
-              <p className="p-4 text-[13px] opacity-60">Cargando…</p>
+              <div className="flex min-h-[40vh] flex-col items-center justify-center px-6 text-center">
+                <p className="text-[18px] font-semibold opacity-50">Cargando…</p>
+              </div>
             ) : threads.length === 0 ? (
-              <p className="p-4 text-[13px] opacity-60">
-                Aún no hay conversaciones de canal. Cuando lleguen mensajes de
-                WhatsApp, Instagram o Messenger aparecerán aquí.
-              </p>
+              <div className="flex min-h-[40vh] flex-col items-center justify-center px-6 text-center">
+                <p className="max-w-sm text-[20px] font-semibold tracking-tight sm:text-[22px]">
+                  Aún no hay conversaciones
+                </p>
+                <p className="mt-2 max-w-sm text-[14px] leading-relaxed opacity-55">
+                  Cuando lleguen mensajes de WhatsApp, Instagram o Messenger
+                  aparecerán aquí.
+                </p>
+              </div>
             ) : (
               threads.map((t) => {
                 const active = t.conversation_id === activeId;
@@ -323,7 +331,7 @@ export default function InboxPage() {
                 {assignee === 'bot' ? (
                   <button
                     type="button"
-                    className="fp-btn border-2 border-black bg-white px-3 py-1.5 text-[12px]"
+                    className="rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[12px] font-medium"
                     onClick={() => setAssignee('human')}
                   >
                     Tomar control
@@ -331,7 +339,7 @@ export default function InboxPage() {
                 ) : (
                   <button
                     type="button"
-                    className="fp-btn border-2 border-black bg-[#b5c995] px-3 py-1.5 text-[12px]"
+                    className="rounded-lg border-2 border-black bg-[#b5c995] px-3 py-1.5 text-[12px] font-medium"
                     onClick={() => setAssignee('bot')}
                   >
                     Reanudar bot
@@ -349,10 +357,10 @@ export default function InboxPage() {
                 {(detail?.messages || []).map((m) => (
                   <div
                     key={m.id}
-                    className={`max-w-[85%] border-2 border-black px-3 py-2 text-[14px] leading-relaxed ${
+                    className={`max-w-[85%] rounded-2xl border-2 border-black px-3 py-2 text-[14px] leading-relaxed ${
                       m.role === 'user'
-                        ? 'mr-auto bg-white'
-                        : 'ml-auto bg-[#f4ed36]/50'
+                        ? 'mr-auto rounded-bl-md bg-white'
+                        : 'ml-auto rounded-br-md bg-[#f4ed36]/50'
                     }`}
                   >
                     <div className="fp-mono mb-1 text-[9px] uppercase opacity-50">
@@ -367,24 +375,42 @@ export default function InboxPage() {
               </div>
 
               <form
-                onSubmit={sendReply}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (assignee !== 'human') return;
+                  sendReply(e);
+                }}
                 className="flex gap-2 border-t-2 border-black p-3"
               >
-                <input
-                  className="min-w-0 flex-1 border-2 border-black bg-white px-3 py-2 text-[14px]"
-                  placeholder={
-                    assignee === 'bot'
-                      ? 'Toma el control para responder como humano…'
-                      : 'Escribe una respuesta…'
-                  }
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  disabled={sending}
-                />
+                {assignee === 'bot' ? (
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 rounded-xl border-2 border-dashed border-black/30 bg-[#faf8f5] px-3 py-2 text-[13px]">
+                    <span className="opacity-70">
+                      El bot está respondiendo. Toma el control para escribir
+                      como humano.
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-lg border-2 border-black bg-[#f4ed36] px-2.5 py-1 text-[12px] font-medium"
+                      onClick={() => setAssignee('human')}
+                    >
+                      Tomar control
+                    </button>
+                  </div>
+                ) : (
+                  <input
+                    className="min-w-0 flex-1 rounded-xl border-2 border-black bg-white px-3 py-2 text-[14px]"
+                    placeholder="Escribe una respuesta…"
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    disabled={sending}
+                  />
+                )}
                 <button
                   type="submit"
-                  disabled={sending || !reply.trim()}
-                  className="fp-btn fp-btn-primary inline-flex items-center gap-1 px-3 py-2 disabled:opacity-50"
+                  disabled={
+                    assignee !== 'human' || sending || !reply.trim()
+                  }
+                  className="fp-btn fp-btn-primary inline-flex items-center gap-1 rounded-xl px-3 py-2 disabled:opacity-40"
                   aria-label="Enviar"
                 >
                   <PaperPlaneIcon />

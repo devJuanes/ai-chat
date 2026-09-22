@@ -4,6 +4,7 @@ import { registerMetaOAuth } from './oauth.js';
 import { registerMetaWebhook } from './webhook.js';
 import { generateBotConfigFromBrief } from './bot-generator.js';
 import { listBotModels } from '../models.js';
+import { registerCommerceRoutes } from './commerce.js';
 
 function publicConnection(row) {
   if (!row) return null;
@@ -35,6 +36,9 @@ function publicBot(row) {
     business_context: row.business_context,
     products_services: row.products_services || '',
     welcome_message: row.welcome_message || '',
+    company_website: row.company_website || '',
+    company_knowledge: row.company_knowledge || '',
+    catalog_mode: row.catalog_mode || 'all',
     form_id: row.form_id || null,
     tone: row.tone,
     model_id: row.model_id,
@@ -74,6 +78,7 @@ export function registerMetaRoutes(app, deps) {
 
   registerMetaWebhook(app);
   registerMetaOAuth(app, deps);
+  registerCommerceRoutes(app, deps);
 
   // ——— Connections ———
   app.get(
@@ -133,6 +138,52 @@ export function registerMetaRoutes(app, deps) {
       } catch (err) {
         return res.status(500).json({
           error: { message: err.message || 'No se pudo desconectar' },
+        });
+      }
+    }
+  );
+
+  app.patch(
+    '/api/meta/connections/:id',
+    authMiddleware(true),
+    async (req, res) => {
+      try {
+        const { org } = await ensureWorkspace(req.user);
+        const db = getDb();
+        const { data: row } = await db
+          .from('meta_connections')
+          .select('*')
+          .eq('id', req.params.id)
+          .maybeSingle();
+        if (!row || row.org_id !== org.id) {
+          return res.status(404).json({ error: { message: 'No encontrado' } });
+        }
+        const status = String(req.body?.status || '').trim();
+        if (!['active', 'disconnected', 'error'].includes(status)) {
+          return res.status(400).json({
+            error: { message: 'status inválido' },
+          });
+        }
+        await db
+          .from('meta_connections')
+          .eq('id', row.id)
+          .update({
+            status,
+            updated_at: new Date().toISOString(),
+          });
+        if (status !== 'active') {
+          await db
+            .from('bot_channel_bindings')
+            .eq('meta_connection_id', row.id)
+            .delete();
+        }
+        return res.json({
+          ok: true,
+          connection: publicConnection({ ...row, status }),
+        });
+      } catch (err) {
+        return res.status(500).json({
+          error: { message: err.message || 'No se pudo actualizar el canal' },
         });
       }
     }
@@ -235,6 +286,11 @@ export function registerMetaRoutes(app, deps) {
         business_context: String(b.business_context || '').trim(),
         products_services: String(b.products_services || '').trim(),
         welcome_message: String(b.welcome_message || '').trim(),
+        company_website: String(b.company_website || '').trim(),
+        company_knowledge: String(b.company_knowledge || '').trim(),
+        catalog_mode: ['all', 'selected', 'none'].includes(b.catalog_mode)
+          ? b.catalog_mode
+          : 'all',
         form_id: b.form_id || null,
         tone: String(b.tone || 'profesional y cercano').trim(),
         model_id: String(b.model_id || 'matu-bot-3-5').trim(),
@@ -253,6 +309,98 @@ export function registerMetaRoutes(app, deps) {
     } catch (err) {
       return res.status(500).json({
         error: { message: err.message || 'No se pudo crear el agente' },
+      });
+    }
+  });
+
+  app.get('/api/bots/:id', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data: bot } = await db
+        .from('bots')
+        .select('*')
+        .eq('id', req.params.id)
+        .maybeSingle();
+      if (!bot || bot.org_id !== org.id) {
+        return res.status(404).json({ error: { message: 'No encontrado' } });
+      }
+      const { data: bindings } = await db
+        .from('bot_channel_bindings')
+        .select('*')
+        .eq('bot_id', bot.id)
+        .eq('org_id', org.id);
+      return res.json({ bot: publicBot(bot), bindings: bindings || [] });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'Error al cargar el agente' },
+      });
+    }
+  });
+
+  app.get('/api/bots/:id/stats', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data: bot } = await db
+        .from('bots')
+        .select('id, org_id')
+        .eq('id', req.params.id)
+        .maybeSingle();
+      if (!bot || bot.org_id !== org.id) {
+        return res.status(404).json({ error: { message: 'No encontrado' } });
+      }
+
+      const { data: conversations } = await db
+        .from('conversations')
+        .select('id, title, preview, assignee, updated_at, source')
+        .eq('org_id', org.id)
+        .eq('bot_id', bot.id)
+        .order('updated_at', { ascending: false })
+        .limit(40);
+
+      const convList = conversations || [];
+      const convIds = convList.map((c) => c.id);
+      let replies = 0;
+      let inbound = 0;
+      let activeHuman = 0;
+      let activeBot = 0;
+
+      if (convIds.length > 0) {
+        const { data: messages } = await db
+          .from('messages')
+          .select('conversation_id, role')
+          .in('conversation_id', convIds);
+        for (const m of messages || []) {
+          if (m.role === 'assistant') replies += 1;
+          else if (m.role === 'user') inbound += 1;
+        }
+        for (const c of convList) {
+          if (c.assignee === 'human') activeHuman += 1;
+          else activeBot += 1;
+        }
+      }
+
+      return res.json({
+        stats: {
+          conversations: convList.length,
+          replies,
+          inbound,
+          active_bot: activeBot,
+          active_human: activeHuman,
+        },
+        recent: convList.slice(0, 8).map((c) => ({
+          id: c.id,
+          title: c.title,
+          preview: c.preview,
+          assignee: c.assignee,
+          updated_at: c.updated_at,
+          source: c.source,
+        })),
+      });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'Error al cargar estadísticas' },
       });
     }
   });
@@ -279,12 +427,17 @@ export function registerMetaRoutes(app, deps) {
         'business_context',
         'products_services',
         'welcome_message',
+        'company_website',
+        'company_knowledge',
         'tone',
         'model_id',
         'language',
         'handoff_keywords',
       ]) {
         if (b[key] != null) patch[key] = String(b[key]).trim();
+      }
+      if (b.catalog_mode != null && ['all', 'selected', 'none'].includes(b.catalog_mode)) {
+        patch.catalog_mode = b.catalog_mode;
       }
       if (b.form_id === null || b.form_id === '') patch.form_id = null;
       else if (b.form_id != null) patch.form_id = String(b.form_id);
@@ -739,6 +892,14 @@ export function registerMetaRoutes(app, deps) {
           .maybeSingle();
         if (!conv || conv.org_id !== org.id) {
           return res.status(404).json({ error: { message: 'No encontrado' } });
+        }
+        if (conv.assignee !== 'human') {
+          return res.status(409).json({
+            error: {
+              message:
+                'Toma el control de la conversación antes de responder como humano',
+            },
+          });
         }
         const { data: thread } = await db
           .from('channel_threads')

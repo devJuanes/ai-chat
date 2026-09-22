@@ -1,3 +1,13 @@
+import {
+  loadProductsForBot,
+  formatCatalogForPrompt,
+  parseCommerceMarks,
+  stripCommerceMarks,
+  insertConversationNote,
+  stageFromNoteType,
+  STAGE_IDS,
+  PIPELINE_STAGES,
+} from './commerce.js';
 import { getDb, newId } from '../db.js';
 import { checkUsage, bumpUsage } from '../auth.js';
 import { estimateTokens, completeUpstreamChat } from '../upstream.js';
@@ -67,10 +77,13 @@ function buildAgentSystemPrompt({
   contactLabel,
   formBundle,
   leadData,
+  catalogProducts,
 }) {
   const channelName = CHANNEL_LABEL[channel] || channel;
-  const products = String(bot.products_services || '').trim();
   const welcome = String(bot.welcome_message || '').trim();
+  const knowledge = String(bot.company_knowledge || '').trim();
+  const website = String(bot.company_website || '').trim();
+  const catalogBlock = formatCatalogForPrompt(catalogProducts);
   const missing =
     formBundle?.fields
       ?.filter((f) => f.required && !leadData?.[f.field_key])
@@ -97,7 +110,7 @@ No menciones estos marcadores al cliente.
 `;
   }
 
-  return `Eres un agente comercial de ${companyName} en ${channelName}.
+  return `Eres un agente comercial senior de ${companyName} en ${channelName}.
 
 ## Identidad (obligatorio)
 - Tu nombre es exactamente: "${bot.name}".
@@ -115,29 +128,69 @@ ${bot.instructions || 'Sé claro, útil y orientado a cerrar.'}
 
 ## Contexto del negocio
 ${bot.business_context || 'Sin contexto adicional.'}
+${website ? `\nSitio web de referencia: ${website}` : ''}
+${knowledge ? `\nConocimiento de la empresa (úsalo; no inventes fuera de esto):\n${knowledge}` : ''}
 
-## Productos / servicios
-${products || 'Pregunta qué necesita el cliente y ofrece ayuda según el contexto del negocio. No inventes catálogo.'}
+## CATÁLOGO OFICIAL (regla crítica — no fallar)
+Solo puedes hablar, ofrecer o cotizar lo que aparece abajo.
+Si el cliente pide algo que NO está en el catálogo: no inventes. Di que lo vas a confirmar con el equipo y, si insiste en comprar eso, usa [[HANDOFF]].
+Nunca inventes "cursos", paquetes, precios ni stock que no estén listados.
+
+${catalogBlock}
 
 ## Tono e idioma
 Tono: ${bot.tone || 'profesional y cercano'}.
 Idioma: ${bot.language || 'es'}.
+Trata clientes que escriben mal o son ambiguos con paciencia: aclara con preguntas cortas.
+
+## Escalado (handoff)
+Si pide humano, hay queja grave, o pide algo fuera de catálogo: responde con calidez profesional.
+NO digas "te paso con un asesor". Di algo como: "Te conecto con alguien del equipo para darte una respuesta precisa."
+Luego termina con [[HANDOFF]].
+
+## Notas internas y pipeline (OBLIGATORIO — el sistema las oculta)
+TÚ calificas el lead y mueves el embudo. No esperes a un humano.
+
+1) Notas: cuando pase algo relevante, añade:
+[[NOTE:tipo|sentimiento|titulo|detalle]]
+tipos: sentiment, meeting, objection, win, lost, handoff, interest, custom
+sentimiento: positive, neutral, negative, critical
+Ejemplos:
+- Cliente grosero → [[NOTE:sentiment|critical|Cliente agresivo|Usó insultos / tono hostil]]
+- Acordaron reunión → [[NOTE:meeting|positive|Reunión acordada|Quieren videollamada esta semana]]
+- Muestra interés → [[NOTE:interest|positive|Interesado|Preguntó por el servicio y plazos]]
+- No le interesa → [[NOTE:lost|negative|Sin interés|Dijo que no necesita el servicio]]
+
+2) Embudo Kanban: en CADA respuesta donde el estado del cliente esté claro, incluye UNA marca:
+[[STAGE:interesado]]
+Valores válidos (elige solo uno): nuevo, interesado, en_duda, cita, cerrar, ganado, perdido
+Reglas de decisión:
+- Primer contacto / sin claridad → nuevo
+- Pregunta por oferta, precio o beneficios → interesado
+- Tiene objeciones o “lo pienso” → en_duda
+- Acuerda reunión/cita → cita
+- Listo para comprar / pide link de pago → cerrar
+- Confirmó compra o cierre → ganado
+- Rechazó o no volverá → perdido
+Si el estado no cambió respecto al mensaje anterior, puedes omitir STAGE.
 
 ## Reglas del canal
 - Respuestas cortas (1–3 frases o bullets). Sin markdown pesado ni código.
-- No inventes precios, stock ni políticas.
-- Empuja suavemente al siguiente paso (dato, demo, compra, agendar).
-- Si pide humano / asesor, responde breve y termina con [[HANDOFF]].
+- Empuja al siguiente paso (dato, link de compra del catálogo, cita, o handoff).
+- Si un producto del catálogo tiene link, puedes compartirlo cuando el cliente esté listo.
+- Si el catálogo dice NO mencionar precio, no digas cifras: ofrece cotización o confirma con el equipo.
 ${formBlock}`;
 }
 
 function stripInternalMarks(text) {
-  return String(text || '')
-    .replace(LEAD_MARK_RE, '')
-    .replace(LEAD_DONE_RE, '')
-    .replace(HANDOFF_RE, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return stripCommerceMarks(
+    String(text || '')
+      .replace(LEAD_MARK_RE, '')
+      .replace(LEAD_DONE_RE, '')
+      .replace(HANDOFF_RE, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 }
 
 function parseLeadMarks(text) {
@@ -543,7 +596,7 @@ export async function handleInboundMessage({
       .eq('id', conversation.id)
       .update({ assignee: 'human' });
     const notice =
-      'Claro, un asesor humano tomará esta conversación en breve.';
+      'Claro, te conecto con alguien del equipo para darte una respuesta precisa. En un momento te escriben.';
     try {
       await sendOutbound({
         connection,
@@ -589,6 +642,7 @@ export async function handleInboundMessage({
   }
 
   const companyName = resolveCompanyName(bot, org);
+  const catalogProducts = await loadProductsForBot(bot, connection.org_id);
   const { data: history } = await db
     .from('messages')
     .select('role, content')
@@ -603,6 +657,7 @@ export async function handleInboundMessage({
     contactLabel: identity.contactName,
     formBundle,
     leadData,
+    catalogProducts,
   });
 
   let rawReply = '';
@@ -620,8 +675,10 @@ export async function handleInboundMessage({
   }
 
   const { data: leadPatch, complete: leadComplete } = parseLeadMarks(rawReply);
+  const { notes: aiNotes, stage: markedStage } = parseCommerceMarks(rawReply);
   let handoff = /\[\[HANDOFF\]\]/i.test(rawReply);
   let reply = stripInternalMarks(rawReply);
+  let pipelineStage = markedStage && STAGE_IDS.has(markedStage) ? markedStage : null;
 
   if (formBundle && Object.keys(leadPatch).length) {
     await upsertLeadSubmission({
@@ -636,6 +693,7 @@ export async function handleInboundMessage({
       patchData: leadPatch,
       markComplete: leadComplete,
     });
+    if (!pipelineStage) pipelineStage = 'interesado';
   } else if (formBundle && leadComplete) {
     await upsertLeadSubmission({
       orgId: connection.org_id,
@@ -649,13 +707,81 @@ export async function handleInboundMessage({
       patchData: {},
       markComplete: true,
     });
+    if (!pipelineStage) pipelineStage = 'interesado';
   }
 
+  for (const n of aiNotes) {
+    const allowedTypes = new Set([
+      'sentiment',
+      'meeting',
+      'objection',
+      'win',
+      'lost',
+      'handoff',
+      'interest',
+      'custom',
+    ]);
+    const allowedSent = new Set([
+      'positive',
+      'neutral',
+      'negative',
+      'critical',
+    ]);
+    const noteType = allowedTypes.has(n.noteType) ? n.noteType : 'custom';
+    await insertConversationNote({
+      orgId: connection.org_id,
+      conversationId: conversation.id,
+      botId: bot.id,
+      channel: connection.channel,
+      contactName: identity.contactName,
+      externalUserId,
+      noteType,
+      title: n.title || 'Nota',
+      body: n.body || '',
+      sentiment: allowedSent.has(n.sentiment) ? n.sentiment : 'neutral',
+      source: 'ai',
+    });
+    if (n.sentiment === 'critical' || noteType === 'handoff') {
+      handoff = true;
+    }
+    if (!pipelineStage) {
+      const inferred = stageFromNoteType(noteType);
+      if (inferred && STAGE_IDS.has(inferred)) pipelineStage = inferred;
+    }
+  }
+
+  const prevStage = conversation.pipeline_stage || 'nuevo';
+  const convPatch = {
+    updated_at: new Date().toISOString(),
+  };
+  if (pipelineStage && STAGE_IDS.has(pipelineStage)) {
+    convPatch.pipeline_stage = pipelineStage;
+    if (pipelineStage !== prevStage) {
+      const label =
+        PIPELINE_STAGES.find((s) => s.id === pipelineStage)?.label ||
+        pipelineStage;
+      await insertConversationNote({
+        orgId: connection.org_id,
+        conversationId: conversation.id,
+        botId: bot.id,
+        channel: connection.channel,
+        contactName: identity.contactName,
+        externalUserId,
+        noteType: 'custom',
+        title: `Embudo → ${label}`,
+        body: `El agente movió el chat de ${prevStage} a ${pipelineStage}`,
+        sentiment:
+          pipelineStage === 'ganado'
+            ? 'positive'
+            : pipelineStage === 'perdido'
+              ? 'negative'
+              : 'neutral',
+        source: 'ai',
+      });
+    }
+  }
   if (handoff) {
-    await db
-      .from('conversations')
-      .eq('id', conversation.id)
-      .update({ assignee: 'human' });
+    convPatch.assignee = 'human';
   }
 
   if (!reply) {
@@ -691,7 +817,11 @@ export async function handleInboundMessage({
     .eq('id', conversation.id)
     .update({
       preview: reply.slice(0, 120),
-      updated_at: new Date().toISOString(),
+      updated_at: convPatch.updated_at,
+      ...(convPatch.pipeline_stage
+        ? { pipeline_stage: convPatch.pipeline_stage }
+        : {}),
+      ...(convPatch.assignee ? { assignee: convPatch.assignee } : {}),
     });
 
   await bumpUsage(org, ownerUserId, tokensIn, tokensOut);
@@ -700,6 +830,7 @@ export async function handleInboundMessage({
     ok: true,
     conversationId: conversation.id,
     handoff,
+    stage: convPatch.pipeline_stage || prevStage,
     replyLength: reply.length,
   };
 }

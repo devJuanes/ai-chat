@@ -11,7 +11,6 @@ import {
   ChatBubbleIcon,
   ChevronDownIcon,
   CompassIcon,
-  FilmIcon,
   InboxIcon,
   LibraryIcon,
   LogoutIcon,
@@ -272,6 +271,7 @@ function ShellSidebar({
           <CompassIcon />
           <span>Explorar</span>
         </NavLink>
+        {/* Imagine — oculto por ahora
         <NavLink
           to="/imagine"
           className={({ isActive }) => linkClass(isActive)}
@@ -280,9 +280,12 @@ function ShellSidebar({
           <FilmIcon />
           <span>Imagine</span>
         </NavLink>
+        */}
         <NavLink
-          to="/bots"
-          className={({ isActive }) => linkClass(isActive)}
+          to="/bots/agentes"
+          className={({ isActive }) =>
+            linkClass(isActive || pathname.startsWith('/bots'))
+          }
           onClick={onCloseMobile}
         >
           <BotIcon />
