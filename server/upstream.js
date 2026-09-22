@@ -105,19 +105,46 @@ export async function streamUpstreamChat({ system, messages, signal }) {
     thinking: { type: 'disabled' },
   };
 
-  const res = await fetch(`${config.upstream.baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.upstream.apiKey}`,
-    },
-    body: JSON.stringify(payload),
-    signal,
-  });
+  let res;
+  try {
+    res = await fetch(`${config.upstream.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.upstream.apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (err) {
+    if (signal?.aborted || err?.name === 'AbortError') {
+      throw new Error('Generación cancelada');
+    }
+    const raw = String(err?.message || err || '');
+    if (/fetch failed|Failed to fetch|ECONNRESET|ETIMEDOUT|ENOTFOUND|network/i.test(raw)) {
+      throw new Error(
+        'No pudimos conectar con el modelo. Revisa tu internet o inténtalo de nuevo en unos segundos.'
+      );
+    }
+    throw new Error(raw || 'No se pudo generar la respuesta');
+  }
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    throw new Error(errText || `Error del modelo (${res.status})`);
+    let friendly = errText || `Error del modelo (${res.status})`;
+    try {
+      const j = JSON.parse(errText);
+      friendly = j?.error?.message || j?.message || friendly;
+    } catch {
+      /* texto plano */
+    }
+    if (res.status === 429) {
+      throw new Error('El modelo está saturado. Espera un momento e inténtalo de nuevo.');
+    }
+    if (res.status >= 500) {
+      throw new Error('El modelo no respondió. Inténtalo de nuevo en unos segundos.');
+    }
+    throw new Error(friendly.slice(0, 240));
   }
 
   return res;
@@ -163,6 +190,19 @@ export async function* parseSseStream(response) {
 
   const rest = think.flush();
   if (rest) yield rest;
+}
+
+/**
+ * Non-streaming chat completion for channel bots (WhatsApp / Messenger / IG).
+ * Accumulates the SSE stream from the upstream so callers get a single string.
+ */
+export async function completeUpstreamChat({ system, messages, signal }) {
+  const res = await streamUpstreamChat({ system, messages, signal });
+  let text = '';
+  for await (const chunk of parseSseStream(res)) {
+    text += chunk;
+  }
+  return stripThinkTags(text);
 }
 
 export { estimateTokens };

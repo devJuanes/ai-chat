@@ -73,6 +73,9 @@ function parsePath(pathname) {
   if (pathname.startsWith('/explore')) {
     return { section: 'explore', projectId: null, conversationId: null, isNew: true };
   }
+  if (pathname.startsWith('/imagine')) {
+    return { section: 'imagine', projectId: null, conversationId: null, isNew: true };
+  }
   if (pathname.startsWith('/search')) {
     return { section: 'search', projectId: null, conversationId: null, isNew: true };
   }

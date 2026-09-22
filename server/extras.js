@@ -6,6 +6,12 @@ import {
   getPlanForOrg,
 } from './auth.js';
 import { generateChatTitle } from './titles.js';
+import {
+  createVideoTask,
+  getVideoTask,
+  listVideoTasks,
+  pingMoneyPrinter,
+} from './moneyprinter.js';
 
 async function getUsage(orgId, userId) {
   const db = getDb();
@@ -281,6 +287,214 @@ export function registerExtraRoutes(app) {
             (usage.tokens_in || 0) + (usage.tokens_out || 0),
         },
       });
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  function slugify(text) {
+    return (
+      String(text || 'app')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 48) || 'app'
+    );
+  }
+
+  function publicSiteUrl(slug) {
+    const base = (
+      process.env.PUBLIC_APP_URL ||
+      process.env.VITE_SITE_URL ||
+      'https://ai.matubyte.com'
+    ).replace(/\/$/, '');
+    // Prefer dedicated MatuAI host for published apps
+    const host = process.env.PUBLIC_SITES_HOST || 'https://ai.matubyte.com';
+    return `${host.replace(/\/$/, '')}/sites/${slug}`;
+  }
+
+  /** Público: sirve el HTML publicado (producción). */
+  app.get('/sites/:slug', async (req, res) => {
+    try {
+      const slug = slugify(req.params.slug);
+      const db = getDb();
+      const { data, error } = await db
+        .from('published_sites')
+        .select('html, name')
+        .eq('slug', slug)
+        .limit(1);
+      if (error) throw new Error(error.message);
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.html) {
+        return res
+          .status(404)
+          .type('html')
+          .send(
+            `<!DOCTYPE html><html><body style="font-family:system-ui;padding:2rem"><h1>Sitio no encontrado</h1><p>No hay una app publicada en <code>/sites/${slug}</code>.</p></body></html>`
+          );
+      }
+      res
+        .status(200)
+        .type('html')
+        .set('Cache-Control', 'public, max-age=60')
+        .send(row.html);
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  app.post('/api/sites', authMiddleware(true), async (req, res) => {
+    try {
+      const { profile, org } = await ensureWorkspace(req.user);
+      const name = String(req.body?.name || '').trim().slice(0, 80);
+      let slug = slugify(req.body?.slug || name);
+      const html = String(req.body?.html || '').trim();
+      const conversationId = req.body?.conversation_id || null;
+
+      if (!name) {
+        return res.status(400).json({ error: { message: 'Nombre requerido' } });
+      }
+      if (!html || html.length < 20) {
+        return res.status(400).json({ error: { message: 'HTML inválido' } });
+      }
+      if (html.length > 3_500_000) {
+        return res
+          .status(400)
+          .json({ error: { message: 'HTML demasiado grande' } });
+      }
+
+      const db = getDb();
+      const id = newId();
+
+      // Si el slug ya existe en la org, actualizar ese sitio
+      const { data: existing } = await db
+        .from('published_sites')
+        .select('id, slug')
+        .eq('org_id', org.id)
+        .eq('slug', slug)
+        .limit(1);
+      const prev = Array.isArray(existing) ? existing[0] : existing;
+
+      if (prev?.id) {
+        const { error } = await db
+          .from('published_sites')
+          .eq('id', prev.id)
+          .update({
+            name,
+            html,
+            conversation_id: conversationId,
+            updated_at: new Date().toISOString(),
+          });
+        if (error) throw new Error(error.message);
+        const url = publicSiteUrl(slug);
+        return res.json({
+          site: { id: prev.id, name, slug, url },
+          url,
+        });
+      }
+
+      // Evitar choque global de slug: añadir sufijo corto
+      const { data: clash } = await db
+        .from('published_sites')
+        .select('id')
+        .eq('slug', slug)
+        .limit(1);
+      const taken = Array.isArray(clash) ? clash[0] : clash;
+      if (taken?.id) {
+        slug = `${slug}-${id.slice(0, 6)}`;
+      }
+
+      const row = {
+        id,
+        org_id: org.id,
+        user_id: profile.id,
+        conversation_id: conversationId,
+        name,
+        slug,
+        html,
+      };
+      const { error } = await db.from('published_sites').insert(row);
+      if (error) throw new Error(error.message);
+      const url = publicSiteUrl(slug);
+      res.status(201).json({ site: { id, name, slug, url }, url });
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  app.get('/api/sites', authMiddleware(true), async (req, res) => {
+    try {
+      const { profile } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data, error } = await db
+        .from('published_sites')
+        .select('id, name, slug, updated_at, created_at')
+        .eq('user_id', profile.id)
+        .order('updated_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      const sites = (data || []).map((s) => ({
+        ...s,
+        url: publicSiteUrl(s.slug),
+      }));
+      res.json({ sites });
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  // ── Imagine (MoneyPrinterTurbo video generation) ─────────────────
+
+  app.get('/api/imagine/status', authMiddleware(true), async (_req, res) => {
+    try {
+      const ping = await pingMoneyPrinter();
+      res.json({
+        configured: Boolean(config.moneyPrinter.baseUrl),
+        baseUrl: config.moneyPrinter.baseUrl,
+        ...ping,
+      });
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  app.post('/api/imagine/videos', authMiddleware(true), async (req, res) => {
+    try {
+      await ensureWorkspace(req.user);
+      const task = await createVideoTask(req.body || {});
+      res.status(201).json({ task });
+    } catch (err) {
+      const status = /no está disponible|MONEYPRINTER_BASE_URL/i.test(
+        err.message || ''
+      )
+        ? 503
+        : /tema o guion|requerido/i.test(err.message || '')
+          ? 400
+          : 500;
+      res.status(status).json({ error: { message: err.message } });
+    }
+  });
+
+  app.get('/api/imagine/tasks/:taskId', authMiddleware(true), async (req, res) => {
+    try {
+      await ensureWorkspace(req.user);
+      const task = await getVideoTask(req.params.taskId);
+      res.json({ task });
+    } catch (err) {
+      const status = err.status === 404 ? 404 : err.status === 503 ? 503 : 500;
+      console.error('[imagine] get task failed:', err.message);
+      res.status(status).json({ error: { message: err.message } });
+    }
+  });
+
+  app.get('/api/imagine/tasks', authMiddleware(true), async (req, res) => {
+    try {
+      await ensureWorkspace(req.user);
+      const page = Number(req.query.page) || 1;
+      const pageSize = Number(req.query.page_size) || 10;
+      const data = await listVideoTasks({ page, pageSize });
+      res.json({ data });
     } catch (err) {
       res.status(500).json({ error: { message: err.message } });
     }

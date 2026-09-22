@@ -15,6 +15,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# Imágenes generadas en chat (MiniMax)
+storage/generated-images/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

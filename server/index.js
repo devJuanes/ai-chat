@@ -18,7 +18,6 @@ import {
   loadSystemPrompt,
   getModel,
   isModelAllowed,
-  SIZOR_MODEL_IDS,
 } from './models.js';
 import {
   streamUpstreamChat,
@@ -28,10 +27,28 @@ import {
 } from './upstream.js';
 import { registerExtraRoutes, loadProjectContext, generateChatTitle } from './extras.js';
 import { buildTemplatePromptBlock } from './templates.js';
+import {
+  isImageGenerationRequest,
+  extractImagePrompt,
+  extractAspectRatio,
+  generateAndStoreImage,
+  formatImageAssistantMessage,
+  registerGeneratedImageRoutes,
+} from './image-gen.js';
+import { registerMetaRoutes, metaConfigured } from './meta/index.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '1mb' }));
+app.use(
+  express.json({
+    limit: '4mb',
+    verify: (req, _res, buf) => {
+      if (req.originalUrl?.startsWith('/api/meta/webhook')) {
+        req.rawBody = buf;
+      }
+    },
+  })
+);
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -40,10 +57,14 @@ app.get('/api/health', (_req, res) => {
     projectId: config.matudb.projectId,
     upstreamConfigured: Boolean(config.upstream.apiKey),
     upstreamModel: config.upstream.model,
+    imageModel: config.upstream.imageModel,
+    metaConfigured: metaConfigured(),
   });
 });
 
 registerExtraRoutes(app);
+registerGeneratedImageRoutes(app);
+registerMetaRoutes(app, { authMiddleware, ensureWorkspace });
 
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -158,21 +179,19 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/models', authMiddleware(false), async (req, res) => {
   let planId = 'free';
   let modelsAllowed = '';
-  let sizorOnly = false;
   if (req.user) {
     try {
       const { org } = await ensureWorkspace(req.user);
       const plan = await getPlanForOrg(org);
       planId = plan.id;
       modelsAllowed = plan.models_allowed || '';
-      sizorOnly = Boolean(org?.sizor_company_id);
     } catch {
       /* use free */
     }
   }
   res.json({
-    models: listPublicModels(planId, modelsAllowed, { sizorOnly }),
-    sizorOnly,
+    models: listPublicModels(planId, modelsAllowed),
+    sizorOnly: false,
   });
 });
 
@@ -273,10 +292,7 @@ app.post('/api/conversations', authMiddleware(true), async (req, res) => {
       });
     }
 
-    let modelId = getModel(req.body?.model_id || 'matu').id;
-    if (org?.sizor_company_id && !SIZOR_MODEL_IDS.includes(modelId)) {
-      modelId = SIZOR_MODEL_IDS[0];
-    }
+    const modelId = getModel(req.body?.model_id || 'matu').id;
     const projectId = req.body?.project_id || null;
     if (projectId) {
       const { data: proj } = await db
@@ -342,12 +358,8 @@ app.post('/api/chat', authMiddleware(true), async (req, res) => {
       return res.status(400).json({ error: { message: 'Mensaje vacío' } });
     }
 
-    let modelId = getModel(req.body?.model_id || 'matu').id;
-    const sizorOnly = Boolean(org?.sizor_company_id);
-    if (sizorOnly && !SIZOR_MODEL_IDS.includes(modelId)) {
-      modelId = SIZOR_MODEL_IDS[0];
-    }
-    if (!isModelAllowed(modelId, plan.id, plan.models_allowed, { sizorOnly })) {
+    const modelId = getModel(req.body?.model_id || 'matu').id;
+    if (!isModelAllowed(modelId, plan.id, plan.models_allowed)) {
       return res.status(403).json({
         error: { message: 'Este modelo no está disponible en tu plan.' },
       });
@@ -582,23 +594,47 @@ ${tail}
     });
 
     let full = continueOf ? continueBase : '';
-    try {
-      const upstream = await streamUpstreamChat({
-        system,
-        messages: upstreamMessages,
-        signal: abort.signal,
-      });
 
-      for await (const chunk of parseSseStream(upstream)) {
-        full += chunk;
-        writeEvent('delta', { content: chunk });
-      }
-    } catch (err) {
-      if (!full || (continueOf && full === continueBase)) {
+    // Generación de imagen cuando el usuario la pide en el chat
+    const wantImage =
+      !continueOf && isImageGenerationRequest(userContent);
+
+    if (wantImage) {
+      writeEvent('delta', { content: 'Generando imagen…' });
+      try {
+        const imagePrompt = extractImagePrompt(userContent);
+        const aspectRatio = extractAspectRatio(userContent);
+        const image = await generateAndStoreImage({
+          prompt: imagePrompt,
+          aspectRatio,
+          signal: abort.signal,
+        });
+        full = formatImageAssistantMessage(image);
+      } catch (err) {
         writeEvent('error', {
-          message: err.message || 'No se pudo generar la respuesta',
+          message: err.message || 'No se pudo generar la imagen',
         });
         return res.end();
+      }
+    } else {
+      try {
+        const upstream = await streamUpstreamChat({
+          system,
+          messages: upstreamMessages,
+          signal: abort.signal,
+        });
+
+        for await (const chunk of parseSseStream(upstream)) {
+          full += chunk;
+          writeEvent('delta', { content: chunk });
+        }
+      } catch (err) {
+        if (!full || (continueOf && full === continueBase)) {
+          writeEvent('error', {
+            message: err.message || 'No se pudo generar la respuesta',
+          });
+          return res.end();
+        }
       }
     }
 
@@ -727,7 +763,7 @@ if (fs.existsSync(indexHtml)) {
       },
     })
   );
-  app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
+  app.get(/^(?!\/(?:api|sites)(?:\/|$)).*/, (_req, res) => {
     res.sendFile(indexHtml);
   });
 }

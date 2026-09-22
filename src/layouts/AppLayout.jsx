@@ -7,9 +7,12 @@ import ProjectBadge from '../components/ProjectBadge';
 import ProjectModal from '../components/ProjectModal';
 import {
   ArchiveIcon,
+  BotIcon,
   ChatBubbleIcon,
   ChevronDownIcon,
   CompassIcon,
+  FilmIcon,
+  InboxIcon,
   LibraryIcon,
   LogoutIcon,
   MoreIcon,
@@ -268,6 +271,32 @@ function ShellSidebar({
         >
           <CompassIcon />
           <span>Explorar</span>
+        </NavLink>
+        <NavLink
+          to="/imagine"
+          className={({ isActive }) => linkClass(isActive)}
+          onClick={onCloseMobile}
+        >
+          <FilmIcon />
+          <span>Imagine</span>
+        </NavLink>
+        <NavLink
+          to="/bots"
+          className={({ isActive }) => linkClass(isActive)}
+          onClick={onCloseMobile}
+        >
+          <BotIcon />
+          <span>Agentes</span>
+        </NavLink>
+        <NavLink
+          to="/inbox"
+          className={({ isActive }) =>
+            linkClass(isActive || pathname.startsWith('/inbox/'))
+          }
+          onClick={onCloseMobile}
+        >
+          <InboxIcon />
+          <span>Inbox</span>
         </NavLink>
         <NavLink
           to="/library"

@@ -227,6 +227,17 @@ export default function RichMarkdown({ content, isUser = false }) {
           {children}
         </a>
       ),
+    img: ({ src, alt }) => {
+      if (!src) return null;
+      return (
+        <img
+          src={src}
+          alt={alt || 'Imagen generada'}
+          loading="lazy"
+          className="my-2 max-h-[min(70vh,560px)] w-full rounded-xl border border-hairline object-contain"
+        />
+      );
+    },
     blockquote: ({ children }) => (
       <blockquote
         className={`my-2 border-l-2 pl-3 ${

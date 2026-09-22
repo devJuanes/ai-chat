@@ -2,10 +2,13 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
 import ChatPage from './pages/ChatPage';
 import ExplorePage from './pages/ExplorePage';
+import ImaginePage from './pages/ImaginePage';
 import LibraryPage from './pages/LibraryPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import UsagePage from './pages/UsagePage';
+import BotsPage from './pages/BotsPage';
+import InboxPage from './pages/InboxPage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -46,6 +49,10 @@ export default function App() {
             element={<ChatPage />}
           />
           <Route path="/explore" element={<ExplorePage />} />
+          <Route path="/imagine" element={<ImaginePage />} />
+          <Route path="/bots" element={<BotsPage />} />
+          <Route path="/inbox" element={<InboxPage />} />
+          <Route path="/inbox/:conversationId" element={<InboxPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/usage" element={<UsagePage />} />
           <Route path="/library" element={<LibraryPage />} />

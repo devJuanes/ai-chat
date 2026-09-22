@@ -714,6 +714,7 @@ export default function ChatArea({
                 : undefined
             }
             title="matu · preview"
+            conversationId={conversation?.id || null}
           />
         ) : null}
       </div>

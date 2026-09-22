@@ -54,22 +54,32 @@ export async function streamChat({
     throw new Error('Debes iniciar sesión');
   }
 
-  const res = await fetch(apiUrl('/api/chat'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      conversation_id: conversationId || undefined,
-      model_id: modelId,
-      project_id: projectId || undefined,
-      content: content || undefined,
-      regenerate_of: regenerateOf || undefined,
-      continue_of: continueOf || undefined,
-    }),
-    signal,
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl('/api/chat'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        conversation_id: conversationId || undefined,
+        model_id: modelId,
+        project_id: projectId || undefined,
+        content: content || undefined,
+        regenerate_of: regenerateOf || undefined,
+        continue_of: continueOf || undefined,
+      }),
+      signal,
+    });
+  } catch (err) {
+    if (signal?.aborted || err?.name === 'AbortError') {
+      throw new Error('Generación cancelada');
+    }
+    throw new Error(
+      'No pudimos conectar con el servidor. Revisa que la app esté corriendo e inténtalo de nuevo.'
+    );
+  }
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;

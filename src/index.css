@@ -273,3 +273,47 @@
   animation: shimmer 1.15s ease-in-out infinite;
   border-radius: 10px;
 }
+
+/* Imagine — wave fill (bottom → top) */
+@keyframes imagine-wave-drift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.imagine-wave-fill {
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(110, 196, 210, 0.55) 0%,
+    rgba(74, 168, 186, 0.88) 38%,
+    rgba(52, 148, 168, 0.96) 100%
+  );
+}
+
+.imagine-wave {
+  position: absolute;
+  left: 0;
+  top: -18px;
+  width: 200%;
+  height: 28px;
+  background-repeat: repeat-x;
+  background-size: 50% 100%;
+}
+
+.imagine-wave--back {
+  opacity: 0.55;
+  animation: imagine-wave-drift 4.2s linear infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28' preserveAspectRatio='none'%3E%3Cpath fill='%2396d4e0' d='M0 18 Q15 6 30 18 T60 18 T90 18 T120 18 V28 H0Z'/%3E%3C/svg%3E");
+}
+
+.imagine-wave--front {
+  top: -12px;
+  height: 22px;
+  opacity: 0.95;
+  animation: imagine-wave-drift 2.6s linear infinite reverse;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 22' preserveAspectRatio='none'%3E%3Cpath fill='%236ec4d2' d='M0 14 Q15 4 30 14 T60 14 T90 14 T120 14 V22 H0Z'/%3E%3C/svg%3E");
+}

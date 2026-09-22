@@ -33,5 +33,33 @@ export const config = {
       'https://api.minimax.io/v1'
     ).replace(/\/$/, ''),
     model: trim(process.env.UPSTREAM_MODEL, 'MiniMax-M3'),
+    /** MiniMax image-01 (generación de imágenes en chat) */
+    imageModel: trim(process.env.UPSTREAM_IMAGE_MODEL, 'image-01'),
+  },
+  /** MoneyPrinterTurbo (Imagine — generación de videos) */
+  moneyPrinter: {
+    baseUrl: trim(
+      process.env.MONEYPRINTER_BASE_URL,
+      'http://127.0.0.1:8080'
+    ).replace(/\/$/, ''),
+    /** URL pública para links de video (si vacío, usa baseUrl) */
+    publicBaseUrl: trim(process.env.MONEYPRINTER_PUBLIC_URL).replace(
+      /\/$/,
+      ''
+    ),
+    apiKey: trim(process.env.MONEYPRINTER_API_KEY),
+  },
+  publicAppUrl: trim(
+    process.env.PUBLIC_APP_URL,
+    'http://127.0.0.1:5173'
+  ).replace(/\/$/, ''),
+  /** Meta platform (WhatsApp / Messenger / Instagram) */
+  meta: {
+    appId: trim(process.env.META_APP_ID),
+    appSecret: trim(process.env.META_APP_SECRET),
+    verifyToken: trim(process.env.META_VERIFY_TOKEN),
+    apiVersion: trim(process.env.META_API_VERSION, 'v21.0'),
+    embeddedSignupConfigId: trim(process.env.META_EMBEDDED_SIGNUP_CONFIG_ID),
+    tokenEncryptionKey: trim(process.env.META_TOKEN_ENCRYPTION_KEY),
   },
 };
