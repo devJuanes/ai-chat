@@ -59,10 +59,21 @@ const CATALOG = [
     file: 'MatuMarketing.md',
     plans: ['free', 'pro', 'team'],
   },
+  {
+    id: 'matu-bot-3-5',
+    name: 'MatuBot 3.5',
+    tagline: 'Chatbot ventas · WhatsApp · atención',
+    file: 'MatuBot3-5.md',
+    plans: ['free', 'pro', 'team'],
+    botOnly: true,
+  },
 ];
 
 /** Modelos permitidos para organizaciones vinculadas desde Sizor */
 export const SIZOR_MODEL_IDS = ['matu', 'matu-marketing', 'matu-commerce'];
+
+/** Modelos para agentes de canal (WhatsApp / IG / FB) */
+export const BOT_MODEL_IDS = ['matu-bot-3-5', 'matu-marketing', 'matu-commerce'];
 
 const promptCache = new Map();
 
@@ -75,6 +86,7 @@ const ALWAYS_ON_FREE = new Set([
   'matu-space-ultra',
   'matu-commerce',
   'matu-marketing',
+  'matu-bot-3-5',
 ]);
 
 function formatNow() {
@@ -123,6 +135,11 @@ export function listPublicModels(
 
   list = ensureCatalogModels(list, pid);
 
+  // MatuBot y similares son solo para agentes de canal
+  if (!opts.includeBotModels) {
+    list = list.filter((m) => !m.botOnly);
+  }
+
   if (opts.sizorOnly) {
     const sizor = new Set(SIZOR_MODEL_IDS);
     list = list.filter((m) => sizor.has(m.id));
@@ -132,7 +149,21 @@ export function listPublicModels(
     }
   }
 
+  if (opts.botsOnly) {
+    const botIds = new Set(BOT_MODEL_IDS);
+    list = CATALOG.filter(
+      (m) => botIds.has(m.id) && m.plans.includes(pid)
+    );
+    if (!list.length) {
+      list = CATALOG.filter((m) => m.id === 'matu-bot-3-5');
+    }
+  }
+
   return list.map(({ id, name, tagline }) => ({ id, name, tagline }));
+}
+
+export function listBotModels(planId = 'free') {
+  return listPublicModels(planId, '', { botsOnly: true, includeBotModels: true });
 }
 
 export function getModel(id) {

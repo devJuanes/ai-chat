@@ -83,6 +83,7 @@ async function processWhatsAppEntry(entry) {
     const contacts = value.contacts || [];
     for (const message of value.messages || []) {
       const contact = contacts.find((c) => c.wa_id === message.from);
+      const profileName = String(contact?.profile?.name || '').trim();
       const { text, isMedia } = extractWhatsAppText(message);
       if (!text && !isMedia) continue;
       try {
@@ -90,7 +91,9 @@ async function processWhatsAppEntry(entry) {
           channel: 'whatsapp',
           phoneNumberId,
           externalUserId: message.from,
-          contactName: contact?.profile?.name || '',
+          // Phone is primary identity; profile name is optional hint
+          contactName: profileName,
+          contactPhone: message.from,
           text,
           externalMessageId: message.id || null,
           isMediaStub: isMedia,

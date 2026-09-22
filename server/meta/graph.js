@@ -142,6 +142,54 @@ export async function sendWhatsAppText({
   });
 }
 
+/** Messenger: first name of the person who messaged the Page */
+export async function fetchMessengerUserProfile(psid, pageToken) {
+  try {
+    const data = await graphFetch(`/${psid}`, {
+      token: pageToken,
+      query: { fields: 'first_name,last_name,name' },
+    });
+    const first = String(data?.first_name || '').trim();
+    const full = String(data?.name || '').trim();
+    return {
+      displayName: first || full.split(/\s+/)[0] || full || '',
+      username: '',
+      raw: data,
+    };
+  } catch {
+    return { displayName: '', username: '', raw: null };
+  }
+}
+
+/** Instagram Messaging: username of the person (IGSID) */
+export async function fetchInstagramUserProfile(igsid, pageToken) {
+  try {
+    const data = await graphFetch(`/${igsid}`, {
+      token: pageToken,
+      query: { fields: 'name,username' },
+    });
+    const username = String(data?.username || '')
+      .trim()
+      .replace(/^@/, '');
+    const name = String(data?.name || '').trim();
+    return {
+      displayName: username ? `@${username}` : name || '',
+      username: username || '',
+      raw: data,
+    };
+  } catch {
+    return { displayName: '', username: '', raw: null };
+  }
+}
+
+/** Format WhatsApp wa_id as a readable phone */
+export function formatWhatsAppPhone(waId) {
+  const digits = String(waId || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length >= 10) return `+${digits}`;
+  return digits;
+}
+
 /**
  * After Embedded Signup, exchange the code for a business token
  * and resolve WABA + phone number id.

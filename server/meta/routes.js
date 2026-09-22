@@ -2,6 +2,8 @@ import { getDb, newId } from '../db.js';
 import { metaConfigured } from './config.js';
 import { registerMetaOAuth } from './oauth.js';
 import { registerMetaWebhook } from './webhook.js';
+import { generateBotConfigFromBrief } from './bot-generator.js';
+import { listBotModels } from '../models.js';
 
 function publicConnection(row) {
   if (!row) return null;
@@ -27,9 +29,13 @@ function publicBot(row) {
     id: row.id,
     org_id: row.org_id,
     name: row.name,
+    company_name: row.company_name || '',
     objective: row.objective,
     instructions: row.instructions,
     business_context: row.business_context,
+    products_services: row.products_services || '',
+    welcome_message: row.welcome_message || '',
+    form_id: row.form_id || null,
     tone: row.tone,
     model_id: row.model_id,
     language: row.language,
@@ -38,6 +44,29 @@ function publicBot(row) {
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+function publicForm(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    org_id: row.org_id,
+    name: row.name,
+    description: row.description || '',
+    active: row.active !== false,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function slugKey(label) {
+  return String(label || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 40) || 'campo';
 }
 
 export function registerMetaRoutes(app, deps) {
@@ -110,6 +139,54 @@ export function registerMetaRoutes(app, deps) {
   );
 
   // ——— Bots CRUD ———
+  app.get('/api/bots/models', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const models = listBotModels(org?.plan_id || 'free');
+      return res.json({ models });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'Error al listar modelos' },
+      });
+    }
+  });
+
+  app.post(
+    '/api/bots/generate',
+    authMiddleware(true),
+    async (req, res) => {
+      try {
+        await ensureWorkspace(req.user);
+        const b = req.body || {};
+        const agentName = String(b.name || '').trim();
+        const companyName = String(b.company_name || '').trim();
+        const brief = String(b.brief || b.description || '').trim();
+        if (!agentName || !companyName || !brief) {
+          return res.status(400).json({
+            error: {
+              message:
+                'Nombre del agente, empresa y descripción son obligatorios',
+            },
+          });
+        }
+        const generated = await generateBotConfigFromBrief({
+          agentName,
+          companyName,
+          brief,
+          channels: Array.isArray(b.channels) ? b.channels : [],
+        });
+        return res.json({ generated });
+      } catch (err) {
+        console.error('[meta] bots/generate', err);
+        return res.status(500).json({
+          error: {
+            message: err.message || 'No se pudo generar la configuración',
+          },
+        });
+      }
+    }
+  );
+
   app.get('/api/bots', authMiddleware(true), async (req, res) => {
     try {
       const { org } = await ensureWorkspace(req.user);
@@ -152,11 +229,15 @@ export function registerMetaRoutes(app, deps) {
         id,
         org_id: org.id,
         name,
+        company_name: String(b.company_name || org.name || '').trim(),
         objective: String(b.objective || '').trim(),
         instructions: String(b.instructions || '').trim(),
         business_context: String(b.business_context || '').trim(),
+        products_services: String(b.products_services || '').trim(),
+        welcome_message: String(b.welcome_message || '').trim(),
+        form_id: b.form_id || null,
         tone: String(b.tone || 'profesional y cercano').trim(),
-        model_id: String(b.model_id || 'matu-commerce').trim(),
+        model_id: String(b.model_id || 'matu-bot-3-5').trim(),
         language: String(b.language || 'es').trim(),
         active: b.active !== false,
         handoff_keywords: String(
@@ -192,9 +273,12 @@ export function registerMetaRoutes(app, deps) {
       const patch = { updated_at: new Date().toISOString() };
       for (const key of [
         'name',
+        'company_name',
         'objective',
         'instructions',
         'business_context',
+        'products_services',
+        'welcome_message',
         'tone',
         'model_id',
         'language',
@@ -202,6 +286,8 @@ export function registerMetaRoutes(app, deps) {
       ]) {
         if (b[key] != null) patch[key] = String(b[key]).trim();
       }
+      if (b.form_id === null || b.form_id === '') patch.form_id = null;
+      else if (b.form_id != null) patch.form_id = String(b.form_id);
       if (typeof b.active === 'boolean') patch.active = b.active;
       if (patch.name === '') {
         return res.status(400).json({
@@ -234,6 +320,210 @@ export function registerMetaRoutes(app, deps) {
     } catch (err) {
       return res.status(500).json({
         error: { message: err.message || 'No se pudo eliminar' },
+      });
+    }
+  });
+
+  // ——— Lead forms ———
+  app.get('/api/lead-forms', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data: forms, error } = await db
+        .from('lead_forms')
+        .select('*')
+        .eq('org_id', org.id)
+        .order('updated_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      const { data: fields } = await db
+        .from('lead_form_fields')
+        .select('*')
+        .eq('org_id', org.id)
+        .order('sort_order', { ascending: true });
+      const byForm = {};
+      for (const f of fields || []) {
+        if (!byForm[f.form_id]) byForm[f.form_id] = [];
+        byForm[f.form_id].push(f);
+      }
+      return res.json({
+        forms: (forms || []).map((form) => ({
+          ...publicForm(form),
+          fields: byForm[form.id] || [],
+        })),
+      });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'Error al listar formularios' },
+      });
+    }
+  });
+
+  app.post('/api/lead-forms', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const body = req.body || {};
+      const name = String(body.name || '').trim();
+      if (!name) {
+        return res.status(400).json({
+          error: { message: 'El nombre del formulario es obligatorio' },
+        });
+      }
+      const db = getDb();
+      const formId = newId();
+      const form = {
+        id: formId,
+        org_id: org.id,
+        name,
+        description: String(body.description || '').trim(),
+        active: body.active !== false,
+      };
+      const { error } = await db.from('lead_forms').insert(form);
+      if (error) throw new Error(error.message);
+
+      const rawFields = Array.isArray(body.fields) ? body.fields : [];
+      const fields = [];
+      for (let i = 0; i < rawFields.length; i++) {
+        const f = rawFields[i];
+        const label = String(f.label || '').trim();
+        if (!label) continue;
+        const field = {
+          id: newId(),
+          form_id: formId,
+          org_id: org.id,
+          field_key: String(f.field_key || slugKey(label)).trim(),
+          label,
+          field_type: [
+            'text',
+            'email',
+            'phone',
+            'number',
+            'select',
+            'textarea',
+          ].includes(f.field_type)
+            ? f.field_type
+            : 'text',
+          required: f.required !== false,
+          options: String(f.options || '').trim(),
+          sort_order: Number.isFinite(f.sort_order) ? f.sort_order : i,
+        };
+        await db.from('lead_form_fields').insert(field);
+        fields.push(field);
+      }
+
+      return res.status(201).json({ form: { ...publicForm(form), fields } });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'No se pudo crear el formulario' },
+      });
+    }
+  });
+
+  app.patch('/api/lead-forms/:id', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data: existing } = await db
+        .from('lead_forms')
+        .select('*')
+        .eq('id', req.params.id)
+        .maybeSingle();
+      if (!existing || existing.org_id !== org.id) {
+        return res.status(404).json({ error: { message: 'No encontrado' } });
+      }
+      const body = req.body || {};
+      const patch = { updated_at: new Date().toISOString() };
+      if (body.name != null) patch.name = String(body.name).trim();
+      if (body.description != null) {
+        patch.description = String(body.description).trim();
+      }
+      if (typeof body.active === 'boolean') patch.active = body.active;
+      await db.from('lead_forms').eq('id', existing.id).update(patch);
+
+      if (Array.isArray(body.fields)) {
+        await db.from('lead_form_fields').eq('form_id', existing.id).delete();
+        for (let i = 0; i < body.fields.length; i++) {
+          const f = body.fields[i];
+          const label = String(f.label || '').trim();
+          if (!label) continue;
+          await db.from('lead_form_fields').insert({
+            id: newId(),
+            form_id: existing.id,
+            org_id: org.id,
+            field_key: String(f.field_key || slugKey(label)).trim(),
+            label,
+            field_type: [
+              'text',
+              'email',
+              'phone',
+              'number',
+              'select',
+              'textarea',
+            ].includes(f.field_type)
+              ? f.field_type
+              : 'text',
+            required: f.required !== false,
+            options: String(f.options || '').trim(),
+            sort_order: i,
+          });
+        }
+      }
+
+      const { data: fields } = await db
+        .from('lead_form_fields')
+        .select('*')
+        .eq('form_id', existing.id)
+        .order('sort_order', { ascending: true });
+
+      return res.json({
+        form: { ...publicForm({ ...existing, ...patch }), fields: fields || [] },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'No se pudo actualizar' },
+      });
+    }
+  });
+
+  app.delete('/api/lead-forms/:id', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data: existing } = await db
+        .from('lead_forms')
+        .select('id, org_id')
+        .eq('id', req.params.id)
+        .maybeSingle();
+      if (!existing || existing.org_id !== org.id) {
+        return res.status(404).json({ error: { message: 'No encontrado' } });
+      }
+      await db
+        .from('bots')
+        .eq('form_id', existing.id)
+        .update({ form_id: null });
+      await db.from('lead_forms').eq('id', existing.id).delete();
+      return res.json({ ok: true });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'No se pudo eliminar' },
+      });
+    }
+  });
+
+  app.get('/api/leads', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const { data, error } = await db
+        .from('lead_submissions')
+        .select('*')
+        .eq('org_id', org.id)
+        .order('updated_at', { ascending: false })
+        .limit(200);
+      if (error) throw new Error(error.message);
+      return res.json({ leads: data || [] });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'Error al listar leads' },
       });
     }
   });

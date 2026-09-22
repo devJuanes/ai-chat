@@ -13,7 +13,7 @@ import {
 
 const CHANNEL_LABEL = {
   whatsapp: 'WhatsApp',
-  messenger: 'Messenger',
+  messenger: 'Facebook',
   instagram: 'Instagram',
 };
 
@@ -58,6 +58,26 @@ function ChannelBadge({ channel, className = '' }) {
       <Icon className="h-3.5 w-3.5 shrink-0" />
     </span>
   );
+}
+
+function contactTitle(thread, conversation) {
+  if (!thread) return conversation?.title || 'Conversación';
+  if (thread.channel === 'whatsapp') {
+    return (
+      thread.contact_phone ||
+      thread.contact_name ||
+      conversation?.title ||
+      thread.external_user_id
+    );
+  }
+  if (thread.channel === 'instagram') {
+    const u = thread.contact_username
+      ? `@${String(thread.contact_username).replace(/^@/, '')}`
+      : '';
+    return u || thread.contact_name || conversation?.title || 'Instagram';
+  }
+  // Facebook Messenger → first name / display
+  return thread.contact_name || conversation?.title || 'Facebook';
 }
 
 function formatTime(iso) {
@@ -260,9 +280,7 @@ export default function InboxPage() {
                       </span>
                     </div>
                     <div className="mt-0.5 truncate text-[14px] font-medium">
-                      {t.contact_name ||
-                        t.conversation?.title ||
-                        t.external_user_id}
+                      {contactTitle(t, t.conversation)}
                     </div>
                     <div className="truncate text-[12px] opacity-60">
                       {t.conversation?.preview || '—'}
@@ -292,9 +310,7 @@ export default function InboxPage() {
               <div className="flex flex-wrap items-center gap-2 border-b-2 border-black px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">
-                    {detail?.thread?.contact_name ||
-                      detail?.conversation?.title ||
-                      'Conversación'}
+                    {contactTitle(detail?.thread, detail?.conversation)}
                   </div>
                   <div className="fp-mono flex items-center gap-1.5 text-[10px] uppercase opacity-50">
                     <ChannelBadge channel={detail?.thread?.channel} />

@@ -1,33 +1,161 @@
 import { getDb, newId } from '../db.js';
 import { checkUsage, bumpUsage } from '../auth.js';
-import { loadSystemPrompt } from '../models.js';
-import {
-  completeUpstreamChat,
-  estimateTokens,
-} from '../upstream.js';
+import { estimateTokens, completeUpstreamChat } from '../upstream.js';
 import { decryptToken } from './crypto.js';
-import { sendPageMessage, sendWhatsAppText } from './graph.js';
+import {
+  sendPageMessage,
+  sendWhatsAppText,
+  fetchMessengerUserProfile,
+  fetchInstagramUserProfile,
+  formatWhatsAppPhone,
+} from './graph.js';
 
 const HISTORY_LIMIT = 30;
+const LEAD_MARK_RE = /\[\[LEAD:([^=\]]+)=([^\]]*)\]\]/gi;
+const LEAD_DONE_RE = /\[\[LEAD_COMPLETE\]\]/gi;
+const HANDOFF_RE = /\[\[HANDOFF\]\]/gi;
 
-function buildAgentSystemPrompt({ bot, orgName, channel }) {
-  const base = loadSystemPrompt(bot.model_id || 'matu-commerce');
-  return `${base}
+const CHANNEL_LABEL = {
+  whatsapp: 'WhatsApp',
+  messenger: 'Facebook Messenger',
+  instagram: 'Instagram',
+};
 
-## Agente de canal (${channel})
-Eres el agente "${bot.name}" de ${orgName || 'la empresa'}.
-Objetivo principal: ${bot.objective || 'Ayudar al cliente y avanzar hacia una conversión.'}
-Instrucciones: ${bot.instructions || 'Sé claro, útil y orientado a acción.'}
-Contexto del negocio: ${bot.business_context || 'No hay contexto adicional.'}
+function looksLikeEmailLocal(name) {
+  const s = String(name || '').trim();
+  if (!s) return true;
+  if (s.includes('@')) return true;
+  // email-local-part style: juanlandazuri07, juan.es.azuri.07
+  if (/^[a-z0-9._-]{6,}$/i.test(s) && /\d/.test(s) && !/\s/.test(s)) {
+    return true;
+  }
+  return false;
+}
+
+function resolveCompanyName(bot, org) {
+  const fromBot = String(bot?.company_name || '').trim();
+  if (fromBot && !looksLikeEmailLocal(fromBot)) return fromBot;
+  const fromOrg = String(org?.name || '').trim();
+  if (fromOrg && !looksLikeEmailLocal(fromOrg) && !/espacio$/i.test(fromOrg)) {
+    return fromOrg;
+  }
+  return fromBot || 'nuestra empresa';
+}
+
+async function loadFormForBot(bot) {
+  if (!bot?.form_id) return null;
+  const db = getDb();
+  const { data: form } = await db
+    .from('lead_forms')
+    .select('*')
+    .eq('id', bot.form_id)
+    .eq('active', true)
+    .maybeSingle();
+  if (!form) return null;
+  const { data: fields } = await db
+    .from('lead_form_fields')
+    .select('*')
+    .eq('form_id', form.id)
+    .order('sort_order', { ascending: true });
+  return { form, fields: fields || [] };
+}
+
+function buildAgentSystemPrompt({
+  bot,
+  companyName,
+  channel,
+  contactLabel,
+  formBundle,
+  leadData,
+}) {
+  const channelName = CHANNEL_LABEL[channel] || channel;
+  const products = String(bot.products_services || '').trim();
+  const welcome = String(bot.welcome_message || '').trim();
+  const missing =
+    formBundle?.fields
+      ?.filter((f) => f.required && !leadData?.[f.field_key])
+      .map((f) => `- ${f.label} (clave: ${f.field_key}, tipo: ${f.field_type})`)
+      .join('\n') || '';
+
+  let formBlock = '';
+  if (formBundle?.fields?.length) {
+    formBlock = `
+## Formulario de leads asignado: "${formBundle.form.name}"
+Debes recopilar estos datos del cliente de forma natural (1–2 preguntas por mensaje):
+${formBundle.fields
+  .map(
+    (f) =>
+      `- ${f.label} [${f.field_key}] (${f.field_type})${f.required ? ' *obligatorio*' : ''}`
+  )
+  .join('\n')}
+${missing ? `\nAún faltan:\n${missing}\n` : '\nTodos los campos obligatorios ya están capturados.\n'}
+Cuando el cliente te dé un dato claro, añade UNA línea oculta al final de tu respuesta interna (el sistema la quitará antes de enviarla):
+[[LEAD:clave=valor]]
+Cuando todos los obligatorios estén listos, añade también:
+[[LEAD_COMPLETE]]
+No menciones estos marcadores al cliente.
+`;
+  }
+
+  return `Eres un agente comercial de ${companyName} en ${channelName}.
+
+## Identidad (obligatorio)
+- Tu nombre es exactamente: "${bot.name}".
+- Representas a la empresa: "${companyName}".
+- NUNCA te presentes con correos, usernames técnicos, IDs, ni "Matu AI" / Matubyte a menos que "${companyName}" sea literalmente eso.
+- Si saludas, saluda como ${bot.name} de ${companyName}.
+${welcome ? `- Saludo sugerido (adáptalo, no lo copies roboticamente): ${welcome}` : ''}
+${contactLabel ? `- El cliente aparece como: ${contactLabel}. Úsalo solo si ayuda; no inventes datos.` : ''}
+
+## Objetivo
+${bot.objective || 'Calificar el lead, responder dudas y avanzar hacia una venta o cita.'}
+
+## Instrucciones operativas
+${bot.instructions || 'Sé claro, útil y orientado a cerrar.'}
+
+## Contexto del negocio
+${bot.business_context || 'Sin contexto adicional.'}
+
+## Productos / servicios
+${products || 'Pregunta qué necesita el cliente y ofrece ayuda según el contexto del negocio. No inventes catálogo.'}
+
+## Tono e idioma
 Tono: ${bot.tone || 'profesional y cercano'}.
 Idioma: ${bot.language || 'es'}.
 
-Reglas del canal:
-- Respuestas cortas (ideal 1–3 párrafos o bullets), sin markdown pesado ni bloques de código.
-- No inventes precios ni stock; si falta info, pregunta.
-- Si el usuario pide hablar con un humano, o coincide con handoff, responde brevemente que un asesor tomará el chat y termina con la línea exacta: [[HANDOFF]]
-- No menciones que eres un modelo de IA genérico; actúa como agente del negocio.
-`;
+## Reglas del canal
+- Respuestas cortas (1–3 frases o bullets). Sin markdown pesado ni código.
+- No inventes precios, stock ni políticas.
+- Empuja suavemente al siguiente paso (dato, demo, compra, agendar).
+- Si pide humano / asesor, responde breve y termina con [[HANDOFF]].
+${formBlock}`;
+}
+
+function stripInternalMarks(text) {
+  return String(text || '')
+    .replace(LEAD_MARK_RE, '')
+    .replace(LEAD_DONE_RE, '')
+    .replace(HANDOFF_RE, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function parseLeadMarks(text) {
+  const data = {};
+  let complete = false;
+  const raw = String(text || '');
+  let m;
+  const re = new RegExp(LEAD_MARK_RE.source, 'gi');
+  while ((m = re.exec(raw))) {
+    const key = String(m[1] || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+    const val = String(m[2] || '').trim();
+    if (key && val) data[key] = val;
+  }
+  if (LEAD_DONE_RE.test(raw)) complete = true;
+  return { data, complete };
 }
 
 function wantsHandoff(text, keywordsCsv) {
@@ -40,7 +168,12 @@ function wantsHandoff(text, keywordsCsv) {
   return keys.some((k) => lower.includes(k));
 }
 
-async function findConnectionByAsset({ channel, pageId, phoneNumberId, igUserId }) {
+async function findConnectionByAsset({
+  channel,
+  pageId,
+  phoneNumberId,
+  igUserId,
+}) {
   const db = getDb();
   let q = db
     .from('meta_connections')
@@ -50,10 +183,10 @@ async function findConnectionByAsset({ channel, pageId, phoneNumberId, igUserId 
 
   if (channel === 'whatsapp' && phoneNumberId) {
     q = q.eq('phone_number_id', phoneNumberId);
-  } else if (channel === 'instagram' && (igUserId || pageId)) {
-    // IG webhooks often use page_id; we may have stored both
+  } else if (channel === 'instagram') {
     if (igUserId) q = q.eq('ig_user_id', igUserId);
-    else q = q.eq('page_id', pageId);
+    else if (pageId) q = q.eq('page_id', pageId);
+    else return null;
   } else if (pageId) {
     q = q.eq('page_id', pageId);
   } else {
@@ -84,11 +217,47 @@ async function getBinding(connectionId) {
   return bot ? { binding, bot } : null;
 }
 
+async function resolveContactIdentity({
+  connection,
+  externalUserId,
+  contactNameHint,
+  contactPhoneHint,
+}) {
+  const token = decryptToken(connection.access_token_enc);
+  let contactName = String(contactNameHint || '').trim();
+  let contactUsername = '';
+  let contactPhone = String(contactPhoneHint || '').trim();
+
+  if (connection.channel === 'whatsapp') {
+    contactPhone = formatWhatsAppPhone(externalUserId) || contactPhone;
+    // Inbox title: phone first; append WA profile name if useful
+    contactName = contactPhone
+      ? contactName && contactName !== contactPhone
+        ? `${contactPhone} · ${contactName}`
+        : contactPhone
+      : contactName || externalUserId;
+  } else if (connection.channel === 'instagram') {
+    const profile = await fetchInstagramUserProfile(externalUserId, token);
+    contactUsername = profile.username || '';
+    contactName =
+      profile.displayName ||
+      contactName ||
+      (contactUsername ? `@${contactUsername}` : '');
+  } else if (connection.channel === 'messenger') {
+    const profile = await fetchMessengerUserProfile(externalUserId, token);
+    contactName = profile.displayName || contactName || '';
+  }
+
+  return { contactName, contactUsername, contactPhone };
+}
+
 async function getOrCreateThread({
   connection,
   bot,
   externalUserId,
   contactName,
+  contactUsername,
+  contactPhone,
   ownerUserId,
 }) {
   const db = getDb();
@@ -100,31 +269,42 @@ async function getOrCreateThread({
     .maybeSingle();
 
   if (existing) {
+    const patch = { last_message_at: new Date().toISOString() };
     if (contactName && contactName !== existing.contact_name) {
+      patch.contact_name = contactName;
+    }
+    if (contactUsername && contactUsername !== existing.contact_username) {
+      patch.contact_username = contactUsername;
+    }
+    if (contactPhone && contactPhone !== existing.contact_phone) {
+      patch.contact_phone = contactPhone;
+    }
+    await db.from('channel_threads').eq('id', existing.id).update(patch);
+    if (contactName) {
       await db
-        .from('channel_threads')
-        .eq('id', existing.id)
-        .update({ contact_name: contactName });
+        .from('conversations')
+        .eq('id', existing.conversation_id)
+        .update({ title: contactName });
     }
     const { data: conv } = await db
       .from('conversations')
       .select('*')
       .eq('id', existing.conversation_id)
       .maybeSingle();
-    return { thread: existing, conversation: conv };
+    return { thread: { ...existing, ...patch }, conversation: conv };
   }
 
   const conversationId = newId();
   const title =
     contactName ||
-    `${connection.channel} · ${String(externalUserId).slice(-6)}`;
+    `${CHANNEL_LABEL[connection.channel] || connection.channel} · ${String(externalUserId).slice(-6)}`;
 
   await db.from('conversations').insert({
     id: conversationId,
     org_id: connection.org_id,
     user_id: ownerUserId,
     title,
-    model_id: bot.model_id || 'matu-commerce',
+    model_id: bot.model_id || 'matu-bot-3-5',
     preview: '',
     source: connection.channel,
     external_thread_id: externalUserId,
@@ -142,6 +322,8 @@ async function getOrCreateThread({
     external_user_id: externalUserId,
     channel: connection.channel,
     contact_name: contactName || '',
+    contact_username: contactUsername || '',
+    contact_phone: contactPhone || '',
     last_message_at: new Date().toISOString(),
   });
 
@@ -199,13 +381,70 @@ async function sendOutbound({ connection, recipientId, text }) {
       text,
     });
   }
-  const pageId = connection.page_id;
   return sendPageMessage({
-    pageId,
+    pageId: connection.page_id,
     pageToken: token,
     recipientId,
     text,
   });
+}
+
+async function upsertLeadSubmission({
+  orgId,
+  formId,
+  botId,
+  threadId,
+  conversationId,
+  channel,
+  contactName,
+  externalUserId,
+  patchData,
+  markComplete,
+}) {
+  const db = getDb();
+  const { data: existing } = await db
+    .from('lead_submissions')
+    .select('*')
+    .eq('form_id', formId)
+    .eq('thread_id', threadId)
+    .maybeSingle();
+
+  const merged = {
+    ...(existing?.data || {}),
+    ...patchData,
+  };
+
+  if (existing?.id) {
+    await db
+      .from('lead_submissions')
+      .eq('id', existing.id)
+      .update({
+        data: merged,
+        status:
+          markComplete || existing.status === 'complete'
+            ? 'complete'
+            : 'partial',
+        contact_name: contactName || existing.contact_name,
+        updated_at: new Date().toISOString(),
+      });
+    return { id: existing.id, data: merged };
+  }
+
+  const id = newId();
+  await db.from('lead_submissions').insert({
+    id,
+    org_id: orgId,
+    form_id: formId,
+    bot_id: botId,
+    thread_id: threadId,
+    conversation_id: conversationId,
+    channel,
+    contact_name: contactName || '',
+    contact_external_id: externalUserId,
+    data: merged,
+    status: markComplete ? 'complete' : 'partial',
+  });
+  return { id, data: merged };
 }
 
 /**
@@ -217,7 +456,8 @@ export async function handleInboundMessage({
   phoneNumberId,
   igUserId,
   externalUserId,
-  contactName,
+  contactName: contactNameHint,
+  contactPhone: contactPhoneHint,
   text,
   externalMessageId,
   isMediaStub = false,
@@ -243,11 +483,20 @@ export async function handleInboundMessage({
   const ownerUserId = await orgOwnerUserId(connection.org_id);
   if (!ownerUserId) return { skipped: 'no_owner' };
 
+  const identity = await resolveContactIdentity({
+    connection,
+    externalUserId,
+    contactNameHint,
+    contactPhoneHint,
+  });
+
   const { thread, conversation } = await getOrCreateThread({
     connection,
     bot,
     externalUserId,
-    contactName,
+    contactName: identity.contactName,
+    contactUsername: identity.contactUsername,
+    contactPhone: identity.contactPhone,
     ownerUserId,
   });
   if (!conversation) return { skipped: 'no_conversation' };
@@ -260,7 +509,6 @@ export async function handleInboundMessage({
 
   if (!inboundContent && !isMediaStub) return { skipped: 'empty' };
 
-  // Persist inbound
   const userMsgId = newId();
   await db.from('messages').insert({
     id: userMsgId,
@@ -285,12 +533,10 @@ export async function handleInboundMessage({
     .eq('id', thread.id)
     .update({ last_message_at: new Date().toISOString() });
 
-  // Human takeover — store message but do not auto-reply
   if (conversation.assignee === 'human') {
     return { ok: true, handoff: true, conversationId: conversation.id };
   }
 
-  // Keyword handoff from user
   if (wantsHandoff(inboundContent, bot.handoff_keywords)) {
     await db
       .from('conversations')
@@ -330,6 +576,19 @@ export async function handleInboundMessage({
     return { skipped: 'usage_limit', error: limit.error };
   }
 
+  const formBundle = await loadFormForBot(bot);
+  let leadData = {};
+  if (formBundle) {
+    const { data: sub } = await db
+      .from('lead_submissions')
+      .select('data, status')
+      .eq('form_id', formBundle.form.id)
+      .eq('thread_id', thread.id)
+      .maybeSingle();
+    leadData = sub?.data || {};
+  }
+
+  const companyName = resolveCompanyName(bot, org);
   const { data: history } = await db
     .from('messages')
     .select('role, content')
@@ -339,13 +598,16 @@ export async function handleInboundMessage({
 
   const system = buildAgentSystemPrompt({
     bot,
-    orgName: org?.name,
+    companyName,
     channel: connection.channel,
+    contactLabel: identity.contactName,
+    formBundle,
+    leadData,
   });
 
-  let reply = '';
+  let rawReply = '';
   try {
-    reply = await completeUpstreamChat({
+    rawReply = await completeUpstreamChat({
       system,
       messages: (history || []).map((m) => ({
         role: m.role,
@@ -357,10 +619,39 @@ export async function handleInboundMessage({
     return { error: err.message };
   }
 
-  let handoff = false;
-  if (reply.includes('[[HANDOFF]]')) {
-    handoff = true;
-    reply = reply.replace(/\[\[HANDOFF\]\]/g, '').trim();
+  const { data: leadPatch, complete: leadComplete } = parseLeadMarks(rawReply);
+  let handoff = /\[\[HANDOFF\]\]/i.test(rawReply);
+  let reply = stripInternalMarks(rawReply);
+
+  if (formBundle && Object.keys(leadPatch).length) {
+    await upsertLeadSubmission({
+      orgId: connection.org_id,
+      formId: formBundle.form.id,
+      botId: bot.id,
+      threadId: thread.id,
+      conversationId: conversation.id,
+      channel: connection.channel,
+      contactName: identity.contactName,
+      externalUserId,
+      patchData: leadPatch,
+      markComplete: leadComplete,
+    });
+  } else if (formBundle && leadComplete) {
+    await upsertLeadSubmission({
+      orgId: connection.org_id,
+      formId: formBundle.form.id,
+      botId: bot.id,
+      threadId: thread.id,
+      conversationId: conversation.id,
+      channel: connection.channel,
+      contactName: identity.contactName,
+      externalUserId,
+      patchData: {},
+      markComplete: true,
+    });
+  }
+
+  if (handoff) {
     await db
       .from('conversations')
       .eq('id', conversation.id)
@@ -368,7 +659,7 @@ export async function handleInboundMessage({
   }
 
   if (!reply) {
-    reply = 'Gracias por tu mensaje. ¿En qué puedo ayudarte?';
+    reply = `Hola, soy ${bot.name} de ${companyName}. ¿En qué te puedo ayudar?`;
   }
 
   try {

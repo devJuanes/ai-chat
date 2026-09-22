@@ -68,7 +68,25 @@ En modo Development solo pueden escribirte testers de la app.
 
 `GET /api/health` incluye `metaConfigured: true|false`.
 
-## 6. nginx
+## 7. Leads / formularios (v2)
+
+Ejecuta también:
+
+```text
+docs/migrations/meta-bots-v2-leads.sql
+```
+
+En **Agentes**:
+- Pon **nombre del agente** + **nombre de la empresa** (no el correo).
+- Añade productos/servicios y contexto.
+- Crea un **formulario** (nombre, teléfono, email…) y asígnalo al agente.
+
+Identidad en inbox:
+- WhatsApp → teléfono (+ perfil si existe)
+- Instagram → @username de Meta
+- Facebook → first_name de Meta
+
+## 8. nginx
 
 Asegura el bloque `location /api/meta/webhook` de
 `deploy/nginx-ai.matubyte.com.conf` y recarga nginx.
