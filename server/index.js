@@ -208,6 +208,7 @@ app.get('/api/conversations', authMiddleware(true), async (req, res) => {
         'id, title, preview, model_id, project_id, pinned_at, share_token, archived_at, updated_at, created_at'
       )
       .eq('user_id', profile.id)
+      .eq('source', 'app')
       .order('updated_at', { ascending: false })
       .limit(100);
 
@@ -256,6 +257,15 @@ app.get(
       if (!conversation) {
         return res.status(404).json({ error: { message: 'No encontrado' } });
       }
+      // Meta / canal chats viven en Inbox + Tablero, no en el historial de IA
+      if (conversation.source && conversation.source !== 'app') {
+        return res.status(404).json({
+          error: {
+            message:
+              'Este chat es de un canal (WhatsApp / Instagram / Messenger). Ábrelo en Inbox.',
+          },
+        });
+      }
       const { data: messages, error: msgErr } = await db
         .from('messages')
         .select('id, role, content, model_id, created_at')
@@ -279,6 +289,7 @@ app.post('/api/conversations', authMiddleware(true), async (req, res) => {
       .from('conversations')
       .select('id')
       .eq('user_id', profile.id)
+      .eq('source', 'app')
       .is('archived_at', null);
 
     if (

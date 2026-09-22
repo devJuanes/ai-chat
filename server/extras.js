@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { getDb, newId, periodYm } from './db.js';
 import { config } from './config.js';
 import {
@@ -12,6 +13,30 @@ import {
   listVideoTasks,
   pingMoneyPrinter,
 } from './moneyprinter.js';
+
+const contactHits = new Map();
+const CONTACT_WINDOW_MS = 15 * 60 * 1000;
+const CONTACT_MAX = 5;
+
+function contactRateOk(ipHash) {
+  const now = Date.now();
+  const row = contactHits.get(ipHash) || { n: 0, t: now };
+  if (now - row.t > CONTACT_WINDOW_MS) {
+    contactHits.set(ipHash, { n: 1, t: now });
+    return true;
+  }
+  if (row.n >= CONTACT_MAX) return false;
+  row.n += 1;
+  contactHits.set(ipHash, row);
+  return true;
+}
+
+function hashIp(ip) {
+  return createHash('sha256')
+    .update(String(ip || 'unknown'))
+    .digest('hex')
+    .slice(0, 32);
+}
 
 async function getUsage(orgId, userId) {
   const db = getDb();
@@ -66,6 +91,89 @@ export async function loadProjectContext(projectId, userId, excludeConvId) {
 }
 
 export function registerExtraRoutes(app) {
+  app.post('/api/contact', async (req, res) => {
+    try {
+      const body = req.body || {};
+      // Honeypot
+      if (String(body.website || '').trim()) {
+        return res.json({ ok: true });
+      }
+
+      const name = String(body.name || '').trim().slice(0, 120);
+      const email = String(body.email || '')
+        .trim()
+        .toLowerCase()
+        .slice(0, 200);
+      const phone = String(body.phone || '').trim().slice(0, 40);
+      const company = String(body.company || '').trim().slice(0, 120);
+      const subject = String(body.subject || '').trim().slice(0, 160);
+      const message = String(body.message || '').trim().slice(0, 4000);
+      let source = String(body.source || 'contacto').trim().toLowerCase();
+      if (!['landing', 'contacto', 'other'].includes(source)) {
+        source = 'other';
+      }
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res
+          .status(400)
+          .json({ error: { message: 'Email inválido' } });
+      }
+      if (!message || message.length < 10) {
+        return res.status(400).json({
+          error: { message: 'El mensaje debe tener al menos 10 caracteres' },
+        });
+      }
+      if (!name) {
+        return res
+          .status(400)
+          .json({ error: { message: 'El nombre es requerido' } });
+      }
+
+      const ip =
+        req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ||
+        req.socket?.remoteAddress ||
+        '';
+      const ipHash = hashIp(ip);
+      if (!contactRateOk(ipHash)) {
+        return res.status(429).json({
+          error: { message: 'Demasiados mensajes. Intenta en unos minutos.' },
+        });
+      }
+
+      const db = getDb();
+      const row = {
+        id: newId(),
+        name,
+        email,
+        phone,
+        company,
+        subject,
+        message,
+        source,
+        status: 'new',
+        user_agent: String(req.headers['user-agent'] || '').slice(0, 400),
+        ip_hash: ipHash,
+        created_at: new Date().toISOString(),
+      };
+
+      const { error } = await db.from('contact_messages').insert(row);
+      if (error) throw error;
+
+      res.json({ ok: true, id: row.id });
+    } catch (err) {
+      console.error('[contact]', err.message || err);
+      res.status(500).json({
+        error: {
+          message:
+            err.message?.includes('contact_messages') ||
+            err.message?.includes('does not exist')
+              ? 'Formulario no disponible aún. Ejecuta la migración contact-messages.sql en MatuDB.'
+              : 'No se pudo guardar el mensaje',
+        },
+      });
+    }
+  });
+
   app.get('/api/me', authMiddleware(true), async (req, res) => {
     try {
       const { profile, org } = await ensureWorkspace(req.user);

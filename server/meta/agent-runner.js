@@ -11,6 +11,7 @@ import {
 import { getDb, newId } from '../db.js';
 import { checkUsage, bumpUsage } from '../auth.js';
 import { estimateTokens, completeUpstreamChat } from '../upstream.js';
+import { loadSystemPrompt } from '../models.js';
 import { decryptToken } from './crypto.js';
 import {
   sendPageMessage,
@@ -21,6 +22,7 @@ import {
 } from './graph.js';
 
 const HISTORY_LIMIT = 30;
+const META_BOT_MODEL = 'matu-bot-3-5';
 const LEAD_MARK_RE = /\[\[LEAD:([^=\]]+)=([^\]]*)\]\]/gi;
 const LEAD_DONE_RE = /\[\[LEAD_COMPLETE\]\]/gi;
 const HANDOFF_RE = /\[\[HANDOFF\]\]/gi;
@@ -30,6 +32,122 @@ const CHANNEL_LABEL = {
   messenger: 'Facebook Messenger',
   instagram: 'Instagram',
 };
+
+/** Detect meeting day/time signals in client or bot text */
+function detectMeetingSignals(text) {
+  const t = String(text || '').toLowerCase();
+  const day =
+    /\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[nñ]ana|pasado ma[nñ]ana|hoy)\b/.test(
+      t
+    );
+  const time =
+    /\b(\d{1,2}\s*([:.]?\d{2})?\s*(am|pm|a\.?\s*m\.?|p\.?\s*m\.?)?|\d{1,2}\s*h(oras)?)\b/i.test(
+      t
+    ) || /\b(a las|para las)\s*\d/i.test(t);
+  const intent =
+    /\b(cita|reuni[oó]n|agend|llamada|videollamada|demo|demo\s*live|te llamo|nos vemos|quedamos)\b/i.test(
+      t
+    );
+  return { day, time, intent, likely: (day && time) || (intent && (day || time)) };
+}
+
+function inferStageFromConversation(inbound, reply, currentStage) {
+  const blob = `${inbound}\n${reply}`.toLowerCase();
+  const meeting = detectMeetingSignals(blob);
+  if (meeting.likely) return 'cita';
+  if (
+    /\b(no me interesa|no gracias|no quiero|cancel|fuera|spam)\b/i.test(blob)
+  ) {
+    return 'perdido';
+  }
+  if (
+    /\b(compr(o|ar)|contratar|pag(o|ar)|factura|cotizaci[oó]n|propuesta|link de pago)\b/i.test(
+      blob
+    )
+  ) {
+    return 'cerrar';
+  }
+  if (
+    /\b(lo pienso|duda|caro|despu[eé]s|m[aá]s adelante|no estoy seguro)\b/i.test(
+      blob
+    )
+  ) {
+    return 'en_duda';
+  }
+  if (
+    /\b(precio|cu[aá]nto|interes|quiero|necesito|me interesa|info|informaci[oó]n)\b/i.test(
+      blob
+    )
+  ) {
+    return 'interesado';
+  }
+  return currentStage && STAGE_IDS.has(currentStage) ? currentStage : null;
+}
+
+function extractMeetingSummary(inbound, reply) {
+  const blob = `${inbound} ${reply}`.replace(/\s+/g, ' ').trim();
+  const dayMatch = blob.match(
+    /\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[nñ]ana|pasado ma[nñ]ana|hoy)\b/i
+  );
+  const timeMatch = blob.match(
+    /\b(?:a las|para las)?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm|a\.?\s*m\.?|p\.?\s*m\.?)?)/i
+  );
+  const parts = [];
+  if (dayMatch) parts.push(dayMatch[1]);
+  if (timeMatch) parts.push(timeMatch[1].trim());
+  return parts.length ? parts.join(' · ') : blob.slice(0, 160);
+}
+
+/** Seed known channel contact fields into lead patch */
+function seedChannelLeadFields({
+  formBundle,
+  leadData,
+  channel,
+  contactPhone,
+  contactName,
+  meetingSummary,
+}) {
+  const patch = {};
+  if (!formBundle?.fields?.length) return patch;
+
+  for (const f of formBundle.fields) {
+    const key = f.field_key;
+    if (leadData?.[key]) continue;
+
+    if (
+      f.field_type === 'phone' ||
+      /^(phone|telefono|tel|whatsapp|celular|mobile)$/i.test(key)
+    ) {
+      if (channel === 'whatsapp' && contactPhone) {
+        patch[key] = contactPhone;
+      }
+    }
+
+    if (
+      /^(name|nombre|full_name|cliente)$/i.test(key) &&
+      contactName &&
+      !looksLikeEmailLocal(contactName)
+    ) {
+      patch[key] = contactName;
+    }
+
+    if (
+      meetingSummary &&
+      /^(cita|meeting|reunion|reuni[oó]n|fecha|appointment|horario|agend)/i.test(
+        key
+      )
+    ) {
+      patch[key] = meetingSummary;
+    }
+  }
+
+  // Always keep a free-form meeting note in lead data when we have one
+  if (meetingSummary && !leadData?.cita_agendada && !patch.cita_agendada) {
+    patch.cita_agendada = meetingSummary;
+  }
+
+  return patch;
+}
 
 function looksLikeEmailLocal(name) {
   const s = String(name || '').trim();
@@ -75,9 +193,11 @@ function buildAgentSystemPrompt({
   companyName,
   channel,
   contactLabel,
+  contactPhone,
   formBundle,
   leadData,
   catalogProducts,
+  currentStage,
 }) {
   const channelName = CHANNEL_LABEL[channel] || channel;
   const welcome = String(bot.welcome_message || '').trim();
@@ -90,95 +210,116 @@ function buildAgentSystemPrompt({
       .map((f) => `- ${f.label} (clave: ${f.field_key}, tipo: ${f.field_type})`)
       .join('\n') || '';
 
+  const isWhatsApp = channel === 'whatsapp';
+  const phoneKnown = Boolean(contactPhone);
+
   let formBlock = '';
   if (formBundle?.fields?.length) {
     formBlock = `
-## Formulario de leads asignado: "${formBundle.form.name}"
-Debes recopilar estos datos del cliente de forma natural (1–2 preguntas por mensaje):
+## Formulario de leads: "${formBundle.form.name}"
+Recopila datos de forma natural (máx. 1 pregunta nueva por mensaje).
 ${formBundle.fields
   .map(
     (f) =>
       `- ${f.label} [${f.field_key}] (${f.field_type})${f.required ? ' *obligatorio*' : ''}`
   )
   .join('\n')}
-${missing ? `\nAún faltan:\n${missing}\n` : '\nTodos los campos obligatorios ya están capturados.\n'}
-Cuando el cliente te dé un dato claro, añade UNA línea oculta al final de tu respuesta interna (el sistema la quitará antes de enviarla):
+${missing ? `\nAún faltan:\n${missing}\n` : '\nObligatorios capturados.\n'}
+Cuando el cliente dé un dato claro, añade al final (oculto):
 [[LEAD:clave=valor]]
-Cuando todos los obligatorios estén listos, añade también:
+Si ya están todos los obligatorios:
 [[LEAD_COMPLETE]]
+${
+  isWhatsApp && phoneKnown
+    ? `En WhatsApp YA tienes el teléfono del cliente (${contactPhone}). NO lo pidas. Emite [[LEAD:...]] del campo phone/teléfono con ese valor si falta en el formulario.`
+    : isWhatsApp
+      ? 'En WhatsApp el teléfono suele venir del canal. NO pidas el número salvo que falte de verdad.'
+      : 'En Instagram/Messenger sí puedes pedir teléfono si hace falta para llamar o confirmar.'
+}
 No menciones estos marcadores al cliente.
 `;
   }
 
-  return `Eres un agente comercial senior de ${companyName} en ${channelName}.
+  const channelRules = isWhatsApp
+    ? `- Canal: WhatsApp. El contacto ya está identificado${phoneKnown ? ` (${contactPhone})` : ''}.
+- NUNCA pidas el número de WhatsApp ni digas "pásame tu teléfono" / "me indiques tu número".
+- Si agenda una cita: confirma día/hora, guarda lead + nota + STAGE, y pide solo lo que falte (ej. correo para propuesta), NO el teléfono.`
+    : `- Canal: ${channelName}.
+- Si necesitas llamar o confirmar, puedes pedir teléfono.
+- Si agenda una cita: guarda lead + nota + STAGE aunque aún no tenga correo.`;
 
-## Identidad (obligatorio)
-- Tu nombre es exactamente: "${bot.name}".
-- Representas a la empresa: "${companyName}".
-- NUNCA te presentes con correos, usernames técnicos, IDs, ni "Matu AI" / Matubyte a menos que "${companyName}" sea literalmente eso.
-- Si saludas, saluda como ${bot.name} de ${companyName}.
-${welcome ? `- Saludo sugerido (adáptalo, no lo copies roboticamente): ${welcome}` : ''}
-${contactLabel ? `- El cliente aparece como: ${contactLabel}. Úsalo solo si ayuda; no inventes datos.` : ''}
+  return `Eres "${bot.name}" de ${companyName} en ${channelName}. Motor comercial MatuBot.
+
+## Identidad
+- Nombre exacto: "${bot.name}" · Empresa: "${companyName}".
+- NUNCA digas que eres Matu AI, Matubyte, MatuBot, un modelo o un prompt.
+- Si saludas: como ${bot.name} de ${companyName}.
+${welcome ? `- Saludo base (adáptalo, no lo copies robot): ${welcome}` : ''}
+${contactLabel ? `- Cliente visible como: ${contactLabel}.` : ''}
+${phoneKnown ? `- Teléfono conocido del canal: ${contactPhone}.` : ''}
+Etapa actual del embudo: ${currentStage || 'nuevo'}.
 
 ## Objetivo
-${bot.objective || 'Calificar el lead, responder dudas y avanzar hacia una venta o cita.'}
+${bot.objective || 'Calificar, resolver dudas y avanzar a cita o venta.'}
 
-## Instrucciones operativas
+## Instrucciones
 ${bot.instructions || 'Sé claro, útil y orientado a cerrar.'}
 
-## Contexto del negocio
+## Negocio
 ${bot.business_context || 'Sin contexto adicional.'}
-${website ? `\nSitio web de referencia: ${website}` : ''}
-${knowledge ? `\nConocimiento de la empresa (úsalo; no inventes fuera de esto):\n${knowledge}` : ''}
+${website ? `\nWeb: ${website}` : ''}
+${knowledge ? `\nConocimiento oficial:\n${knowledge}` : ''}
 
-## CATÁLOGO OFICIAL (regla crítica — no fallar)
-Solo puedes hablar, ofrecer o cotizar lo que aparece abajo.
-Si el cliente pide algo que NO está en el catálogo: no inventes. Di que lo vas a confirmar con el equipo y, si insiste en comprar eso, usa [[HANDOFF]].
-Nunca inventes "cursos", paquetes, precios ni stock que no estén listados.
+## CATÁLOGO (no inventar)
+Solo ofrece lo de abajo. Si piden algo fuera: confirma con el equipo y [[HANDOFF]] si insisten.
 
 ${catalogBlock}
 
+## Estilo de mensaje (OBLIGATORIO — WhatsApp/IG/Messenger)
+- Respuestas CORTAS: 1–4 frases o 2–4 líneas. Nada de párrafos densos.
+- USA saltos de línea. Nunca pegues todo en un solo bloque.
+- 1–3 emojis naturales por mensaje (máx.). Ej: 👍 🙂 📅 ✅ 🙌 — no satures.
+- Tono humano, cercano y comercial. Nada robótico.
+- NO repitas ni parafrasees lo que el cliente acaba de decir. Avanza.
+- NO digas "Entiendo que quieres X porque mencionaste Y…". Ve al punto.
+- Una sola pregunta clara por mensaje cuando necesites un dato.
+- Empuja el siguiente paso (dato que falte, cita, cotización o link del catálogo).
+
 ## Tono e idioma
-Tono: ${bot.tone || 'profesional y cercano'}.
+Tono: ${bot.tone || 'cercano, humano y comercial'}.
 Idioma: ${bot.language || 'es'}.
-Trata clientes que escriben mal o son ambiguos con paciencia: aclara con preguntas cortas.
 
-## Escalado (handoff)
-Si pide humano, hay queja grave, o pide algo fuera de catálogo: responde con calidez profesional.
-NO digas "te paso con un asesor". Di algo como: "Te conecto con alguien del equipo para darte una respuesta precisa."
-Luego termina con [[HANDOFF]].
+## Canal
+${channelRules}
 
-## Notas internas y pipeline (OBLIGATORIO — el sistema las oculta)
-TÚ calificas el lead y mueves el embudo. No esperes a un humano.
+## Citas / reuniones (CRÍTICO)
+Si el cliente confirma día y/o hora (ej. "miércoles a las 6 pm"):
+1) Confirma en 1–2 líneas con emoji 📅.
+2) Emite SIEMPRE:
+[[STAGE:cita]]
+[[NOTE:meeting|positive|Cita acordada|día y hora + canal]]
+[[LEAD:cita_agendada=miércoles 6pm]] (ajusta al dato real)
+3) Rellena cualquier campo del formulario de fecha/cita/horario con [[LEAD:...]].
+4) En WhatsApp NO pidas teléfono. Pide correo u otro dato solo si hace falta para la propuesta.
+5) No digas que "agendas" sin emitir las marcas: sin marcas no se guarda.
 
-1) Notas: cuando pase algo relevante, añade:
+## Embudo Kanban (OBLIGATORIO)
+Cuando el estado esté claro, incluye UNA marca:
+[[STAGE:interesado]]
+Valores: nuevo | interesado | en_duda | cita | cerrar | ganado | perdido
+- Pregunta precio/beneficio → interesado
+- Objeción / "lo pienso" → en_duda
+- Día/hora de reunión → cita (siempre)
+- Quiere pagar / cotización formal → cerrar
+- Compró → ganado · Rechazó → perdido
+
+## Notas
 [[NOTE:tipo|sentimiento|titulo|detalle]]
 tipos: sentiment, meeting, objection, win, lost, handoff, interest, custom
 sentimiento: positive, neutral, negative, critical
-Ejemplos:
-- Cliente grosero → [[NOTE:sentiment|critical|Cliente agresivo|Usó insultos / tono hostil]]
-- Acordaron reunión → [[NOTE:meeting|positive|Reunión acordada|Quieren videollamada esta semana]]
-- Muestra interés → [[NOTE:interest|positive|Interesado|Preguntó por el servicio y plazos]]
-- No le interesa → [[NOTE:lost|negative|Sin interés|Dijo que no necesita el servicio]]
 
-2) Embudo Kanban: en CADA respuesta donde el estado del cliente esté claro, incluye UNA marca:
-[[STAGE:interesado]]
-Valores válidos (elige solo uno): nuevo, interesado, en_duda, cita, cerrar, ganado, perdido
-Reglas de decisión:
-- Primer contacto / sin claridad → nuevo
-- Pregunta por oferta, precio o beneficios → interesado
-- Tiene objeciones o “lo pienso” → en_duda
-- Acuerda reunión/cita → cita
-- Listo para comprar / pide link de pago → cerrar
-- Confirmó compra o cierre → ganado
-- Rechazó o no volverá → perdido
-Si el estado no cambió respecto al mensaje anterior, puedes omitir STAGE.
-
-## Reglas del canal
-- Respuestas cortas (1–3 frases o bullets). Sin markdown pesado ni código.
-- Empuja al siguiente paso (dato, link de compra del catálogo, cita, o handoff).
-- Si un producto del catálogo tiene link, puedes compartirlo cuando el cliente esté listo.
-- Si el catálogo dice NO mencionar precio, no digas cifras: ofrece cotización o confirma con el equipo.
+## Handoff
+Si pide humano o hay queja grave: calidez + [[HANDOFF]]. No digas "te paso con un asesor"; di que alguien del equipo le escribe.
 ${formBlock}`;
 }
 
@@ -357,7 +498,7 @@ async function getOrCreateThread({
     org_id: connection.org_id,
     user_id: ownerUserId,
     title,
-    model_id: bot.model_id || 'matu-bot-3-5',
+    model_id: META_BOT_MODEL,
     preview: '',
     source: connection.channel,
     external_thread_id: externalUserId,
@@ -650,15 +791,31 @@ export async function handleInboundMessage({
     .order('created_at', { ascending: true })
     .limit(HISTORY_LIMIT);
 
-  const system = buildAgentSystemPrompt({
+  const currentStage = conversation.pipeline_stage || 'nuevo';
+  const opsPrompt = buildAgentSystemPrompt({
     bot,
     companyName,
     channel: connection.channel,
     contactLabel: identity.contactName,
+    contactPhone: identity.contactPhone || thread.contact_phone || '',
     formBundle,
     leadData,
     catalogProducts,
+    currentStage,
   });
+
+  // MatuBot tuneado + reglas operativas del canal/catálogo/formulario
+  let system = opsPrompt;
+  try {
+    const matuCore = loadSystemPrompt(META_BOT_MODEL, '', {});
+    system = `${matuCore}
+
+---
+## Capas operativas de este agente (tienen prioridad sobre lo genérico)
+${opsPrompt}`;
+  } catch (err) {
+    console.warn('[meta] MatuBot prompt load failed', err.message);
+  }
 
   let rawReply = '';
   try {
@@ -678,9 +835,47 @@ export async function handleInboundMessage({
   const { notes: aiNotes, stage: markedStage } = parseCommerceMarks(rawReply);
   let handoff = /\[\[HANDOFF\]\]/i.test(rawReply);
   let reply = stripInternalMarks(rawReply);
-  let pipelineStage = markedStage && STAGE_IDS.has(markedStage) ? markedStage : null;
+  reply = reply
+    .replace(/([.!?])\s+(?=[A-ZÁÉÍÓÚ¿¡])/g, '$1\n\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
-  if (formBundle && Object.keys(leadPatch).length) {
+  let pipelineStage =
+    markedStage && STAGE_IDS.has(markedStage) ? markedStage : null;
+
+  const meetingFromInbound = detectMeetingSignals(inboundContent);
+  const meetingFromReply = detectMeetingSignals(reply);
+  const meetingLikely = meetingFromInbound.likely || meetingFromReply.likely;
+  const meetingSummary = meetingLikely
+    ? extractMeetingSummary(inboundContent, reply)
+    : '';
+
+  if (!pipelineStage) {
+    pipelineStage = inferStageFromConversation(
+      inboundContent,
+      reply,
+      currentStage
+    );
+  }
+  if (meetingLikely) pipelineStage = 'cita';
+
+  const seeded = seedChannelLeadFields({
+    formBundle,
+    leadData,
+    channel: connection.channel,
+    contactPhone:
+      identity.contactPhone ||
+      thread.contact_phone ||
+      (connection.channel === 'whatsapp'
+        ? formatWhatsAppPhone(externalUserId)
+        : '') ||
+      '',
+    contactName: identity.contactName,
+    meetingSummary,
+  });
+  const mergedLeadPatch = { ...seeded, ...leadPatch };
+
+  if (formBundle && Object.keys(mergedLeadPatch).length) {
     await upsertLeadSubmission({
       orgId: connection.org_id,
       formId: formBundle.form.id,
@@ -690,10 +885,12 @@ export async function handleInboundMessage({
       channel: connection.channel,
       contactName: identity.contactName,
       externalUserId,
-      patchData: leadPatch,
+      patchData: mergedLeadPatch,
       markComplete: leadComplete,
     });
-    if (!pipelineStage) pipelineStage = 'interesado';
+    if (!pipelineStage || pipelineStage === 'nuevo') {
+      pipelineStage = meetingLikely ? 'cita' : 'interesado';
+    }
   } else if (formBundle && leadComplete) {
     await upsertLeadSubmission({
       orgId: connection.org_id,
@@ -704,10 +901,34 @@ export async function handleInboundMessage({
       channel: connection.channel,
       contactName: identity.contactName,
       externalUserId,
-      patchData: {},
+      patchData: seeded,
       markComplete: true,
     });
-    if (!pipelineStage) pipelineStage = 'interesado';
+    if (!pipelineStage || pipelineStage === 'nuevo') {
+      pipelineStage = meetingLikely ? 'cita' : 'interesado';
+    }
+  } else if (formBundle && Object.keys(seeded).length) {
+    await upsertLeadSubmission({
+      orgId: connection.org_id,
+      formId: formBundle.form.id,
+      botId: bot.id,
+      threadId: thread.id,
+      conversationId: conversation.id,
+      channel: connection.channel,
+      contactName: identity.contactName,
+      externalUserId,
+      patchData: seeded,
+      markComplete: false,
+    });
+  }
+
+  if (meetingLikely && !aiNotes.some((n) => n.noteType === 'meeting')) {
+    aiNotes.push({
+      noteType: 'meeting',
+      sentiment: 'positive',
+      title: 'Cita acordada',
+      body: meetingSummary || 'Cliente confirmó día/hora de reunión',
+    });
   }
 
   for (const n of aiNotes) {
@@ -785,7 +1006,7 @@ export async function handleInboundMessage({
   }
 
   if (!reply) {
-    reply = `Hola, soy ${bot.name} de ${companyName}. ¿En qué te puedo ayudar?`;
+    reply = `Hola, soy ${bot.name} de ${companyName}. 🙂\n\n¿En qué te puedo ayudar?`;
   }
 
   try {
@@ -807,7 +1028,7 @@ export async function handleInboundMessage({
     conversation_id: conversation.id,
     role: 'assistant',
     content: reply,
-    model_id: bot.model_id,
+    model_id: META_BOT_MODEL,
     tokens_in: tokensIn,
     tokens_out: tokensOut,
   });
@@ -817,6 +1038,7 @@ export async function handleInboundMessage({
     .eq('id', conversation.id)
     .update({
       preview: reply.slice(0, 120),
+      model_id: META_BOT_MODEL,
       updated_at: convPatch.updated_at,
       ...(convPatch.pipeline_stage
         ? { pipeline_stage: convPatch.pipeline_stage }

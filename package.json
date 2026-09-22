@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@devjuanes/matuclient": "^2.3.0",
+    "@lottiefiles/dotlottie-react": "^0.19.16",
     "cors": "^2.8.6",
     "dotenv": "^18.0.0",
     "express": "^5.2.1",

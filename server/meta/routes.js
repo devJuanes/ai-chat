@@ -293,7 +293,7 @@ export function registerMetaRoutes(app, deps) {
           : 'all',
         form_id: b.form_id || null,
         tone: String(b.tone || 'profesional y cercano').trim(),
-        model_id: String(b.model_id || 'matu-bot-3-5').trim(),
+        model_id: 'matu-bot-3-5',
         language: String(b.language || 'es').trim(),
         active: b.active !== false,
         handoff_keywords: String(
@@ -430,12 +430,13 @@ export function registerMetaRoutes(app, deps) {
         'company_website',
         'company_knowledge',
         'tone',
-        'model_id',
         'language',
         'handoff_keywords',
       ]) {
         if (b[key] != null) patch[key] = String(b[key]).trim();
       }
+      // Agentes Meta siempre usan MatuBot (no otro modelo del chat)
+      patch.model_id = 'matu-bot-3-5';
       if (b.catalog_mode != null && ['all', 'selected', 'none'].includes(b.catalog_mode)) {
         patch.catalog_mode = b.catalog_mode;
       }

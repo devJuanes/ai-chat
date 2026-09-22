@@ -47,7 +47,7 @@
   font-weight: 400;
   font-style: normal;
   letter-spacing: 0.02em;
-  line-height: 0.82;
+  line-height: 1.12;
   text-transform: uppercase;
   font-feature-settings: 'calt' 0;
 }
@@ -56,7 +56,7 @@
 .fp .mono {
   font-family: var(--font-mono);
   font-size: 12px;
-  line-height: 0.9;
+  line-height: 1.45;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -117,7 +117,7 @@
 .fp .link-underline {
   font-family: var(--font-mono);
   font-size: 12px;
-  line-height: 0.9;
+  line-height: 1.4;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-bone-white);
@@ -147,6 +147,14 @@
   font-size: 15px;
   font-weight: 500;
   color: var(--color-ink-black);
+}
+
+textarea.landing .fp-input,
+.landing textarea.fp-input,
+.fp textarea.fp-input {
+  height: auto;
+  min-height: 120px;
+  line-height: 1.4;
 }
 
 .landing .fp-input:focus,
@@ -255,17 +263,161 @@
 
 /* Responsive display sizes */
 .landing .hero-title {
-  font-size: clamp(64px, 18vw, 184px);
+  font-size: clamp(48px, 14vw, 184px);
+  line-height: 1.12;
 }
 
 .landing .section-title {
-  font-size: clamp(48px, 12vw, 100px);
+  font-size: clamp(32px, 9vw, 100px);
+  line-height: 1.18;
+  letter-spacing: 0.03em;
+}
+
+/* Mobile/tablet: section titles centered like the hero */
+@media (max-width: 899px) {
+  .landing .section-title,
+  .landing .section-heading {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: none;
+    width: 100%;
+  }
+
+  .landing .section-lead {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .landing .section-head {
+    text-align: center;
+    align-items: center;
+  }
 }
 
 @media (min-width: 900px) {
   .landing .hero-title {
     font-size: clamp(120px, 14vw, 220px);
+    line-height: 0.95;
   }
+
+  .landing .section-title {
+    font-size: clamp(48px, 12vw, 100px);
+    line-height: 1.08;
+    text-align: left;
+  }
+
+  .landing .section-heading {
+    text-align: left;
+  }
+
+  .landing .section-lead {
+    text-align: left;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .landing .section-head {
+    text-align: left;
+    align-items: flex-end;
+  }
+}
+
+/* Mobile rhythm: more air between blocks */
+@media (max-width: 639px) {
+  .landing .display,
+  .fp .display {
+    line-height: 1.16;
+  }
+
+  .landing .hero-title {
+    font-size: clamp(44px, 13.5vw, 72px);
+    line-height: 1.14;
+  }
+
+  .landing .section-title {
+    font-size: clamp(30px, 9.5vw, 48px);
+    line-height: 1.2;
+  }
+
+  .landing .card {
+    padding: 18px;
+  }
+
+  .landing .btn-pill,
+  .fp .btn-pill,
+  .landing .btn-outline,
+  .fp .btn-outline {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  /* Header CTA stays compact — never full-bleed */
+  .landing .mkt-header .btn-pill,
+  .landing .mkt-header .btn-outline,
+  .landing .mkt-header__cta {
+    width: auto;
+    min-height: 0;
+  }
+
+  .landing .mkt-header {
+    flex-wrap: nowrap;
+  }
+
+  .landing .mkt-header__nav {
+    flex-wrap: nowrap;
+  }
+
+  .landing .mono,
+  .fp .mono {
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .landing .t-card {
+    min-width: min(280px, 78vw);
+  }
+}
+
+.landing .model-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.landing .model-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 6px 6px 0 #000;
+}
+
+.landing .model-card:focus-visible {
+  outline: 3px solid var(--color-hi-vis-yellow);
+  outline-offset: 3px;
+}
+
+.landing .faq-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing .faq-card[open] .faq-card__mark {
+  background: #1a1a1a;
+  color: var(--color-hi-vis-yellow);
+}
+
+.landing .faq-card .faq-card__plus {
+  display: inline;
+}
+
+.landing .faq-card .faq-card__minus {
+  display: none;
+}
+
+.landing .faq-card[open] .faq-card__plus {
+  display: none;
+}
+
+.landing .faq-card[open] .faq-card__minus {
+  display: inline;
 }
 
 /* Testimonials marquee */

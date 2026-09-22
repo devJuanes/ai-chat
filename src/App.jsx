@@ -17,6 +17,7 @@ import SharePage from './pages/SharePage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import ModelsPage from './pages/ModelsPage';
+import ModelDetailPage from './pages/ModelDetailPage';
 import PricingPage from './pages/PricingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/acerca" element={<AboutPage />} />
         <Route path="/contacto" element={<ContactPage />} />
         <Route path="/modelos" element={<ModelsPage />} />
+        <Route path="/modelos/:modelId" element={<ModelDetailPage />} />
         <Route path="/precios" element={<PricingPage />} />
         <Route path="/privacidad" element={<PrivacyPage />} />
         <Route path="/terminos" element={<TermsPage />} />
