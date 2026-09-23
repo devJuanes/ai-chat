@@ -31,7 +31,7 @@ function pct(used, limit) {
   return Math.min(100, Math.round((used / limit) * 100));
 }
 
-function ProgressCard({ value, label, detail, usedLabel, tone }) {
+function ProgressCard({ value, label, detail, usedLabel, tone, hideBar = false }) {
   return (
     <div className={`fp-card ${tone} p-5`}>
       <div className="mb-3 flex items-end justify-between gap-3">
@@ -41,9 +41,13 @@ function ProgressCard({ value, label, detail, usedLabel, tone }) {
         </div>
         <div className="text-right text-[12px] font-bold">{usedLabel}</div>
       </div>
-      <div className="fp-progress">
-        <span style={{ width: `${value}%` }} />
-      </div>
+      {hideBar ? (
+        <div className="fp-mono text-[11px] opacity-55">Sin barra de cuota · ilimitado</div>
+      ) : (
+        <div className="fp-progress">
+          <span style={{ width: `${Math.max(0, Math.min(100, value || 0))}%` }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -115,6 +119,7 @@ export default function UsagePage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <ProgressCard
               value={tokenPct}
+              hideBar={unlimited}
               tone="fp-card-butter"
               label="Tokens del periodo"
               detail={
@@ -133,15 +138,20 @@ export default function UsagePage() {
               }
             />
             <ProgressCard
-              value={Math.min(
-                100,
-                activeModels.length
-                  ? Math.round(
-                      activeModels.reduce((a, m) => a + (m.pct || 0), 0) /
-                        activeModels.length
+              value={
+                unlimited
+                  ? 0
+                  : Math.min(
+                      100,
+                      activeModels.length
+                        ? Math.round(
+                            activeModels.reduce((a, m) => a + (m.pct || 0), 0) /
+                              activeModels.length
+                          )
+                        : 0
                     )
-                  : 0
-              )}
+              }
+              hideBar={unlimited}
               tone="fp-card-matcha"
               label="Modelos activos"
               detail={`${activeModels.length || 0} con consumo este mes`}
@@ -200,24 +210,28 @@ export default function UsagePage() {
                           {m.messages_count || 0}
                         </td>
                         <td className="py-3 min-w-[120px]">
-                          <div className="flex items-center gap-2">
-                            <div className="fp-progress flex-1">
-                              <span
-                                style={{
-                                  width: `${p}%`,
-                                  background:
-                                    p >= 90
-                                      ? '#c94245'
-                                      : p >= 70
-                                        ? '#ac4f98'
-                                        : undefined,
-                                }}
-                              />
+                          {unlimited ? (
+                            <span className="fp-mono text-[11px] opacity-55">∞</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <div className="fp-progress flex-1">
+                                <span
+                                  style={{
+                                    width: `${p}%`,
+                                    background:
+                                      p >= 90
+                                        ? '#c94245'
+                                        : p >= 70
+                                          ? '#ac4f98'
+                                          : undefined,
+                                  }}
+                                />
+                              </div>
+                              <span className="w-8 text-right tabular-nums text-[11px] font-bold">
+                                {`${p}%`}
+                              </span>
                             </div>
-                            <span className="w-8 text-right tabular-nums text-[11px] font-bold">
-                              {unlimited ? '—' : `${p}%`}
-                            </span>
-                          </div>
+                          )}
                         </td>
                       </tr>
                     );

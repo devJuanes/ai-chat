@@ -764,10 +764,20 @@ export async function handleInboundMessage({
     .eq('id', connection.org_id)
     .maybeSingle();
 
-  const limit = await checkUsage(org, ownerUserId, META_BOT_MODEL);
+  let limit = { ok: true };
+  try {
+    limit = await checkUsage(org, ownerUserId, META_BOT_MODEL);
+  } catch (err) {
+    console.warn('[meta] checkUsage threw', err.message);
+    limit = { ok: true, soft_fail: true };
+  }
   if (!limit.ok) {
-    console.warn('[meta] usage limit', limit.error);
-    return { skipped: 'usage_limit', error: limit.error };
+    // Nunca silenciar un cliente de WhatsApp/IG por billing:
+    // logueamos y seguimos. El admin / cuotas se aplican en chat app.
+    console.warn(
+      '[meta] usage over quota — responding anyway',
+      limit.error || ''
+    );
   }
 
   const formBundle = await loadFormForBot(bot);
@@ -1046,7 +1056,13 @@ ${opsPrompt}`;
       ...(convPatch.assignee ? { assignee: convPatch.assignee } : {}),
     });
 
-  await bumpUsage(org, ownerUserId, tokensIn, tokensOut, META_BOT_MODEL);
+  await bumpUsage(
+    org,
+    ownerUserId,
+    tokensIn,
+    tokensOut,
+    META_BOT_MODEL
+  ).catch((err) => console.warn('[meta] bumpUsage', err.message));
 
   return {
     ok: true,

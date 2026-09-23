@@ -278,49 +278,56 @@ async function getOrCreateModelUsage(orgId, userId, modelId) {
   const db = getDb();
   const ym = periodYm();
   const mid = String(modelId || 'matu').trim() || 'matu';
-  let { data: row } = await db
-    .from('usage_by_model')
-    .select('*')
-    .eq('org_id', orgId)
-    .eq('user_id', userId)
-    .eq('model_id', mid)
-    .eq('period_ym', ym)
-    .maybeSingle();
+  const empty = {
+    id: null,
+    org_id: orgId,
+    user_id: userId,
+    model_id: mid,
+    period_ym: ym,
+    messages_count: 0,
+    tokens_in: 0,
+    tokens_out: 0,
+    _missingTable: false,
+  };
 
-  if (!row) {
+  try {
+    const { data: row, error: selErr } = await db
+      .from('usage_by_model')
+      .select('*')
+      .eq('org_id', orgId)
+      .eq('user_id', userId)
+      .eq('model_id', mid)
+      .eq('period_ym', ym)
+      .maybeSingle();
+
+    if (selErr) {
+      // Table missing or schema not migrated yet — don't block chat/bots
+      return { ...empty, _missingTable: true };
+    }
+    if (row) return row;
+
     const id = newId();
-    const insert = {
-      id,
-      org_id: orgId,
-      user_id: userId,
-      model_id: mid,
-      period_ym: ym,
-      messages_count: 0,
-      tokens_in: 0,
-      tokens_out: 0,
-      updated_at: new Date().toISOString(),
-    };
+    const insert = { ...empty, id, updated_at: new Date().toISOString() };
+    delete insert._missingTable;
     const { error } = await db.from('usage_by_model').insert(insert);
     if (error) {
-      // Table may not exist yet — fall back to empty in-memory row
-      if (/usage_by_model|does not exist|relation/i.test(error.message)) {
-        return { ...insert, _missingTable: true };
+      if (/duplicate|unique|already/i.test(error.message || '')) {
+        const { data: again } = await db
+          .from('usage_by_model')
+          .select('*')
+          .eq('org_id', orgId)
+          .eq('user_id', userId)
+          .eq('model_id', mid)
+          .eq('period_ym', ym)
+          .maybeSingle();
+        if (again) return again;
       }
-      // Race: unique conflict → re-read
-      const { data: again } = await db
-        .from('usage_by_model')
-        .select('*')
-        .eq('org_id', orgId)
-        .eq('user_id', userId)
-        .eq('model_id', mid)
-        .eq('period_ym', ym)
-        .maybeSingle();
-      if (again) return again;
-      throw new Error(error.message);
+      return { ...empty, id, _missingTable: true };
     }
-    row = insert;
+    return insert;
+  } catch {
+    return { ...empty, _missingTable: true };
   }
-  return row;
 }
 
 /** Default token caps if plan_model_limits row is missing */
@@ -465,61 +472,65 @@ async function maybeNotifyThreshold({
  * @param {string} [modelId] — if omitted, only soft global token check (legacy)
  */
 export async function checkUsage(org, userId, modelId = null) {
-  const profile = await getProfileFlags(userId);
-  const plan = await getPlanForOrg(org);
-  const counter = await getOrCreateCounter(org.id, userId);
+  try {
+    const profile = await getProfileFlags(userId);
+    const plan = await getPlanForOrg(org);
+    const counter = await getOrCreateCounter(org.id, userId);
 
-  if (profile.is_admin) {
-    return {
-      ok: true,
-      usage: counter,
-      plan,
-      is_admin: true,
-      unlimited: true,
-    };
-  }
-
-  // Message caps deprecated — enforcement is per-model tokens
-  // (plans.monthly_message_limit kept for display / legacy only)
-
-  // Soft global token ceiling only when no model context
-  if (!modelId) {
-    const usedGlobal = (counter.tokens_in || 0) + (counter.tokens_out || 0);
-    if (
-      plan.monthly_token_limit >= 0 &&
-      usedGlobal >= plan.monthly_token_limit
-    ) {
+    // Admin = sin ningún tope (chat, Meta, cualquier modelo)
+    if (profile.is_admin === true || profile.is_admin === 'true' || profile.is_admin === 1) {
       return {
-        ok: false,
-        error: 'Límite mensual global de tokens alcanzado. Mejora tu plan.',
+        ok: true,
         usage: counter,
         plan,
-        is_admin: false,
+        is_admin: true,
+        unlimited: true,
       };
     }
-  }
 
-  if (modelId) {
-    const modelLimit = await getModelTokenLimit(plan.id, modelId);
-    if (modelLimit >= 0) {
-      const row = await getOrCreateModelUsage(org.id, userId, modelId);
-      const usedModel = (row.tokens_in || 0) + (row.tokens_out || 0);
-      if (usedModel >= modelLimit) {
+    // Soft global token ceiling only when no model context
+    if (!modelId) {
+      const usedGlobal = (counter.tokens_in || 0) + (counter.tokens_out || 0);
+      if (
+        plan.monthly_token_limit >= 0 &&
+        usedGlobal >= plan.monthly_token_limit
+      ) {
         return {
           ok: false,
-          error: `Límite mensual de tokens del modelo «${modelId}» alcanzado (${modelLimit.toLocaleString('es')}). Mejora tu plan o usa otro modelo.`,
+          error: 'Límite mensual global de tokens alcanzado. Mejora tu plan.',
           usage: counter,
           plan,
-          model_id: modelId,
-          model_used: usedModel,
-          model_limit: modelLimit,
           is_admin: false,
         };
       }
     }
-  }
 
-  return { ok: true, usage: counter, plan, is_admin: false };
+    if (modelId) {
+      const modelLimit = await getModelTokenLimit(plan.id, modelId);
+      if (modelLimit >= 0) {
+        const row = await getOrCreateModelUsage(org.id, userId, modelId);
+        const usedModel = (row.tokens_in || 0) + (row.tokens_out || 0);
+        if (usedModel >= modelLimit) {
+          return {
+            ok: false,
+            error: `Límite mensual de tokens del modelo «${modelId}» alcanzado (${modelLimit.toLocaleString('es')}). Mejora tu plan o usa otro modelo.`,
+            usage: counter,
+            plan,
+            model_id: modelId,
+            model_used: usedModel,
+            model_limit: modelLimit,
+            is_admin: false,
+          };
+        }
+      }
+    }
+
+    return { ok: true, usage: counter, plan, is_admin: false };
+  } catch (err) {
+    // Nunca tumbar el chat/bot por un fallo de billing
+    console.warn('[usage] checkUsage soft-fail', err.message);
+    return { ok: true, usage: null, plan: null, soft_fail: true };
+  }
 }
 
 export async function bumpUsage(
