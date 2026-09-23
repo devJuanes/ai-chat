@@ -5,6 +5,9 @@ import {
   authMiddleware,
   ensureWorkspace,
   getPlanForOrg,
+  listModelUsage,
+  listUsageNotifications,
+  markNotificationsRead,
 } from './auth.js';
 import { generateChatTitle } from './titles.js';
 import {
@@ -179,11 +182,17 @@ export function registerExtraRoutes(app) {
       const { profile, org } = await ensureWorkspace(req.user);
       const plan = await getPlanForOrg(org);
       const usage = await getUsage(org.id, profile.id);
+      const byModel = await listModelUsage(org.id, profile.id, plan.id);
+      const notifications = await listUsageNotifications(profile.id, {
+        unreadOnly: false,
+      });
+      const unread = notifications.filter((n) => !n.read_at).length;
       res.json({
         user: {
           id: profile.id,
           email: profile.email,
           name: profile.display_name,
+          is_admin: Boolean(profile.is_admin),
         },
         organization: org
           ? { id: org.id, name: org.name, plan_id: org.plan_id }
@@ -200,9 +209,43 @@ export function registerExtraRoutes(app) {
           messages_count: usage.messages_count || 0,
           tokens_in: usage.tokens_in || 0,
           tokens_out: usage.tokens_out || 0,
-          tokens_total:
-            (usage.tokens_in || 0) + (usage.tokens_out || 0),
+          tokens_total: (usage.tokens_in || 0) + (usage.tokens_out || 0),
+          by_model: byModel,
+          unlimited: Boolean(profile.is_admin),
         },
+        notifications: {
+          unread,
+          items: notifications.slice(0, 20),
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  app.get('/api/notifications', authMiddleware(true), async (req, res) => {
+    try {
+      const { profile } = await ensureWorkspace(req.user);
+      const items = await listUsageNotifications(profile.id);
+      res.json({
+        unread: items.filter((n) => !n.read_at).length,
+        items,
+      });
+    } catch (err) {
+      res.status(500).json({ error: { message: err.message } });
+    }
+  });
+
+  app.post('/api/notifications/read', authMiddleware(true), async (req, res) => {
+    try {
+      const { profile } = await ensureWorkspace(req.user);
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+      await markNotificationsRead(profile.id, ids);
+      const items = await listUsageNotifications(profile.id);
+      res.json({
+        ok: true,
+        unread: items.filter((n) => !n.read_at).length,
+        items,
       });
     } catch (err) {
       res.status(500).json({ error: { message: err.message } });

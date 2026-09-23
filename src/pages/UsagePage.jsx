@@ -2,9 +2,23 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useWorkspace } from '../lib/workspace';
 import { MenuIcon } from '../components/Icons';
+import NotificationBell from '../components/NotificationBell';
+
+const MODEL_LABELS = {
+  matu: 'Matu',
+  vo0: 'VO0',
+  vo5: 'VO5',
+  'matu-apex': 'Matu Forge',
+  'matu-dev-3-5': 'Matu Dev 3.5',
+  'matu-space-ultra': 'Space Ultra',
+  'matu-commerce': 'Commerce',
+  'matu-marketing': 'Marketing',
+  'matu-bot-3-5': 'MatuBot (Meta)',
+};
 
 function formatTokens(n) {
   if (n == null) return '—';
+  if (n < 0) return '∞';
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
@@ -12,7 +26,8 @@ function formatTokens(n) {
 }
 
 function pct(used, limit) {
-  if (!limit || limit <= 0) return 0;
+  if (limit == null || limit < 0) return 0;
+  if (!limit) return 100;
   return Math.min(100, Math.round((used / limit) * 100));
 }
 
@@ -33,44 +48,6 @@ function ProgressCard({ value, label, detail, usedLabel, tone }) {
   );
 }
 
-function MonthHeatmap({ intensity = 0.2 }) {
-  const cells = useMemo(() => {
-    const days = 35;
-    return Array.from({ length: days }, (_, i) => {
-      const wave = Math.abs(Math.sin(i * 0.55)) * intensity;
-      const noise = ((i * 17) % 10) / 40;
-      return Math.min(1, wave + noise * intensity);
-    });
-  }, [intensity]);
-
-  return (
-    <div>
-      <div className="mb-2 grid grid-cols-7 gap-1">
-        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
-          <div key={d} className="fp-mono text-center text-[10px] opacity-50">
-            {d}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((v, i) => (
-          <div
-            key={i}
-            className="aspect-square rounded-[3px] border border-black/20"
-            style={{
-              background:
-                v < 0.08
-                  ? '#f0ece8'
-                  : `rgba(172, 79, 152, ${0.2 + v * 0.75})`,
-            }}
-            title={`Actividad relativa ${(v * 100).toFixed(0)}%`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function UsagePage() {
   const ws = useWorkspace();
   const navigate = useNavigate();
@@ -78,13 +55,18 @@ export default function UsagePage() {
 
   const plan = ws.plan || {};
   const usage = ws.usage || {};
+  const unlimited = Boolean(usage.unlimited || ws.profileUser?.is_admin);
   const tokensUsed = usage.tokens_total ?? 0;
   const tokenLimit = plan.monthly_token_limit ?? 0;
   const msgUsed = usage.messages_count ?? 0;
-  const msgLimit = plan.monthly_message_limit ?? 0;
-  const tokenPct = pct(tokensUsed, tokenLimit);
-  const msgPct = pct(msgUsed, msgLimit);
-  const intensity = Math.max(0.12, Math.min(0.9, (tokenPct || msgPct) / 100));
+  const byModel = useMemo(() => {
+    const rows = Array.isArray(usage.by_model) ? [...usage.by_model] : [];
+    rows.sort((a, b) => (b.tokens_total || 0) - (a.tokens_total || 0));
+    return rows;
+  }, [usage.by_model]);
+
+  const tokenPct = unlimited ? 0 : pct(tokensUsed, tokenLimit);
+  const activeModels = byModel.filter((m) => (m.tokens_total || 0) > 0 || m.messages_count > 0);
 
   return (
     <main className="fp-page flex h-dvh min-w-0 flex-col">
@@ -99,6 +81,7 @@ export default function UsagePage() {
         </button>
         <div className="fp-mono">Uso y plan</div>
         <div className="flex-1" />
+        <NotificationBell />
         <button
           type="button"
           className="fp-btn-ink px-3.5 py-2 text-[11px]"
@@ -121,6 +104,11 @@ export default function UsagePage() {
             <p className="mt-2 text-[14px] font-medium opacity-75">
               Periodo {usage.period_ym || 'actual'} · Plan{' '}
               <span className="font-bold">{plan.name || plan.id || 'Gratis'}</span>
+              {unlimited ? (
+                <span className="ml-2 rounded-[4px] border-2 border-black bg-[#f4ed36] px-1.5 py-0.5 text-[11px] font-bold">
+                  Admin · ilimitado
+                </span>
+              ) : null}
             </p>
           </div>
 
@@ -128,104 +116,146 @@ export default function UsagePage() {
             <ProgressCard
               value={tokenPct}
               tone="fp-card-butter"
-              label="Límite de tokens"
+              label="Tokens del periodo"
               detail={
-                tokenLimit > 0
-                  ? `Cuota mensual ${formatTokens(tokenLimit)}`
-                  : 'Sin límite configurado'
+                unlimited
+                  ? 'Sin tope (cuenta admin)'
+                  : tokenLimit < 0
+                    ? 'Cuota global ilimitada'
+                    : tokenLimit > 0
+                      ? `Referencia global ${formatTokens(tokenLimit)}`
+                      : 'Sin límite global'
               }
-              usedLabel={`${tokenPct}% · ${formatTokens(tokensUsed)}`}
+              usedLabel={
+                unlimited
+                  ? `${formatTokens(tokensUsed)} usados`
+                  : `${tokenPct}% · ${formatTokens(tokensUsed)}`
+              }
             />
             <ProgressCard
-              value={msgPct}
+              value={Math.min(
+                100,
+                activeModels.length
+                  ? Math.round(
+                      activeModels.reduce((a, m) => a + (m.pct || 0), 0) /
+                        activeModels.length
+                    )
+                  : 0
+              )}
               tone="fp-card-matcha"
-              label="Límite de mensajes"
-              detail={
-                msgLimit > 0
-                  ? `Cuota mensual ${msgLimit}`
-                  : 'Sin límite configurado'
-              }
-              usedLabel={`${msgPct}% · ${msgUsed}`}
+              label="Modelos activos"
+              detail={`${activeModels.length || 0} con consumo este mes`}
+              usedLabel={`${msgUsed} msgs`}
             />
           </div>
 
-          <div className="fp-card fp-card-lilac p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="fp-card p-5 sm:p-6">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="fp-display text-[28px]" style={{ color: '#f4ed36' }}>
-                  Saldo
-                </h2>
-                <p className="mt-2 max-w-md text-[13px] font-medium opacity-85">
-                  Créditos de suscripción + recargas. Se usan cuando se agota la
-                  cuota del plan.
+                <h2 className="text-[15px] font-bold">Consumo por modelo</h2>
+                <p className="mt-1 text-[13px] opacity-70">
+                  Cada modelo tiene su propia cuota de tokens. MatuBot (WhatsApp /
+                  Instagram / Messenger) no consume la cuota de tu chat Matu.
                 </p>
               </div>
-              <button
-                type="button"
-                className="fp-pill px-4 py-2 text-[12px]"
-                onClick={() => navigate('/settings/facturacion')}
-              >
-                Recargar
-              </button>
             </div>
-            <p className="mt-5 text-[13px] font-medium opacity-70">
-              Aún no tienes créditos extra.
-            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] border-collapse text-left text-[13px]">
+                <thead>
+                  <tr className="border-b-2 border-black/20 fp-mono text-[10px] opacity-60">
+                    <th className="py-2 pr-3 font-normal">Modelo</th>
+                    <th className="py-2 pr-3 font-normal">Usado</th>
+                    <th className="py-2 pr-3 font-normal">Límite</th>
+                    <th className="py-2 pr-3 font-normal">Msgs</th>
+                    <th className="py-2 font-normal">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {byModel.map((m) => {
+                    const limit = unlimited ? -1 : m.monthly_token_limit;
+                    const p = unlimited ? 0 : m.pct || pct(m.tokens_total, limit);
+                    return (
+                      <tr
+                        key={m.model_id}
+                        className="border-b border-black/10 align-middle"
+                      >
+                        <td className="py-3 pr-3 font-bold">
+                          {MODEL_LABELS[m.model_id] || m.model_id}
+                          {m.model_id === 'matu-bot-3-5' ? (
+                            <span className="ml-1.5 text-[10px] font-medium opacity-55">
+                              Meta
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="py-3 pr-3 tabular-nums">
+                          {formatTokens(m.tokens_total)}
+                        </td>
+                        <td className="py-3 pr-3 tabular-nums">
+                          {unlimited || limit < 0
+                            ? 'Ilimitado'
+                            : formatTokens(limit)}
+                        </td>
+                        <td className="py-3 pr-3 tabular-nums">
+                          {m.messages_count || 0}
+                        </td>
+                        <td className="py-3 min-w-[120px]">
+                          <div className="flex items-center gap-2">
+                            <div className="fp-progress flex-1">
+                              <span
+                                style={{
+                                  width: `${p}%`,
+                                  background:
+                                    p >= 90
+                                      ? '#c94245'
+                                      : p >= 70
+                                        ? '#ac4f98'
+                                        : undefined,
+                                }}
+                              />
+                            </div>
+                            <span className="w-8 text-right tabular-nums text-[11px] font-bold">
+                              {unlimited ? '—' : `${p}%`}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="fp-card p-5 sm:p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="text-[15px] font-bold">Resumen del periodo</h2>
-                <span className="fp-mono opacity-50">Este mes</span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  {
-                    label: 'Tokens',
-                    value: formatTokens(tokensUsed),
-                    tone: 'fp-card-pink',
-                  },
-                  {
-                    label: 'Entrada',
-                    value: formatTokens(usage.tokens_in ?? 0),
-                    tone: 'fp-card-butter',
-                  },
-                  {
-                    label: 'Salida',
-                    value: formatTokens(usage.tokens_out ?? 0),
-                    tone: 'fp-card-matcha',
-                  },
-                ].map((card) => (
-                  <div key={card.label} className={`fp-card ${card.tone} px-3 py-4`}>
-                    <div className="fp-mono opacity-60">{card.label}</div>
-                    <div className="mt-1.5 text-[22px] font-bold tabular-nums">
-                      {card.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="fp-card p-5 sm:p-6">
-              <h2 className="mb-1 text-[15px] font-bold">Actividad</h2>
-              <p className="mb-4 fp-mono opacity-50">Intensidad del periodo</p>
-              <MonthHeatmap intensity={intensity} />
-              <div className="mt-5 space-y-2 border-t-2 border-black/15 pt-4 text-[13px] font-medium">
-                <div className="flex justify-between">
-                  <span className="opacity-55">Mensajes</span>
-                  <span className="tabular-nums">{msgUsed}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="opacity-55">Tokens</span>
-                  <span className="tabular-nums">{formatTokens(tokensUsed)}</span>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              {
+                label: 'Tokens',
+                value: formatTokens(tokensUsed),
+                tone: 'fp-card-pink',
+              },
+              {
+                label: 'Entrada',
+                value: formatTokens(usage.tokens_in ?? 0),
+                tone: 'fp-card-butter',
+              },
+              {
+                label: 'Salida',
+                value: formatTokens(usage.tokens_out ?? 0),
+                tone: 'fp-card-matcha',
+              },
+            ].map((card) => (
+              <div key={card.label} className={`fp-card ${card.tone} px-3 py-4`}>
+                <div className="fp-mono opacity-60">{card.label}</div>
+                <div className="mt-1.5 text-[22px] font-bold tabular-nums">
+                  {card.value}
                 </div>
               </div>
-            </div>
+            ))}
           </div>
 
           <p className="text-center text-[12px] font-medium opacity-55">
-            ¿Dudas?{' '}
+            Alertas al 30%, 70% y 90% de cada modelo ·{' '}
             <Link
               to="/settings/facturacion"
               className="font-bold underline underline-offset-2"

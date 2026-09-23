@@ -23,6 +23,7 @@ import {
 } from '../components/Icons';
 import { CloseIcon, MenuIcon } from '../components/Icons';
 import BrandLogo from '../components/BrandLogo';
+import NotificationBell from '../components/NotificationBell';
 import { isSizorEmbed } from '../lib/sizorEmbed';
 
 const PROJECTS_PREVIEW = 6;
@@ -575,18 +576,21 @@ function ShellSidebar({
             </span>
           </button>
           {!embed ? (
-            <button
-              type="button"
-              className="fp-pill shrink-0 px-2 py-1.5 text-[10px]"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen(false);
-                onCloseMobile?.();
-                navigate('/usage');
-              }}
-            >
-              Mejorar
-            </button>
+            <>
+              <NotificationBell className="shrink-0" placement="top" />
+              <button
+                type="button"
+                className="fp-pill shrink-0 px-2 py-1.5 text-[10px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onCloseMobile?.();
+                  navigate('/usage');
+                }}
+              >
+                Mejorar
+              </button>
+            </>
           ) : null}
         </div>
 

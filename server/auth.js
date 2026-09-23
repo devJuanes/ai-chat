@@ -195,7 +195,7 @@ export async function getPlanForOrg(org) {
     return {
       id: 'free',
       name: 'Free',
-      monthly_message_limit: 40,
+      monthly_message_limit: -1,
       monthly_token_limit: 80000,
       max_conversations: 20,
       models_allowed: 'matu,vo0,matu-apex,matu-dev-3-5',
@@ -211,12 +211,34 @@ export async function getPlanForOrg(org) {
     plan || {
       id: 'free',
       name: 'Free',
-      monthly_message_limit: 40,
+      monthly_message_limit: -1,
       monthly_token_limit: 80000,
       max_conversations: 20,
       models_allowed: 'matu,vo0,matu-apex,matu-dev-3-5',
     }
   );
+}
+
+async function getProfileFlags(userId) {
+  const db = getDb();
+  try {
+    const { data, error } = await db
+      .from('profiles')
+      .select('id, is_admin, email, display_name')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error && /is_admin|column/i.test(error.message || '')) {
+      const { data: fallback } = await db
+        .from('profiles')
+        .select('id, email, display_name')
+        .eq('id', userId)
+        .maybeSingle();
+      return { ...(fallback || { id: userId }), is_admin: false };
+    }
+    return data || { id: userId, is_admin: false };
+  } catch {
+    return { id: userId, is_admin: false };
+  }
 }
 
 async function getOrCreateCounter(orgId, userId) {
@@ -246,41 +268,267 @@ async function getOrCreateCounter(orgId, userId) {
       messages_count: 0,
       tokens_in: 0,
       tokens_out: 0,
+      period_ym: ym,
     };
   }
   return counter;
 }
 
-export async function checkUsage(org, userId) {
+async function getOrCreateModelUsage(orgId, userId, modelId) {
+  const db = getDb();
+  const ym = periodYm();
+  const mid = String(modelId || 'matu').trim() || 'matu';
+  let { data: row } = await db
+    .from('usage_by_model')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('user_id', userId)
+    .eq('model_id', mid)
+    .eq('period_ym', ym)
+    .maybeSingle();
+
+  if (!row) {
+    const id = newId();
+    const insert = {
+      id,
+      org_id: orgId,
+      user_id: userId,
+      model_id: mid,
+      period_ym: ym,
+      messages_count: 0,
+      tokens_in: 0,
+      tokens_out: 0,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await db.from('usage_by_model').insert(insert);
+    if (error) {
+      // Table may not exist yet — fall back to empty in-memory row
+      if (/usage_by_model|does not exist|relation/i.test(error.message)) {
+        return { ...insert, _missingTable: true };
+      }
+      // Race: unique conflict → re-read
+      const { data: again } = await db
+        .from('usage_by_model')
+        .select('*')
+        .eq('org_id', orgId)
+        .eq('user_id', userId)
+        .eq('model_id', mid)
+        .eq('period_ym', ym)
+        .maybeSingle();
+      if (again) return again;
+      throw new Error(error.message);
+    }
+    row = insert;
+  }
+  return row;
+}
+
+/** Default token caps if plan_model_limits row is missing */
+const DEFAULT_MODEL_CAPS = {
+  free: {
+    matu: 25000,
+    vo0: 15000,
+    'matu-apex': 20000,
+    'matu-dev-3-5': 20000,
+    'matu-space-ultra': 15000,
+    'matu-commerce': 15000,
+    'matu-marketing': 15000,
+    'matu-bot-3-5': 40000,
+    '*': 15000,
+  },
+  pro: {
+    '*': 300000,
+    'matu-bot-3-5': 500000,
+  },
+  team: {
+    '*': -1,
+  },
+};
+
+export async function getModelTokenLimit(planId, modelId) {
+  const mid = String(modelId || 'matu').trim() || 'matu';
+  const pid = planId || 'free';
+  const db = getDb();
+  try {
+    const { data, error } = await db
+      .from('plan_model_limits')
+      .select('monthly_token_limit')
+      .eq('plan_id', pid)
+      .eq('model_id', mid)
+      .maybeSingle();
+    if (!error && data && typeof data.monthly_token_limit === 'number') {
+      return data.monthly_token_limit;
+    }
+  } catch {
+    /* table missing */
+  }
+  const pack = DEFAULT_MODEL_CAPS[pid] || DEFAULT_MODEL_CAPS.free;
+  if (typeof pack[mid] === 'number') return pack[mid];
+  return typeof pack['*'] === 'number' ? pack['*'] : 15000;
+}
+
+export async function listModelUsage(orgId, userId, planId) {
+  const db = getDb();
+  const ym = periodYm();
+  let rows = [];
+  try {
+    const { data, error } = await db
+      .from('usage_by_model')
+      .select('*')
+      .eq('org_id', orgId)
+      .eq('user_id', userId)
+      .eq('period_ym', ym);
+    if (!error) rows = data || [];
+  } catch {
+    rows = [];
+  }
+
+  const byId = new Map(rows.map((r) => [r.model_id, r]));
+  const modelIds = new Set([
+    ...Object.keys(DEFAULT_MODEL_CAPS.free),
+    ...rows.map((r) => r.model_id),
+  ]);
+  modelIds.delete('*');
+
+  const out = [];
+  for (const modelId of [...modelIds].sort()) {
+    const row = byId.get(modelId);
+    const limit = await getModelTokenLimit(planId, modelId);
+    const tokensIn = row?.tokens_in || 0;
+    const tokensOut = row?.tokens_out || 0;
+    const used = tokensIn + tokensOut;
+    out.push({
+      model_id: modelId,
+      period_ym: ym,
+      messages_count: row?.messages_count || 0,
+      tokens_in: tokensIn,
+      tokens_out: tokensOut,
+      tokens_total: used,
+      monthly_token_limit: limit,
+      pct:
+        limit < 0
+          ? 0
+          : limit === 0
+            ? 100
+            : Math.min(100, Math.round((used / limit) * 100)),
+    });
+  }
+  return out;
+}
+
+async function maybeNotifyThreshold({
+  orgId,
+  userId,
+  modelId,
+  used,
+  limit,
+}) {
+  if (limit == null || limit < 0) return;
+  if (limit === 0) return;
+  const pct = Math.round((used / limit) * 100);
+  const crossed = [30, 70, 90].filter((t) => pct >= t);
+  if (!crossed.length) return;
+
+  const db = getDb();
+  const ym = periodYm();
+  for (const threshold of crossed) {
+    const title =
+      threshold >= 90
+        ? `Uso crítico · ${modelId}`
+        : threshold >= 70
+          ? `Uso alto · ${modelId}`
+          : `Aviso de uso · ${modelId}`;
+    const body = `Has consumido ~${threshold}% de la cuota mensual de tokens del modelo ${modelId} (${used.toLocaleString('es')}/${limit.toLocaleString('es')}).`;
+    try {
+      const { error } = await db.from('usage_notifications').insert({
+        id: newId(),
+        org_id: orgId,
+        user_id: userId,
+        period_ym: ym,
+        model_id: modelId,
+        threshold,
+        title,
+        body,
+      });
+      if (error && !/duplicate|unique|already/i.test(error.message || '')) {
+        console.warn('[usage] notify', error.message);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * @param {object} org
+ * @param {string} userId
+ * @param {string} [modelId] — if omitted, only soft global token check (legacy)
+ */
+export async function checkUsage(org, userId, modelId = null) {
+  const profile = await getProfileFlags(userId);
   const plan = await getPlanForOrg(org);
   const counter = await getOrCreateCounter(org.id, userId);
 
-  if (
-    plan.monthly_message_limit >= 0 &&
-    (counter.messages_count || 0) >= plan.monthly_message_limit
-  ) {
+  if (profile.is_admin) {
     return {
-      ok: false,
-      error: `Límite mensual de mensajes alcanzado (${plan.monthly_message_limit}). Mejora tu plan.`,
+      ok: true,
       usage: counter,
       plan,
+      is_admin: true,
+      unlimited: true,
     };
   }
 
-  const usedTokens = (counter.tokens_in || 0) + (counter.tokens_out || 0);
-  if (plan.monthly_token_limit >= 0 && usedTokens >= plan.monthly_token_limit) {
-    return {
-      ok: false,
-      error: 'Límite mensual de tokens alcanzado. Mejora tu plan.',
-      usage: counter,
-      plan,
-    };
+  // Message caps deprecated — enforcement is per-model tokens
+  // (plans.monthly_message_limit kept for display / legacy only)
+
+  // Soft global token ceiling only when no model context
+  if (!modelId) {
+    const usedGlobal = (counter.tokens_in || 0) + (counter.tokens_out || 0);
+    if (
+      plan.monthly_token_limit >= 0 &&
+      usedGlobal >= plan.monthly_token_limit
+    ) {
+      return {
+        ok: false,
+        error: 'Límite mensual global de tokens alcanzado. Mejora tu plan.',
+        usage: counter,
+        plan,
+        is_admin: false,
+      };
+    }
   }
 
-  return { ok: true, usage: counter, plan };
+  if (modelId) {
+    const modelLimit = await getModelTokenLimit(plan.id, modelId);
+    if (modelLimit >= 0) {
+      const row = await getOrCreateModelUsage(org.id, userId, modelId);
+      const usedModel = (row.tokens_in || 0) + (row.tokens_out || 0);
+      if (usedModel >= modelLimit) {
+        return {
+          ok: false,
+          error: `Límite mensual de tokens del modelo «${modelId}» alcanzado (${modelLimit.toLocaleString('es')}). Mejora tu plan o usa otro modelo.`,
+          usage: counter,
+          plan,
+          model_id: modelId,
+          model_used: usedModel,
+          model_limit: modelLimit,
+          is_admin: false,
+        };
+      }
+    }
+  }
+
+  return { ok: true, usage: counter, plan, is_admin: false };
 }
 
-export async function bumpUsage(org, userId, tokensIn = 0, tokensOut = 0) {
+export async function bumpUsage(
+  org,
+  userId,
+  tokensIn = 0,
+  tokensOut = 0,
+  modelId = null
+) {
   const counter = await getOrCreateCounter(org.id, userId);
   const db = getDb();
   const next = {
@@ -289,5 +537,63 @@ export async function bumpUsage(org, userId, tokensIn = 0, tokensOut = 0) {
     tokens_out: (counter.tokens_out || 0) + tokensOut,
   };
   await db.from('usage_counters').eq('id', counter.id).update(next);
+
+  if (modelId) {
+    const row = await getOrCreateModelUsage(org.id, userId, modelId);
+    if (!row._missingTable) {
+      const modelNext = {
+        messages_count: (row.messages_count || 0) + 1,
+        tokens_in: (row.tokens_in || 0) + tokensIn,
+        tokens_out: (row.tokens_out || 0) + tokensOut,
+        updated_at: new Date().toISOString(),
+      };
+      await db.from('usage_by_model').eq('id', row.id).update(modelNext);
+      const plan = await getPlanForOrg(org);
+      const limit = await getModelTokenLimit(plan.id, modelId);
+      const used = modelNext.tokens_in + modelNext.tokens_out;
+      await maybeNotifyThreshold({
+        orgId: org.id,
+        userId,
+        modelId,
+        used,
+        limit,
+      });
+    }
+  }
+
   return { ...counter, ...next };
+}
+
+export async function listUsageNotifications(userId, { unreadOnly = false } = {}) {
+  const db = getDb();
+  try {
+    let q = db
+      .from('usage_notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(40);
+    if (unreadOnly) q = q.is('read_at', null);
+    const { data, error } = await q;
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function markNotificationsRead(userId, ids = null) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  try {
+    let q = db
+      .from('usage_notifications')
+      .update({ read_at: now })
+      .eq('user_id', userId)
+      .is('read_at', null);
+    if (ids?.length) q = q.in('id', ids);
+    await q;
+  } catch {
+    /* ignore */
+  }
 }

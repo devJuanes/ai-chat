@@ -20,6 +20,7 @@ import {
   ShareIcon,
   TrashIcon,
 } from './Icons';
+import NotificationBell from './NotificationBell';
 import { isSizorEmbed } from '../lib/sizorEmbed';
 
 function formatChatDate(value) {
@@ -298,6 +299,8 @@ export default function ChatArea({
         )}
 
         <div className="flex-1" />
+
+        {isAuthenticated ? <NotificationBell className="shrink-0" /> : null}
 
         {liveHtml && !livePreviewOpen ? (
           <button

@@ -764,7 +764,7 @@ export async function handleInboundMessage({
     .eq('id', connection.org_id)
     .maybeSingle();
 
-  const limit = await checkUsage(org, ownerUserId);
+  const limit = await checkUsage(org, ownerUserId, META_BOT_MODEL);
   if (!limit.ok) {
     console.warn('[meta] usage limit', limit.error);
     return { skipped: 'usage_limit', error: limit.error };
@@ -1046,7 +1046,7 @@ ${opsPrompt}`;
       ...(convPatch.assignee ? { assignee: convPatch.assignee } : {}),
     });
 
-  await bumpUsage(org, ownerUserId, tokensIn, tokensOut);
+  await bumpUsage(org, ownerUserId, tokensIn, tokensOut, META_BOT_MODEL);
 
   return {
     ok: true,

@@ -376,7 +376,7 @@ app.post('/api/chat', authMiddleware(true), async (req, res) => {
       });
     }
 
-    const limit = await checkUsage(org, profile.id);
+    const limit = await checkUsage(org, profile.id, modelId);
     if (!limit.ok) {
       return res.status(429).json({ error: { message: limit.error } });
     }
@@ -698,7 +698,7 @@ ${tail}
         updated_at: new Date().toISOString(),
       });
 
-    await bumpUsage(org, profile.id, tokensIn, tokensOut).catch(() => {});
+    await bumpUsage(org, profile.id, tokensIn, tokensOut, modelId).catch(() => {});
 
     writeEvent('done', {
       conversation_id: conversationId,

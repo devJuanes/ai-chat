@@ -213,7 +213,7 @@ export const PLANS_PUBLIC = [
     period: 'para siempre',
     highlight: false,
     features: [
-      '40 mensajes / mes',
+      'Tokens por modelo (chat ≠ MatuBot)',
       'Modelos flagship y de nicho',
       'Proyectos y chats',
       'Ideal para probar Matu AI',
@@ -226,9 +226,9 @@ export const PLANS_PUBLIC = [
     period: '/ mes',
     highlight: true,
     features: [
-      '500 mensajes / mes',
+      'Cuotas altas por modelo',
       'VO5 y todos los modelos',
-      'Más tokens y conversaciones',
+      'Más tokens Meta / MatuBot',
       'Para freelancers y founders',
     ],
   },
@@ -239,9 +239,9 @@ export const PLANS_PUBLIC = [
     period: '/ mes',
     highlight: false,
     features: [
-      '5.000 mensajes / mes',
+      'Tokens ilimitados por modelo',
       'Capacidad de equipo',
-      'Límites altos de tokens',
+      'MatuBot sin tope práctico',
       'Para operaciones en crecimiento',
     ],
   },
@@ -313,7 +313,7 @@ export const FAQ = [
   },
   {
     q: '¿Hay plan gratis?',
-    a: 'Sí. Free incluye mensajes mensuales para probar. Pro ($29) y Team ($99) suben capacidad sin precios absurdos. Empiezas gratis y escalas cuando lo necesites.',
+    a: 'Sí. Free incluye cuota de tokens por modelo (el chat Matu no comparte tope con MatuBot de WhatsApp). Pro ($29) y Team ($99) suben capacidad. Empiezas gratis y escalas cuando lo necesites.',
   },
   {
     q: '¿Puedo usarlo para landings, tablas y exports?',
