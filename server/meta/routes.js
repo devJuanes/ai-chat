@@ -80,6 +80,43 @@ export function registerMetaRoutes(app, deps) {
   registerMetaOAuth(app, deps);
   registerCommerceRoutes(app, deps);
 
+  // ——— Bot error / skip logs (meta_bot_logs) ———
+  app.get('/api/meta/bot-logs', authMiddleware(true), async (req, res) => {
+    try {
+      const { org } = await ensureWorkspace(req.user);
+      const db = getDb();
+      const limit = Math.min(
+        200,
+        Math.max(1, Number(req.query.limit) || 50)
+      );
+      const severity = String(req.query.severity || '').trim();
+      let q = db
+        .from('meta_bot_logs')
+        .select('*')
+        .eq('org_id', org.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (severity && ['error', 'warn', 'info'].includes(severity)) {
+        q = q.eq('severity', severity);
+      }
+      const { data, error } = await q;
+      if (error) {
+        if (/meta_bot_logs|does not exist|relation/i.test(error.message || '')) {
+          return res.json({
+            logs: [],
+            hint: 'Ejecuta docs/migrations/meta-bot-logs-v1.sql en MatuDB',
+          });
+        }
+        throw new Error(error.message);
+      }
+      return res.json({ logs: data || [] });
+    } catch (err) {
+      return res.status(500).json({
+        error: { message: err.message || 'No se pudieron leer los logs' },
+      });
+    }
+  });
+
   // ——— Connections ———
   app.get(
     '/api/meta/connections',

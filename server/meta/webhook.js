@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { verifyMetaSignature } from './crypto.js';
 import { handleInboundMessage } from './agent-runner.js';
+import { logMetaBotEvent } from './bot-logs.js';
 
 function extractTextFromMessengerMessage(msg) {
   if (!msg) return { text: '', isMedia: false };
@@ -53,9 +54,20 @@ async function processMessengerLikeEntry(entry, channelHint) {
     if (!event.sender?.id) continue;
 
     const { text, isMedia } = extractTextFromMessengerMessage(event.message);
-    if (!text && !isMedia) continue;
+    if (!text && !isMedia) {
+      await logMetaBotEvent({
+        channel: channelHint === 'instagram' ? 'instagram' : 'messenger',
+        externalUserId: event.sender.id,
+        externalMessageId: event.message?.mid || null,
+        stage: 'webhook',
+        severity: 'info',
+        code: 'unsupported_or_empty',
+        message: 'Evento Messenger/IG sin texto ni adjunto usable',
+        detail: { pageId, hasPostback: Boolean(event.postback) },
+      });
+      continue;
+    }
 
-    // Instagram messaging also arrives via page webhooks with object=instagram
     const channel =
       channelHint === 'instagram' ? 'instagram' : 'messenger';
 
@@ -71,6 +83,16 @@ async function processMessengerLikeEntry(entry, channelHint) {
       });
     } catch (err) {
       console.error('[meta/webhook] messenger handler', err.message);
+      await logMetaBotEvent({
+        channel,
+        externalUserId: event.sender.id,
+        externalMessageId: event.message?.mid || null,
+        stage: 'webhook',
+        severity: 'error',
+        code: 'handler_exception',
+        message: err.message || 'Excepción en handler Messenger/IG',
+        detail: { pageId },
+      });
     }
   }
 }
@@ -85,13 +107,24 @@ async function processWhatsAppEntry(entry) {
       const contact = contacts.find((c) => c.wa_id === message.from);
       const profileName = String(contact?.profile?.name || '').trim();
       const { text, isMedia } = extractWhatsAppText(message);
-      if (!text && !isMedia) continue;
+      if (!text && !isMedia) {
+        await logMetaBotEvent({
+          channel: 'whatsapp',
+          externalUserId: message.from,
+          externalMessageId: message.id || null,
+          stage: 'webhook',
+          severity: 'info',
+          code: 'unsupported_or_empty',
+          message: `WhatsApp tipo no manejado: ${message.type || 'unknown'}`,
+          detail: { phoneNumberId, type: message.type || null },
+        });
+        continue;
+      }
       try {
         await handleInboundMessage({
           channel: 'whatsapp',
           phoneNumberId,
           externalUserId: message.from,
-          // Phone is primary identity; profile name is optional hint
           contactName: profileName,
           contactPhone: message.from,
           text,
@@ -100,6 +133,16 @@ async function processWhatsAppEntry(entry) {
         });
       } catch (err) {
         console.error('[meta/webhook] whatsapp handler', err.message);
+        await logMetaBotEvent({
+          channel: 'whatsapp',
+          externalUserId: message.from,
+          externalMessageId: message.id || null,
+          stage: 'webhook',
+          severity: 'error',
+          code: 'handler_exception',
+          message: err.message || 'Excepción en handler WhatsApp',
+          detail: { phoneNumberId },
+        });
       }
     }
   }
@@ -145,6 +188,12 @@ export function registerMetaWebhook(app) {
       try {
         body = JSON.parse(body.toString('utf8'));
       } catch {
+        logMetaBotEvent({
+          stage: 'webhook',
+          severity: 'error',
+          code: 'invalid_json',
+          message: 'Webhook body no es JSON válido',
+        });
         return;
       }
     }
@@ -167,6 +216,12 @@ export function registerMetaWebhook(app) {
         }
       } catch (err) {
         console.error('[meta/webhook] process error', err);
+        await logMetaBotEvent({
+          stage: 'webhook',
+          severity: 'error',
+          code: 'process_exception',
+          message: err?.message || 'Error procesando webhook Meta',
+        });
       }
     });
   });

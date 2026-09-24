@@ -20,12 +20,18 @@ import {
   fetchInstagramUserProfile,
   formatWhatsAppPhone,
 } from './graph.js';
+import { logMetaBotEvent } from './bot-logs.js';
+import { enqueueDebouncedReply } from './reply-queue.js';
 
 const HISTORY_LIMIT = 30;
 const META_BOT_MODEL = 'matu-bot-3-5';
 const LEAD_MARK_RE = /\[\[LEAD:([^=\]]+)=([^\]]*)\]\]/gi;
 const LEAD_DONE_RE = /\[\[LEAD_COMPLETE\]\]/gi;
 const HANDOFF_RE = /\[\[HANDOFF\]\]/gi;
+
+const FALLBACK_REPLY =
+  'Disculpa, tuve un problema técnico al responder. ¿Me lo puedes repetir o escribirlo de otra forma? En un momento te ayudo.';
+
 
 const CHANNEL_LABEL = {
   whatsapp: 'WhatsApp',
@@ -583,6 +589,21 @@ async function sendOutbound({ connection, recipientId, text }) {
   });
 }
 
+/** Try send; one retry on transient failure. */
+async function sendOutboundReliable({ connection, recipientId, text }) {
+  try {
+    return await sendOutbound({ connection, recipientId, text });
+  } catch (err) {
+    const msg = String(err?.message || err);
+    const retryable = /timeout|ECONN|ETIMEDOUT|429|5\d\d|temporar|rate/i.test(
+      msg
+    );
+    if (!retryable) throw err;
+    await new Promise((r) => setTimeout(r, 700));
+    return sendOutbound({ connection, recipientId, text });
+  }
+}
+
 async function upsertLeadSubmission({
   orgId,
   formId,
@@ -656,26 +677,99 @@ export async function handleInboundMessage({
   externalMessageId,
   isMediaStub = false,
 }) {
-  if (!externalUserId) return { skipped: 'no_sender' };
+  const baseLog = {
+    channel: channel || null,
+    externalUserId: externalUserId || null,
+    externalMessageId: externalMessageId || null,
+  };
 
-  const connection = await findConnectionByAsset({
-    channel,
-    pageId,
-    phoneNumberId,
-    igUserId,
-  });
-  if (!connection) return { skipped: 'no_connection' };
+  if (!externalUserId) {
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'webhook',
+      severity: 'warn',
+      code: 'no_sender',
+      message: 'Inbound sin sender id',
+    });
+    return { skipped: 'no_sender' };
+  }
+
+  let connection;
+  try {
+    connection = await findConnectionByAsset({
+      channel,
+      pageId,
+      phoneNumberId,
+      igUserId,
+    });
+  } catch (err) {
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'connection',
+      severity: 'error',
+      code: 'connection_lookup_failed',
+      message: err.message || 'Error buscando conexión Meta',
+      detail: { pageId, phoneNumberId, igUserId },
+    });
+    throw err;
+  }
+
+  if (!connection) {
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'connection',
+      severity: 'error',
+      code: 'no_connection',
+      message:
+        'No hay meta_connection activa para este canal/asset (phone_number_id / page_id / ig_user_id)',
+      detail: { pageId, phoneNumberId, igUserId, channel },
+    });
+    return { skipped: 'no_connection' };
+  }
+
+  baseLog.orgId = connection.org_id;
 
   if (externalMessageId && (await alreadyProcessed(externalMessageId))) {
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      stage: 'dedupe',
+      severity: 'info',
+      code: 'duplicate',
+      message: 'Mensaje Meta ya procesado (external_id)',
+    });
     return { skipped: 'duplicate' };
   }
 
   const bound = await getBinding(connection.id);
-  if (!bound) return { skipped: 'no_bot' };
+  if (!bound) {
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      stage: 'bot',
+      severity: 'error',
+      code: 'no_bot',
+      message:
+        'Canal conectado pero sin bot activo vinculado (bot_channel_bindings / bots.active)',
+      detail: { connectionId: connection.id },
+    });
+    return { skipped: 'no_bot' };
+  }
   const { bot } = bound;
 
   const ownerUserId = await orgOwnerUserId(connection.org_id);
-  if (!ownerUserId) return { skipped: 'no_owner' };
+  if (!ownerUserId) {
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      botId: bot.id,
+      stage: 'bot',
+      severity: 'error',
+      code: 'no_owner',
+      message: 'Organización sin owner/member para atribuir el chat',
+    });
+    return { skipped: 'no_owner' };
+  }
 
   const identity = await resolveContactIdentity({
     connection,
@@ -693,7 +787,18 @@ export async function handleInboundMessage({
     contactPhone: identity.contactPhone,
     ownerUserId,
   });
-  if (!conversation) return { skipped: 'no_conversation' };
+  if (!conversation) {
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      botId: bot.id,
+      stage: 'conversation',
+      severity: 'error',
+      code: 'no_conversation',
+      message: 'No se pudo crear/leer la conversación del hilo',
+    });
+    return { skipped: 'no_conversation' };
+  }
 
   const db = getDb();
   const inboundContent = isMediaStub
@@ -701,7 +806,19 @@ export async function handleInboundMessage({
       '[El cliente envió un archivo multimedia. Pídele que describa su solicitud en texto.]'
     : String(text || '').trim();
 
-  if (!inboundContent && !isMediaStub) return { skipped: 'empty' };
+  if (!inboundContent && !isMediaStub) {
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      botId: bot.id,
+      conversationId: conversation.id,
+      stage: 'webhook',
+      severity: 'info',
+      code: 'empty',
+      message: 'Payload sin texto ni media usable',
+    });
+    return { skipped: 'empty' };
+  }
 
   const userMsgId = newId();
   await db.from('messages').insert({
@@ -728,6 +845,17 @@ export async function handleInboundMessage({
     .update({ last_message_at: new Date().toISOString() });
 
   if (conversation.assignee === 'human') {
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      botId: bot.id,
+      conversationId: conversation.id,
+      stage: 'handoff',
+      severity: 'info',
+      code: 'assignee_human',
+      message:
+        'Chat en modo humano: inbound guardado, bot no responde hasta reasignar a bot',
+    });
     return { ok: true, handoff: true, conversationId: conversation.id };
   }
 
@@ -739,13 +867,23 @@ export async function handleInboundMessage({
     const notice =
       'Claro, te conecto con alguien del equipo para darte una respuesta precisa. En un momento te escriben.';
     try {
-      await sendOutbound({
+      await sendOutboundReliable({
         connection,
         recipientId: externalUserId,
         text: notice,
       });
     } catch (err) {
       console.error('[meta] handoff send failed', err.message);
+      await logMetaBotEvent({
+        ...baseLog,
+        orgId: connection.org_id,
+        botId: bot.id,
+        conversationId: conversation.id,
+        stage: 'send',
+        severity: 'error',
+        code: 'handoff_send_failed',
+        message: err.message || 'No se pudo enviar aviso de handoff',
+      });
     }
     const aid = newId();
     await db.from('messages').insert({
@@ -755,7 +893,82 @@ export async function handleInboundMessage({
       content: notice,
       model_id: bot.model_id,
     });
+    await logMetaBotEvent({
+      ...baseLog,
+      orgId: connection.org_id,
+      botId: bot.id,
+      conversationId: conversation.id,
+      stage: 'handoff',
+      severity: 'info',
+      code: 'keyword_handoff',
+      message: 'Handoff por palabra clave del cliente',
+    });
     return { ok: true, handoff: true, conversationId: conversation.id };
+  }
+
+  const queueKey = `${connection.id}::${externalUserId}`;
+  return enqueueDebouncedReply(queueKey, () =>
+    generateAndSendBotReply({
+      connection,
+      bot,
+      thread,
+      conversationId: conversation.id,
+      ownerUserId,
+      externalUserId,
+      externalMessageId,
+      identity,
+      inboundContent,
+    })
+  );
+}
+
+async function generateAndSendBotReply({
+  connection,
+  bot,
+  thread,
+  conversationId,
+  ownerUserId,
+  externalUserId,
+  externalMessageId,
+  identity,
+  inboundContent,
+}) {
+  const db = getDb();
+  const baseLog = {
+    orgId: connection.org_id,
+    botId: bot.id,
+    conversationId,
+    channel: connection.channel,
+    externalUserId,
+    externalMessageId,
+  };
+
+  const { data: conversation } = await db
+    .from('conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .maybeSingle();
+  if (!conversation) {
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'conversation',
+      severity: 'error',
+      code: 'conversation_missing',
+      message: 'Conversación desapareció antes de generar respuesta',
+    });
+    return { skipped: 'no_conversation' };
+  }
+
+  // Re-check handoff in case another msg flipped assignee during debounce
+  if (conversation.assignee === 'human') {
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'handoff',
+      severity: 'info',
+      code: 'assignee_human_after_debounce',
+      message: 'Assignee pasó a human durante debounce; no se genera IA',
+    });
+    return { ok: true, handoff: true, conversationId };
   }
 
   const { data: org } = await db
@@ -772,12 +985,24 @@ export async function handleInboundMessage({
     limit = { ok: true, soft_fail: true };
   }
   if (!limit.ok) {
-    // Nunca silenciar un cliente de WhatsApp/IG por billing:
-    // logueamos y seguimos. El admin / cuotas se aplican en chat app.
     console.warn(
       '[meta] usage over quota — responding anyway',
       limit.error || ''
     );
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'usage',
+      severity: 'warn',
+      code: 'usage_quota',
+      message:
+        limit.error ||
+        'Cuota de tokens/mensajes agotada; se responde igual (no silenciar cliente)',
+      detail: {
+        model: META_BOT_MODEL,
+        model_used: limit.model_used,
+        model_limit: limit.model_limit,
+      },
+    });
   }
 
   const formBundle = await loadFormForBot(bot);
@@ -797,7 +1022,7 @@ export async function handleInboundMessage({
   const { data: history } = await db
     .from('messages')
     .select('role, content')
-    .eq('conversation_id', conversation.id)
+    .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(HISTORY_LIMIT);
 
@@ -814,7 +1039,6 @@ export async function handleInboundMessage({
     currentStage,
   });
 
-  // MatuBot tuneado + reglas operativas del canal/catálogo/formulario
   let system = opsPrompt;
   try {
     const matuCore = loadSystemPrompt(META_BOT_MODEL, '', {});
@@ -825,9 +1049,17 @@ export async function handleInboundMessage({
 ${opsPrompt}`;
   } catch (err) {
     console.warn('[meta] MatuBot prompt load failed', err.message);
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'llm',
+      severity: 'warn',
+      code: 'prompt_load_failed',
+      message: err.message || 'No se cargó prompt MatuBot; se usa ops prompt',
+    });
   }
 
   let rawReply = '';
+  let usedFallback = false;
   try {
     rawReply = await completeUpstreamChat({
       system,
@@ -838,7 +1070,15 @@ ${opsPrompt}`;
     });
   } catch (err) {
     console.error('[meta] upstream error', err.message);
-    return { error: err.message };
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'llm',
+      severity: 'error',
+      code: 'upstream_error',
+      message: err.message || 'Fallo del modelo upstream',
+    });
+    rawReply = FALLBACK_REPLY;
+    usedFallback = true;
   }
 
   const { data: leadPatch, complete: leadComplete } = parseLeadMarks(rawReply);
@@ -891,7 +1131,7 @@ ${opsPrompt}`;
       formId: formBundle.form.id,
       botId: bot.id,
       threadId: thread.id,
-      conversationId: conversation.id,
+      conversationId,
       channel: connection.channel,
       contactName: identity.contactName,
       externalUserId,
@@ -907,7 +1147,7 @@ ${opsPrompt}`;
       formId: formBundle.form.id,
       botId: bot.id,
       threadId: thread.id,
-      conversationId: conversation.id,
+      conversationId,
       channel: connection.channel,
       contactName: identity.contactName,
       externalUserId,
@@ -923,7 +1163,7 @@ ${opsPrompt}`;
       formId: formBundle.form.id,
       botId: bot.id,
       threadId: thread.id,
-      conversationId: conversation.id,
+      conversationId,
       channel: connection.channel,
       contactName: identity.contactName,
       externalUserId,
@@ -961,7 +1201,7 @@ ${opsPrompt}`;
     const noteType = allowedTypes.has(n.noteType) ? n.noteType : 'custom';
     await insertConversationNote({
       orgId: connection.org_id,
-      conversationId: conversation.id,
+      conversationId,
       botId: bot.id,
       channel: connection.channel,
       contactName: identity.contactName,
@@ -993,7 +1233,7 @@ ${opsPrompt}`;
         pipelineStage;
       await insertConversationNote({
         orgId: connection.org_id,
-        conversationId: conversation.id,
+        conversationId,
         botId: bot.id,
         channel: connection.channel,
         contactName: identity.contactName,
@@ -1020,14 +1260,52 @@ ${opsPrompt}`;
   }
 
   try {
-    await sendOutbound({
+    await sendOutboundReliable({
       connection,
       recipientId: externalUserId,
       text: reply,
     });
   } catch (err) {
     console.error('[meta] send failed', err.message);
-    return { error: `send_failed: ${err.message}` };
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'send',
+      severity: 'error',
+      code: 'send_failed',
+      message: err.message || 'Graph API rechazó el envío',
+      detail: { graph: err.graph || null, status: err.status || null },
+    });
+
+    // Last resort: shorter fallback so the customer is never left hanging
+    if (!usedFallback) {
+      try {
+        await sendOutboundReliable({
+          connection,
+          recipientId: externalUserId,
+          text: FALLBACK_REPLY,
+        });
+        reply = FALLBACK_REPLY;
+        usedFallback = true;
+        await logMetaBotEvent({
+          ...baseLog,
+          stage: 'fallback',
+          severity: 'warn',
+          code: 'fallback_sent_after_send_fail',
+          message: 'Se envió mensaje de fallback tras fallo de Graph',
+        });
+      } catch (err2) {
+        await logMetaBotEvent({
+          ...baseLog,
+          stage: 'send',
+          severity: 'error',
+          code: 'send_failed_fatal',
+          message: err2.message || 'Fallback también falló al enviar',
+        });
+        return { error: `send_failed: ${err.message}` };
+      }
+    } else {
+      return { error: `send_failed: ${err.message}` };
+    }
   }
 
   const tokensIn = estimateTokens(inboundContent);
@@ -1035,7 +1313,7 @@ ${opsPrompt}`;
   const aid = newId();
   await db.from('messages').insert({
     id: aid,
-    conversation_id: conversation.id,
+    conversation_id: conversationId,
     role: 'assistant',
     content: reply,
     model_id: META_BOT_MODEL,
@@ -1045,7 +1323,7 @@ ${opsPrompt}`;
 
   await db
     .from('conversations')
-    .eq('id', conversation.id)
+    .eq('id', conversationId)
     .update({
       preview: reply.slice(0, 120),
       model_id: META_BOT_MODEL,
@@ -1062,13 +1340,33 @@ ${opsPrompt}`;
     tokensIn,
     tokensOut,
     META_BOT_MODEL
-  ).catch((err) => console.warn('[meta] bumpUsage', err.message));
+  ).catch(async (err) => {
+    console.warn('[meta] bumpUsage', err.message);
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'usage',
+      severity: 'warn',
+      code: 'bump_usage_failed',
+      message: err.message || 'No se pudo registrar uso de tokens',
+    });
+  });
+
+  if (usedFallback) {
+    await logMetaBotEvent({
+      ...baseLog,
+      stage: 'fallback',
+      severity: 'warn',
+      code: 'fallback_reply',
+      message: 'Se respondió con mensaje de fallback (IA o envío falló)',
+    });
+  }
 
   return {
     ok: true,
-    conversationId: conversation.id,
+    conversationId,
     handoff,
     stage: convPatch.pipeline_stage || prevStage,
     replyLength: reply.length,
+    fallback: usedFallback,
   };
 }
