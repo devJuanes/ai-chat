@@ -213,7 +213,7 @@ function ShellSidebar({
     setSections((s) => ({ ...s, [key]: !s[key] }));
 
   const linkClass = (active) =>
-    `fp-nav-btn flex items-center gap-2.5 px-2.5 py-2 text-[14px] transition-colors ${
+    `fp-nav-btn flex items-center gap-2.5 px-2 py-1.5 text-left text-[14px] transition-colors ${
       active ? 'fp-nav-active' : ''
     }`;
 
@@ -244,16 +244,18 @@ function ShellSidebar({
         </button>
       </div>
 
-      <nav className="flex flex-col gap-0.5 px-3 py-1" aria-label="Principal">
+      <nav className="flex flex-col gap-1 px-3 py-1" aria-label="Principal">
         <button
           type="button"
-          className="fp-nav-btn flex items-center gap-2.5 px-2.5 py-2 text-left text-[14px] font-medium"
+          className="fp-nav-btn fp-nav-new flex items-center gap-2.5 px-2 py-1.5 text-left text-[14px]"
           onClick={() => {
             ws.exitProject();
             onCloseMobile?.();
           }}
         >
-          <PencilIcon />
+          <span className="fp-nav-ico">
+            <PencilIcon />
+          </span>
           <span>Nuevo chat</span>
         </button>
         <NavLink
@@ -261,7 +263,9 @@ function ShellSidebar({
           className={({ isActive }) => linkClass(isActive)}
           onClick={onCloseMobile}
         >
-          <SearchIcon />
+          <span className="fp-nav-ico">
+            <SearchIcon />
+          </span>
           <span>Buscar</span>
         </NavLink>
         <NavLink
@@ -269,7 +273,9 @@ function ShellSidebar({
           className={({ isActive }) => linkClass(isActive)}
           onClick={onCloseMobile}
         >
-          <CompassIcon />
+          <span className="fp-nav-ico">
+            <CompassIcon />
+          </span>
           <span>Explorar</span>
         </NavLink>
         {/* Imagine — oculto por ahora
@@ -278,7 +284,9 @@ function ShellSidebar({
           className={({ isActive }) => linkClass(isActive)}
           onClick={onCloseMobile}
         >
-          <FilmIcon />
+          <span className="fp-nav-ico">
+            <FilmIcon />
+          </span>
           <span>Imagine</span>
         </NavLink>
         */}
@@ -289,7 +297,9 @@ function ShellSidebar({
           }
           onClick={onCloseMobile}
         >
-          <BotIcon />
+          <span className="fp-nav-ico">
+            <BotIcon />
+          </span>
           <span>Agentes</span>
         </NavLink>
         <NavLink
@@ -299,7 +309,9 @@ function ShellSidebar({
           }
           onClick={onCloseMobile}
         >
-          <InboxIcon />
+          <span className="fp-nav-ico">
+            <InboxIcon />
+          </span>
           <span>Inbox</span>
         </NavLink>
         <NavLink
@@ -307,7 +319,9 @@ function ShellSidebar({
           className={({ isActive }) => linkClass(isActive)}
           onClick={onCloseMobile}
         >
-          <LibraryIcon />
+          <span className="fp-nav-ico">
+            <LibraryIcon />
+          </span>
           <span>Biblioteca</span>
         </NavLink>
       </nav>
@@ -349,7 +363,7 @@ function ShellSidebar({
                       project ? (
                         <ProjectBadge project={project} size={22} />
                       ) : (
-                        <span className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center text-white/70">
+                        <span className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md bg-black/15 text-white/80">
                           <ChatBubbleIcon className="h-3.5 w-3.5" />
                         </span>
                       )
@@ -376,7 +390,7 @@ function ShellSidebar({
           </button>
           <button
             type="button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-white/70 hover:bg-black/20 hover:text-[#f4ed36]"
+            className="fp-ico-btn"
             title="Nuevo proyecto"
             aria-label="Nuevo proyecto"
             onClick={onOpenCreateProject}
@@ -534,7 +548,7 @@ function ShellSidebar({
                       }}
                       onPin={ws.pinConversation}
                       leading={
-                        <span className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center text-white/70">
+                        <span className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md bg-black/15 text-white/80">
                           <ChatBubbleIcon className="h-3.5 w-3.5" />
                         </span>
                       }

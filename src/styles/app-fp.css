@@ -77,32 +77,118 @@
 }
 
 .fp-app .fp-nav-btn {
-  color: rgba(249, 245, 242, 0.88);
-  border-radius: 6px;
+  color: rgba(249, 245, 242, 0.92);
+  border-radius: 8px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .fp-app .fp-nav-btn:hover {
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.2);
   color: var(--fp-bone);
+}
+
+.fp-app .fp-nav-btn .fp-nav-ico {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1.5px solid rgba(0, 0, 0, 0.22);
+  color: rgba(249, 245, 242, 0.95);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fp-app .fp-nav-btn:hover .fp-nav-ico {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.fp-app .fp-nav-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .fp-app .fp-nav-active {
   background: var(--fp-hi-vis) !important;
   color: #000 !important;
   font-weight: 700;
-  box-shadow: none !important;
+  box-shadow: 2px 2px 0 #000 !important;
+  border: 1.5px solid #000;
+}
+
+.fp-app .fp-nav-active .fp-nav-ico {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: var(--fp-hi-vis) !important;
+}
+
+.fp-app .fp-nav-new {
+  background: rgba(249, 245, 242, 0.95);
+  color: var(--fp-ink) !important;
+  border: 2px solid #000;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 2px 2px 0 #000;
+  margin-bottom: 2px;
+}
+
+.fp-app .fp-nav-new:hover {
+  background: #fff;
+  color: #000 !important;
+  transform: translate(-0.5px, -0.5px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.fp-app .fp-nav-new .fp-nav-ico {
+  background: var(--fp-hi-vis);
+  border-color: #000;
+  color: #000;
+}
+
+.fp-app .fp-nav-new:hover .fp-nav-ico {
+  background: var(--fp-butter);
+  border-color: #000;
+  color: #000;
 }
 
 .fp-app .fp-section {
-  color: rgba(249, 245, 242, 0.55);
+  color: rgba(249, 245, 242, 0.62);
   font-family: var(--fp-mono);
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 .fp-app .fp-section:hover {
   color: var(--fp-hi-vis);
+}
+
+.fp-app .fp-section svg {
+  opacity: 0.7;
+}
+
+.fp-app .fp-ico-btn {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.12);
+  color: rgba(249, 245, 242, 0.85);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.fp-app .fp-ico-btn:hover {
+  background: var(--fp-hi-vis);
+  border-color: #000;
+  color: #000;
 }
 
 .fp-app .fp-chat-item {

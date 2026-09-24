@@ -225,30 +225,50 @@ export function registerExtraRoutes(app) {
 
   app.get('/api/notifications', authMiddleware(true), async (req, res) => {
     try {
-      const { profile } = await ensureWorkspace(req.user);
-      const items = await listUsageNotifications(profile.id);
+      let userId = req.user?.id;
+      try {
+        const { profile } = await ensureWorkspace(req.user);
+        userId = profile?.id || userId;
+      } catch (err) {
+        console.warn('[notifications] ensureWorkspace', err?.message || err);
+      }
+      if (!userId) {
+        return res.json({ unread: 0, items: [] });
+      }
+      const items = await listUsageNotifications(userId);
       res.json({
         unread: items.filter((n) => !n.read_at).length,
         items,
       });
     } catch (err) {
-      res.status(500).json({ error: { message: err.message } });
+      console.warn('[notifications]', err?.message || err);
+      res.json({ unread: 0, items: [] });
     }
   });
 
   app.post('/api/notifications/read', authMiddleware(true), async (req, res) => {
     try {
-      const { profile } = await ensureWorkspace(req.user);
+      let userId = req.user?.id;
+      try {
+        const { profile } = await ensureWorkspace(req.user);
+        userId = profile?.id || userId;
+      } catch (err) {
+        console.warn('[notifications/read] ensureWorkspace', err?.message || err);
+      }
+      if (!userId) {
+        return res.json({ ok: true, unread: 0, items: [] });
+      }
       const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
-      await markNotificationsRead(profile.id, ids);
-      const items = await listUsageNotifications(profile.id);
+      await markNotificationsRead(userId, ids);
+      const items = await listUsageNotifications(userId);
       res.json({
         ok: true,
         unread: items.filter((n) => !n.read_at).length,
         items,
       });
     } catch (err) {
-      res.status(500).json({ error: { message: err.message } });
+      console.warn('[notifications/read]', err?.message || err);
+      res.json({ ok: true, unread: 0, items: [] });
     }
   });
 

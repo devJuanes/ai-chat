@@ -101,12 +101,29 @@ export function authMiddleware(required = true) {
   };
 }
 
-export async function ensureWorkspace(user) {
-  const db = getDb();
+/** Serialize ensureWorkspace per user to avoid slug/profile races on parallel /api/* boot. */
+const workspaceLocks = new Map();
+
+function withWorkspaceLock(userId, fn) {
+  const key = String(userId);
+  const prev = workspaceLocks.get(key) || Promise.resolve();
+  const next = prev.then(fn, fn).finally(() => {
+    if (workspaceLocks.get(key) === next) workspaceLocks.delete(key);
+  });
+  workspaceLocks.set(key, next);
+  return next;
+}
+
+function isDuplicateError(err) {
+  const msg = String(err?.message || err || '');
+  return /duplicate|unique|already exists/i.test(msg);
+}
+
+async function loadProfileAndOrg(db, userId) {
   const { data: profile, error: profileReadErr } = await db
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', userId)
     .maybeSingle();
 
   if (profileReadErr) {
@@ -115,8 +132,47 @@ export async function ensureWorkspace(user) {
         'No se pudo leer el perfil. ¿Ejecutaste docs/schema.sql?'
     );
   }
+  if (!profile) return null;
 
-  if (profile) {
+  const { data: org } = await db
+    .from('organizations')
+    .select('*')
+    .eq('id', profile.default_org_id)
+    .maybeSingle();
+  return { profile, org: org ?? null };
+}
+
+async function ensureMembership(db, orgId, userId) {
+  try {
+    const { data: existing } = await db
+      .from('organization_members')
+      .select('id')
+      .eq('org_id', orgId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (existing) return;
+
+    const { error: memberErr } = await db.from('organization_members').insert({
+      id: newId(),
+      org_id: orgId,
+      user_id: userId,
+      role: 'owner',
+    });
+    if (memberErr && !isDuplicateError(memberErr)) {
+      throw new Error(memberErr.message || 'No se pudo unir a la organización');
+    }
+  } catch (err) {
+    if (isDuplicateError(err)) return;
+    throw err;
+  }
+}
+
+async function ensureWorkspaceUnlocked(user) {
+  const db = getDb();
+  const existing = await loadProfileAndOrg(db, user.id);
+
+  if (existing) {
+    const { profile } = existing;
     const wanted = String(user.name || '').trim();
     const emailPrefix = String(user.email || profile.email || '').split('@')[0];
     if (
@@ -126,68 +182,121 @@ export async function ensureWorkspace(user) {
         !profile.display_name ||
         profile.display_name === emailPrefix)
     ) {
-      await db
-        .from('profiles')
-        .eq('id', profile.id)
-        .update({ display_name: wanted });
-      profile.display_name = wanted;
+      try {
+        await db
+          .from('profiles')
+          .eq('id', profile.id)
+          .update({ display_name: wanted });
+        profile.display_name = wanted;
+      } catch {
+        /* non-fatal */
+      }
     }
-
-    const { data: org } = await db
-      .from('organizations')
-      .select('*')
-      .eq('id', profile.default_org_id)
-      .maybeSingle();
-    return { profile, org: org ?? null };
+    return existing;
   }
 
-  const orgId = newId();
   const orgName = `${user.name || 'Mi'} Espacio`;
   const slug = `ws-${String(user.id).replace(/-/g, '').slice(0, 12)}`;
 
-  const { error: orgErr } = await db.from('organizations').insert({
-    id: orgId,
-    name: orgName,
-    slug,
-    plan_id: 'free',
-  });
-  if (orgErr) {
-    throw new Error(orgErr.message || 'No se pudo crear la organización');
+  let org = null;
+  try {
+    const { data } = await db
+      .from('organizations')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
+    org = data || null;
+  } catch {
+    org = null;
   }
 
-  const { error: profileErr } = await db.from('profiles').insert({
-    id: user.id,
-    email: user.email,
-    display_name: user.name || user.email.split('@')[0],
-    default_org_id: orgId,
-  });
-  if (profileErr) {
-    throw new Error(profileErr.message || 'No se pudo crear el perfil');
+  if (!org) {
+    const orgId = newId();
+    try {
+      const { error: orgErr } = await db.from('organizations').insert({
+        id: orgId,
+        name: orgName,
+        slug,
+        plan_id: 'free',
+      });
+      if (orgErr) {
+        if (!isDuplicateError(orgErr)) {
+          throw new Error(orgErr.message || 'No se pudo crear la organización');
+        }
+      } else {
+        const { data: createdOrg } = await db
+          .from('organizations')
+          .select('*')
+          .eq('id', orgId)
+          .maybeSingle();
+        org = createdOrg || null;
+      }
+    } catch (err) {
+      if (!isDuplicateError(err)) throw err;
+    }
+
+    if (!org) {
+      const { data: raced } = await db
+        .from('organizations')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+      org = raced || null;
+    }
   }
 
-  const { error: memberErr } = await db.from('organization_members').insert({
-    id: newId(),
-    org_id: orgId,
-    user_id: user.id,
-    role: 'owner',
-  });
-  if (memberErr) {
-    throw new Error(memberErr.message || 'No se pudo unir a la organización');
+  if (!org) {
+    throw new Error('No se pudo crear ni recuperar la organización');
   }
 
-  const { data: createdProfile } = await db
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  const again = await loadProfileAndOrg(db, user.id);
+  if (again) return again;
 
-  const { data: createdOrg } = await db
-    .from('organizations')
-    .select('*')
-    .eq('id', orgId)
-    .single();
+  try {
+    const { error: profileErr } = await db.from('profiles').insert({
+      id: user.id,
+      email: user.email,
+      display_name: user.name || user.email?.split('@')[0] || 'Usuario',
+      default_org_id: org.id,
+    });
+    if (profileErr) {
+      if (!isDuplicateError(profileErr)) {
+        throw new Error(profileErr.message || 'No se pudo crear el perfil');
+      }
+      const raced = await loadProfileAndOrg(db, user.id);
+      if (raced) return raced;
+      throw new Error(profileErr.message || 'No se pudo crear el perfil');
+    }
+  } catch (err) {
+    if (isDuplicateError(err)) {
+      const raced = await loadProfileAndOrg(db, user.id);
+      if (raced) return raced;
+    }
+    // If profile already exists under race, re-read; otherwise rethrow
+    const raced = await loadProfileAndOrg(db, user.id);
+    if (raced) return raced;
+    throw err instanceof Error
+      ? err
+      : new Error(err?.message || 'No se pudo crear el perfil');
+  }
 
-  return { profile: createdProfile, org: createdOrg };
+  try {
+    await ensureMembership(db, org.id, user.id);
+  } catch (err) {
+    if (!isDuplicateError(err)) {
+      console.warn('[ensureWorkspace] membership', err?.message || err);
+    }
+  }
+
+  const created = await loadProfileAndOrg(db, user.id);
+  if (!created) {
+    throw new Error('Perfil creado pero no se pudo leer');
+  }
+  return created;
+}
+
+export async function ensureWorkspace(user) {
+  return withWorkspaceLock(user.id, () => ensureWorkspaceUnlocked(user));
 }
 
 export async function getPlanForOrg(org) {

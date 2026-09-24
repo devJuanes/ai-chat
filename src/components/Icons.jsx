@@ -1,5 +1,5 @@
-const sw = 1.5;
-const size = 16;
+const sw = 1.75;
+const size = 18;
 
 const base = {
   width: size,
@@ -16,7 +16,7 @@ const base = {
 export function ChatBubbleIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M21 12a8.5 8.5 0 0 1-12.6 7.5L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12Z" />
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
     </svg>
   );
 }
@@ -25,7 +25,7 @@ export function CompassIcon(props) {
   return (
     <svg {...base} {...props}>
       <circle cx="12" cy="12" r="9" />
-      <path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" />
+      <polygon points="16.2,7.8 14.1,14.1 7.8,16.2 9.9,9.9" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -33,16 +33,20 @@ export function CompassIcon(props) {
 export function LibraryIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M4 4h4v16H4zM10 4h4v16h-4zM16 6l4-1 1.5 15.5-4 1z" />
+      <path d="M4 19V5a1 1 0 0 1 1-1h2v16H5a1 1 0 0 1-1-1Z" />
+      <path d="M10 19V4h4v15" />
+      <path d="M16 19V6.5l4-1.5v14" />
+      <path d="M4 19h16" />
     </svg>
   );
 }
 
+/** Nuevo chat — lápiz sobre hoja */
 export function PencilIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4Z" />
-      <path d="m13.5 6.5 4 4" />
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }
@@ -59,7 +63,7 @@ export function SearchIcon(props) {
   return (
     <svg {...base} {...props}>
       <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
+      <path d="m20 20-3.2-3.2" />
     </svg>
   );
 }
@@ -231,11 +235,12 @@ export function CodeBracketIcon(props) {
   );
 }
 
+/** Chincheta — fijar chat */
 export function PinIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M12 22s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z" />
-      <circle cx="12" cy="10" r="2.25" />
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
     </svg>
   );
 }
@@ -312,9 +317,12 @@ export function MicOffIcon(props) {
 export function BotIcon(props) {
   return (
     <svg {...base} {...props}>
-      <rect x="5" y="9" width="14" height="10" rx="2" />
-      <path d="M12 3v3M9 14h.01M15 14h.01M8 19v2M16 19v2" />
-      <circle cx="12" cy="6" r="1.5" />
+      <rect x="4" y="8" width="16" height="12" rx="3" />
+      <path d="M12 4v4" />
+      <circle cx="12" cy="4" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="13" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="13" r="1.15" fill="currentColor" stroke="none" />
+      <path d="M9 17h6" />
     </svg>
   );
 }
@@ -323,8 +331,8 @@ export function BotIcon(props) {
 export function InboxIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M4 6h16v12H4z" />
-      <path d="m4 8 8 5 8-5" />
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </svg>
   );
 }
