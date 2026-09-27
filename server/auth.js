@@ -449,6 +449,7 @@ const DEFAULT_MODEL_CAPS = {
     'matu-space-ultra': 15000,
     'matu-commerce': 15000,
     'matu-marketing': 15000,
+    'matu-sports-pro': 15000,
     'matu-bot-3-5': 40000,
     '*': 15000,
   },

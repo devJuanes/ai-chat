@@ -40,6 +40,11 @@ const FALLBACK_MODELS = [
     name: 'Matu Marketing',
     tagline: 'Growth · copy · adquisición',
   },
+  {
+    id: 'matu-sports-pro',
+    name: 'MatuSports Pro',
+    tagline: 'Analítica · pronósticos · valor esperado',
+  },
 ];
 
 function parsePath(pathname) {

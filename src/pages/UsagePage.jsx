@@ -13,6 +13,7 @@ const MODEL_LABELS = {
   'matu-space-ultra': 'Space Ultra',
   'matu-commerce': 'Commerce',
   'matu-marketing': 'Marketing',
+  'matu-sports-pro': 'Sports Pro',
   'matu-bot-3-5': 'MatuBot (Meta)',
 };
 

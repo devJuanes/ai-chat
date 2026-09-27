@@ -8,6 +8,7 @@
   --fp-matcha: #b5c995;
   --fp-magenta: #ac4f98;
   --fp-red: #c94245;
+  --fp-pitch: #1b6b3a;
   --fp-bone: #f9f5f2;
   --fp-ink: #1a1a1a;
   --fp-display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
@@ -297,6 +298,11 @@
 
 .fp-app .fp-card-dusk {
   background: var(--fp-dusk);
+  color: var(--fp-bone);
+}
+
+.fp-app .fp-card-pitch {
+  background: var(--fp-pitch);
   color: var(--fp-bone);
 }
 

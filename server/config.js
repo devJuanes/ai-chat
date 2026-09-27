@@ -62,4 +62,12 @@ export const config = {
     embeddedSignupConfigId: trim(process.env.META_EMBEDDED_SIGNUP_CONFIG_ID),
     tokenEncryptionKey: trim(process.env.META_TOKEN_ENCRYPTION_KEY),
   },
+  /** API-Sports: 100 req/día por deporte (fútbol, baloncesto, hockey, NBA). */
+  sports: {
+    apiKey: trim(process.env.SPORTS_API_KEY),
+    dailyLimit: Number(process.env.SPORTS_API_DAILY_LIMIT || 100),
+    reserve: Number(process.env.SPORTS_API_RESERVE || 8),
+    enabled: trim(process.env.SPORTS_SYNC_ENABLED, 'true') !== 'false',
+    forecastCap: Number(process.env.SPORTS_FORECAST_DAILY_CAP || 36),
+  },
 };

@@ -60,6 +60,13 @@ const CATALOG = [
     plans: ['free', 'pro', 'team'],
   },
   {
+    id: 'matu-sports-pro',
+    name: 'MatuSports Pro',
+    tagline: 'Analítica · pronósticos · valor esperado',
+    file: 'MatuSportsPro.md',
+    plans: ['free', 'pro', 'team'],
+  },
+  {
     id: 'matu-bot-3-5',
     name: 'MatuBot 3.5',
     tagline: 'Chatbot ventas · WhatsApp · atención',
@@ -86,6 +93,7 @@ const ALWAYS_ON_FREE = new Set([
   'matu-space-ultra',
   'matu-commerce',
   'matu-marketing',
+  'matu-sports-pro',
   'matu-bot-3-5',
 ]);
 
@@ -187,13 +195,14 @@ export function loadSystemPrompt(modelId, extraContext = '', options = {}) {
   const templateBlock = options.templateBlock
     ? `\n${options.templateBlock}\n`
     : '';
+  const sportsBlock = options.sportsBlock ? `\n${options.sportsBlock}\n` : '';
 
   return `${base}
 
 ## Contexto en vivo
 Fecha y hora actuales: ${formatNow()} (${config.timezone}).
 Empresa: ${config.companyName} — ${config.companyUrl}.
-${extraContext ? `\n## Contexto del proyecto\n${extraContext}\n` : ''}${templateBlock}`;
+${extraContext ? `\n## Contexto del proyecto\n${extraContext}\n` : ''}${sportsBlock}${templateBlock}`;
 }
 
 export function isModelAllowed(modelId, planId, modelsAllowedCsv, opts = {}) {

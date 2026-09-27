@@ -36,6 +36,8 @@ import {
   registerGeneratedImageRoutes,
 } from './image-gen.js';
 import { registerMetaRoutes, metaConfigured } from './meta/index.js';
+import { startSportsScheduler } from './sports/scheduler.js';
+import { buildSportsChatContext } from './sports/context.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -554,8 +556,18 @@ app.post('/api/chat', authMiddleware(true), async (req, res) => {
       .order('created_at', { ascending: true })
       .limit(40);
 
+    let sportsBlock = '';
+    if (modelId === 'matu-sports-pro' && userContent && !continueOf) {
+      try {
+        sportsBlock = await buildSportsChatContext(userContent);
+      } catch (err) {
+        console.warn('[sports] contexto', err?.message || err);
+      }
+    }
+
     const system = loadSystemPrompt(modelId, projectContext, {
       templateBlock: continueOf ? '' : buildTemplatePromptBlock(userContent),
+      sportsBlock,
     });
     const assistantId = continueMsgId || newId();
 
@@ -784,4 +796,5 @@ app.listen(config.port, host, () => {
   console.log(
     `Matu AI → http://${host}:${config.port} | project=${config.matudb.projectId.slice(0, 8)}… | model=${config.upstream.model} | upstream=${config.upstream.apiKey ? 'ok' : 'missing'} | static=${fs.existsSync(indexHtml) ? 'dist' : 'off'}`
   );
+  startSportsScheduler();
 });

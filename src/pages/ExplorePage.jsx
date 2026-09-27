@@ -71,6 +71,15 @@ const MODEL_META = {
     plans: 'Gratis · Pro · Team',
     color: 'fp-card-dusk',
   },
+  'matu-sports-pro': {
+    power: 5,
+    bestFor: 'Analítica y pronósticos deportivos',
+    useCases:
+      'Probabilidades, valor esperado, cuotas, riesgo, scouting y backtesting',
+    speed: 'Pensado',
+    plans: 'Gratis · Pro · Team',
+    color: 'fp-card-pitch',
+  },
 };
 
 const SUGGESTIONS = [
@@ -113,6 +122,11 @@ const SUGGESTIONS = [
     title: 'Campaña de adquisición',
     body: 'Necesito un ángulo de ads + 3 variantes de copy + CTA para un SaaS de facturación B2B. Optimiza para leads calificados, no likes.',
     model: 'matu-marketing',
+  },
+  {
+    title: 'Valor esperado de un partido',
+    body: 'Con los datos que te pase, estima la probabilidad de cada resultado, compárala con las cuotas y dime si hay valor esperado. Declara supuestos y no inventes lesiones ni alineaciones.',
+    model: 'matu-sports-pro',
   },
 ];
 

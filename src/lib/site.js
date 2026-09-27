@@ -178,6 +178,28 @@ export const MODELS_PUBLIC = [
     cta: 'chat',
   },
   {
+    id: 'matu-sports-pro',
+    name: 'MatuSports Pro',
+    tag: 'Deportes',
+    niche: 'Analítica · pronósticos',
+    body: 'Probabilidades, valor esperado y riesgo cuantitativo en mercados deportivos.',
+    search: [
+      'IA pronósticos deportivos',
+      'analítica deportiva',
+      'valor esperado apuestas',
+    ],
+    color: '#1b6b3a',
+    ink: '#f9f5f2',
+    summary:
+      'Motor cuantitativo para estimar probabilidades, compararlas con el mercado y decidir con el riesgo a la vista.',
+    points: [
+      'xG, ratings, forma y contexto antes de cualquier pick.',
+      'Probabilidad, valor esperado y tamaño de posición.',
+      'Sin certezas: limita la confianza cuando faltan datos.',
+    ],
+    cta: 'chat',
+  },
+  {
     id: 'matubot',
     name: 'MatuBot',
     tag: 'Agentes',
