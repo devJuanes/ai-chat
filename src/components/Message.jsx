@@ -3,6 +3,7 @@ import AgentLoader from './AgentLoader';
 import CodeBlock from './CodeBlock';
 import DataTable, { parseDelimited } from './DataTable';
 import RichMarkdown from './RichMarkdown';
+import SportsSlate from './SportsSlate';
 import {
   CheckIcon,
   CopyIcon,
@@ -62,6 +63,25 @@ function renderContent(text, isUser, { flushCode = false } = {}) {
   const tokens = tokenize(text);
   return tokens.map((tok, i) => {
     if (tok.type === 'code') {
+      if (!isUser && String(tok.lang).toLowerCase() === 'sports') {
+        let cards = [];
+        try {
+          cards = JSON.parse(tok.content);
+        } catch {
+          cards = [];
+        }
+        if (Array.isArray(cards) && cards.length) {
+          return <SportsSlate key={`sports-${i}`} cards={cards} />;
+        }
+        if (tok.streaming) {
+          return (
+            <p key={`sports-${i}`} className="px-3 py-2 text-[13px] font-medium opacity-60">
+              Armando los pronósticos…
+            </p>
+          );
+        }
+        return null;
+      }
       if (!isUser && isDataLang(tok.lang) && tok.content.trim()) {
         const sep = tok.lang.toLowerCase() === 'tsv' ? '\t' : ',';
         const { headers, rows } = parseDelimited(tok.content, sep);

@@ -2,7 +2,8 @@ import { getDb } from '../db.js';
 import { FINISHED } from './constants.js';
 import { pairKey } from './normalize.js';
 import { sportsTablesReady } from './sync.js';
-import { addDays, dayBoundsUtc, zonedParts } from './time.js';
+import { slateRequestFromText } from './slate.js';
+import { dayBoundsUtc, zonedParts } from './time.js';
 
 const SLIM =
   'id, provider, sport, league_name, league_country, kickoff_at, status_short, home_team_id, home_team_name, away_team_id, away_team_name, home_score, away_score, is_priority, venue';
@@ -159,8 +160,10 @@ export async function buildSportsChatContext(userText) {
   if (!(await sportsTablesReady())) return '';
   const text = norm(userText).slice(0, 2500);
   const today = zonedParts().date;
-  const from = dayBoundsUtc(addDays(today, -1)).start.toISOString();
-  const to = dayBoundsUtc(addDays(today, 2)).end.toISOString();
+  const request = slateRequestFromText(userText);
+  const focusDate = request?.date || today;
+  const from = dayBoundsUtc(focusDate).start.toISOString();
+  const to = dayBoundsUtc(focusDate).end.toISOString();
   const db = getDb();
   const { data, error } = await db
     .from('sports_fixtures')
@@ -170,7 +173,9 @@ export async function buildSportsChatContext(userText) {
     .limit(300);
   if (error) return '';
 
-  const slate = (data || []).slice().sort((a, b) => String(a.kickoff_at).localeCompare(String(b.kickoff_at)));
+  const slate = (data || [])
+    .filter((row) => !FINISHED.has(row.status_short))
+    .sort((a, b) => String(a.kickoff_at).localeCompare(String(b.kickoff_at)));
   const matched = new Map();
   for (const row of slate) {
     if (mentions(text, row.home_team_name) || mentions(text, row.away_team_name)) {
@@ -192,15 +197,16 @@ export async function buildSportsChatContext(userText) {
     }
   }
 
-  const priority = slate.filter((row) => row.is_priority).slice(0, 24);
   const parts = [
     '## Datos deportivos verificados',
-    'Fuente: base interna de Matu. No inventes cifras que no aparezcan aquí o en el mensaje del usuario. Sin cuotas no hay edge ni stake.',
+    `Fecha de la agenda: ${focusDate} (America/Bogota). Solo partidos de ese día que aún no han finalizado.`,
+    'Habla como tipster: porcentaje de victoria, handicap y cuota solo si el usuario pegó un precio. No armes tablas. Las tarjetas con logo las pinta el chat.',
+    'No cites partidos de días anteriores ni marcadores finales como pronóstico.',
     '',
-    '### Agenda prioritaria (ayer a pasado mañana)',
+    '### Agenda del día',
   ];
-  if (priority.length) parts.push(...priority.map(lineFixture));
-  else parts.push('Sin partidos prioritarios cargados en esta ventana.');
+  if (slate.length) parts.push(...slate.slice(0, 24).map(lineFixture));
+  else parts.push('Sin partidos abiertos cargados para esta fecha.');
 
   const focus = [...matched.values()].slice(0, 3);
   if (focus.length) {

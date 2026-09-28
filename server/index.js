@@ -38,6 +38,7 @@ import {
 import { registerMetaRoutes, metaConfigured } from './meta/index.js';
 import { startSportsScheduler } from './sports/scheduler.js';
 import { buildSportsChatContext } from './sports/context.js';
+import { buildSportsCardFence } from './sports/slate.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -557,9 +558,11 @@ app.post('/api/chat', authMiddleware(true), async (req, res) => {
       .limit(40);
 
     let sportsBlock = '';
+    let cardFence = '';
     if (modelId === 'matu-sports-pro' && userContent && !continueOf) {
       try {
         sportsBlock = await buildSportsChatContext(userContent);
+        cardFence = await buildSportsCardFence(userContent);
       } catch (err) {
         console.warn('[sports] contexto', err?.message || err);
       }
@@ -617,6 +620,10 @@ ${tail}
     });
 
     let full = continueOf ? continueBase : '';
+    if (cardFence && !continueOf) {
+      full = cardFence;
+      writeEvent('delta', { content: cardFence });
+    }
 
     // Generación de imagen cuando el usuario la pide en el chat
     const wantImage =

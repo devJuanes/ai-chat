@@ -4,6 +4,7 @@ import { sportsGetPages } from './client.js';
 import { FINISHED, PROVIDERS } from './constants.js';
 import { normalizeFixture, pairKey, summarizeGames } from './normalize.js';
 import { addDays, dayBoundsUtc, zonedParts } from './time.js';
+import { insertRow, updateWhere } from './writes.js';
 
 const ENRICH_CAP = {
   football: 18,
@@ -54,6 +55,9 @@ function fixturePayload(row) {
     home_team_name: row.home_team_name,
     away_team_id: row.away_team_id,
     away_team_name: row.away_team_name,
+    home_logo: row.home_logo || null,
+    away_logo: row.away_logo || null,
+    league_logo: row.league_logo || null,
     home_score: row.home_score,
     away_score: row.away_score,
     venue: row.venue,
@@ -88,7 +92,7 @@ async function upsertFixtures(rows) {
     const payload = fixturePayload(row);
     const id = existing.get(row.external_id);
     if (id) {
-      const { error } = await db.from('sports_fixtures').update(payload).eq('id', id);
+      const { error } = await updateWhere('sports_fixtures', 'id', id, payload);
       if (error) console.warn('[sports] update partido', error.message || error);
       else saved += 1;
     } else {
@@ -98,13 +102,13 @@ async function upsertFixtures(rows) {
 
   for (let i = 0; i < fresh.length; i += 40) {
     const chunk = fresh.slice(i, i + 40);
-    const { error } = await db.from('sports_fixtures').insert(chunk);
+    const { error } = await insertRow('sports_fixtures', chunk);
     if (!error) {
       saved += chunk.length;
       continue;
     }
     for (const row of chunk) {
-      const { error: one } = await db.from('sports_fixtures').insert(row);
+      const { error: one } = await insertRow('sports_fixtures', row);
       if (!one) saved += 1;
       else console.warn('[sports] insert partido', one.message || one);
     }
@@ -180,9 +184,9 @@ async function saveForm(provider, teamId, teamName, games) {
     .eq('team_id', String(teamId))
     .limit(1);
   if (existing?.[0]?.id) {
-    await db.from('sports_team_form').update(payload).eq('id', existing[0].id);
+    await updateWhere('sports_team_form', 'id', existing[0].id, payload);
   } else {
-    await db.from('sports_team_form').insert({ ...payload, id: newId() });
+    await insertRow('sports_team_form', { ...payload, id: newId() });
   }
 }
 
@@ -225,9 +229,9 @@ async function saveH2h(provider, fixture, games) {
     .eq('team_b_id', teamB)
     .limit(1);
   if (existing?.[0]?.id) {
-    await db.from('sports_h2h').update(payload).eq('id', existing[0].id);
+    await updateWhere('sports_h2h', 'id', existing[0].id, payload);
   } else {
-    await db.from('sports_h2h').insert({ ...payload, id: newId() });
+    await insertRow('sports_h2h', { ...payload, id: newId() });
   }
 }
 
@@ -244,11 +248,8 @@ async function fetchTeamForm(provider, fixture, side) {
   if (!teamId) return;
   if (await isFresh('sports_team_form', { provider, team_id: String(teamId) })) return;
   const spec = PROVIDERS[provider];
-  const params =
-    provider === 'football'
-      ? { team: teamId, last: 8 }
-      : { team: teamId, season: fixture.season || '' };
-  if (provider !== 'football' && !fixture.season) return;
+  if (!fixture.season) return;
+  const params = { team: teamId, season: fixture.season };
   const pack = await sportsGetPages(provider, spec.teamPath, params, {
     reuseMinutes: 1200,
   });
@@ -273,8 +274,7 @@ async function fetchH2h(provider, fixture) {
   }
   const spec = PROVIDERS[provider];
   const h2h = `${fixture.home_team_id}-${fixture.away_team_id}`;
-  const params =
-    provider === 'football' ? { h2h, last: 10 } : { h2h };
+  const params = { h2h };
   const pack = await sportsGetPages(provider, spec.h2hPath, params, {
     reuseMinutes: 1200,
   });
@@ -354,9 +354,7 @@ export async function runSportsIngest({ refreshOnly = false, kind = 'ingest' } =
   const db = getDb();
   const runId = newId();
   const today = zonedParts().date;
-  const dates = refreshOnly
-    ? [today]
-    : [addDays(today, -1), today, addDays(today, 1)].sort();
+  const dates = refreshOnly ? [today] : [today, addDays(today, 1)];
   try {
     await db.from('sports_sync_runs').insert({
       id: runId,
@@ -371,25 +369,19 @@ export async function runSportsIngest({ refreshOnly = false, kind = 'ingest' } =
       }
     }
     if (!refreshOnly) await enrichPriority(dates);
-    await db
-      .from('sports_sync_runs')
-      .update({
-        status: 'ok',
-        finished_at: new Date().toISOString(),
-        detail: { dates, saved },
-      })
-      .eq('id', runId);
+    await updateWhere('sports_sync_runs', 'id', runId, {
+      status: 'ok',
+      finished_at: new Date().toISOString(),
+      detail: { dates, saved },
+    });
     return { ok: true, saved, dates };
   } catch (err) {
     console.warn('[sports] ingest', err?.message || err);
-    await db
-      .from('sports_sync_runs')
-      .update({
-        status: 'error',
-        finished_at: new Date().toISOString(),
-        detail: { dates, error: String(err?.message || err).slice(0, 400) },
-      })
-      .eq('id', runId);
+    await updateWhere('sports_sync_runs', 'id', runId, {
+      status: 'error',
+      finished_at: new Date().toISOString(),
+      detail: { dates, error: String(err?.message || err).slice(0, 400) },
+    });
     return { ok: false, error: err?.message || String(err) };
   } finally {
     syncing = false;

@@ -4,7 +4,8 @@ import { completeUpstreamChat } from '../upstream.js';
 import { FINISHED, PROVIDERS } from './constants.js';
 import { pairKey } from './normalize.js';
 import { isSportsSyncing, sportsTablesReady } from './sync.js';
-import { zonedDateTimeToUtc, zonedParts } from './time.js';
+import { addDays, dayBoundsUtc, zonedParts } from './time.js';
+import { insertRow, updateWhere } from './writes.js';
 
 const SYSTEM = `Eres MatuSports Pro, motor cuantitativo de Matu AI SaaS (MatuByte S.A.S.).
 Generas un pronóstico interno para guardarlo en base de datos.
@@ -17,7 +18,8 @@ Reglas:
 - Fútbol: home + draw + away = 1. Incluye btts y over (más de 2.5 goles) entre 0 y 1.
 - Baloncesto, NBA y hockey: draw = null. home + away = 1. btts = null. over puede ser null si no hay línea.
 - Responde únicamente JSON válido, sin markdown:
-{"home":0.42,"draw":0.28,"away":0.30,"btts":0.55,"over":0.48,"confidence":"baja","no_bet":true,"summary":"2 a 4 frases en español","drivers":["factor 1","factor 2"]}`;
+{"home":0.42,"draw":0.28,"away":0.30,"btts":0.55,"over":0.48,"pick":"home","confidence":"media","no_bet":true,"summary":"2 a 4 frases como tipster, con el porcentaje del lado elegido","drivers":["factor 1","factor 2"]}
+pick es home, draw o away. El porcentaje de ese lado es el que se guarda.`;
 
 function clamp(n) {
   const x = Number(n);
@@ -34,8 +36,30 @@ function parseJson(text) {
   return JSON.parse(body.slice(start, end + 1));
 }
 
+function slateDateOf(kickoff) {
+  if (!kickoff) return zonedParts().date;
+  const parsed = new Date(kickoff);
+  if (Number.isNaN(parsed.getTime())) return zonedParts().date;
+  return zonedParts(parsed).date;
+}
+
+function choosePick(homeP, drawP, awayP, hasDraw) {
+  const options = [
+    { key: 'home', label: 'Victoria local', p: homeP },
+    hasDraw ? { key: 'draw', label: 'Empate', p: drawP } : null,
+    { key: 'away', label: 'Victoria visita', p: awayP },
+  ].filter((item) => item && item.p != null);
+  options.sort((a, b) => b.p - a.p);
+  const best = options[0];
+  return {
+    pick_label: best?.label || 'Sin lado claro',
+    win_prob: best?.p ?? null,
+    is_premium: (best?.p || 0) >= 0.8,
+  };
+}
+
 async function forecastsToday() {
-  const start = zonedDateTimeToUtc(zonedParts().date, 0, 0).toISOString();
+  const start = dayBoundsUtc(zonedParts().date).start.toISOString();
   const { data, error } = await getDb()
     .from('sports_forecasts')
     .select('id')
@@ -92,17 +116,25 @@ function packetFor(fixture, home, away, h2h) {
   };
 }
 
-async function writeForecast(fixture, payload) {
-  const db = getDb();
+async function writeForecast(fixture, forecastId, payload) {
+  const picked = choosePick(
+    payload.home_prob,
+    payload.draw_prob,
+    payload.away_prob,
+    payload.draw_prob != null
+  );
   const now = new Date().toISOString();
-  const row = {
-    fixture_id: fixture.id,
+  await updateWhere('sports_forecasts', 'id', forecastId, {
     model_id: 'matu-sports-pro',
     home_prob: payload.home_prob,
     draw_prob: payload.draw_prob,
     away_prob: payload.away_prob,
     btts_prob: payload.btts_prob,
     over_prob: payload.over_prob,
+    win_prob: picked.win_prob,
+    pick_label: picked.pick_label,
+    slate_date: slateDateOf(fixture.kickoff_at),
+    is_premium: picked.is_premium,
     confidence: payload.confidence,
     no_bet: true,
     summary: payload.summary,
@@ -110,17 +142,44 @@ async function writeForecast(fixture, payload) {
     raw_text: payload.raw_text,
     inputs: payload.inputs,
     updated_at: now,
-  };
+  });
+}
+
+async function claimForecast(fixture) {
+  const db = getDb();
   const { data: existing } = await db
     .from('sports_forecasts')
-    .select('id')
+    .select('id, summary, updated_at')
     .eq('fixture_id', fixture.id)
     .limit(1);
-  if (existing?.[0]?.id) {
-    await db.from('sports_forecasts').update(row).eq('id', existing[0].id);
-    return;
+  const row = existing?.[0];
+  if (row && row.summary !== '__pending__') return null;
+  if (row?.summary === '__pending__') {
+    const age = Date.now() - new Date(row.updated_at || 0).getTime();
+    if (age < 8 * 60 * 1000) return null;
+    await updateWhere('sports_forecasts', 'id', row.id, {
+      updated_at: new Date().toISOString(),
+    });
+    return row.id;
   }
-  await db.from('sports_forecasts').insert({ ...row, id: newId(), created_at: now });
+  const id = newId();
+  const now = new Date().toISOString();
+  const { error } = await insertRow('sports_forecasts', {
+    id,
+    fixture_id: fixture.id,
+    model_id: 'matu-sports-pro',
+    no_bet: true,
+    summary: '__pending__',
+    confidence: 'baja',
+    slate_date: slateDateOf(fixture.kickoff_at),
+    pick_label: null,
+    win_prob: null,
+    is_premium: false,
+    created_at: now,
+    updated_at: now,
+  });
+  if (error) return null;
+  return id;
 }
 
 export async function forecastPending(limit = 1) {
@@ -131,34 +190,51 @@ export async function forecastPending(limit = 1) {
   const done = await forecastsToday();
   if (done >= cap) return 0;
 
-  const now = Date.now();
-  const from = new Date(now - 3 * 60 * 60 * 1000).toISOString();
-  const to = new Date(now + 40 * 60 * 60 * 1000).toISOString();
+  const today = zonedParts().date;
+  const tomorrow = addDays(today, 1);
+  const from = dayBoundsUtc(today).start.toISOString();
+  const to = dayBoundsUtc(tomorrow).end.toISOString();
   const db = getDb();
   const { data: fixtures, error } = await db
     .from('sports_fixtures')
     .select('*')
-    .eq('is_priority', true)
     .gte('kickoff_at', from)
     .lte('kickoff_at', to)
-    .limit(80);
+    .limit(200);
   if (error || !fixtures?.length) return 0;
 
-  const ids = fixtures.map((f) => f.id);
+  const open = fixtures.filter((fixture) => {
+    if (FINISHED.has(fixture.status_short)) return false;
+    const day = slateDateOf(fixture.kickoff_at);
+    return day === today || day === tomorrow;
+  });
+  const ids = open.map((fixture) => fixture.id);
+  if (!ids.length) return 0;
   const { data: existing } = await db
     .from('sports_forecasts')
-    .select('fixture_id')
-    .in('fixture_id', ids.slice(0, 80));
-  const have = new Set((existing || []).map((r) => r.fixture_id));
+    .select('fixture_id, summary')
+    .in('fixture_id', ids.slice(0, 200));
+  const have = new Set(
+    (existing || [])
+      .filter((row) => row.summary !== '__pending__')
+      .map((row) => row.fixture_id)
+  );
 
-  const pending = fixtures
-    .filter((f) => !have.has(f.id) && !FINISHED.has(f.status_short))
-    .sort((a, b) => String(a.kickoff_at).localeCompare(String(b.kickoff_at)))
+  const pending = open
+    .filter((fixture) => !have.has(fixture.id))
+    .sort((a, b) => {
+      if (Boolean(a.is_priority) !== Boolean(b.is_priority)) {
+        return a.is_priority ? -1 : 1;
+      }
+      return String(a.kickoff_at).localeCompare(String(b.kickoff_at));
+    })
     .slice(0, Math.max(1, limit));
 
   let wrote = 0;
   for (const fixture of pending) {
     if (done + wrote >= cap) break;
+    const forecastId = await claimForecast(fixture);
+    if (!forecastId) continue;
     const spec = PROVIDERS[fixture.provider] || PROVIDERS.football;
     const home = await loadSide(fixture.provider, fixture.home_team_id);
     const away = await loadSide(fixture.provider, fixture.away_team_id);
@@ -184,6 +260,7 @@ export async function forecastPending(limit = 1) {
       });
     } catch (err) {
       console.warn('[sports] pronóstico', err?.message || err);
+      await getDb().from('sports_forecasts').eq('id', forecastId).delete();
       continue;
     }
 
@@ -197,7 +274,7 @@ export async function forecastPending(limit = 1) {
     const homeP = clamp(parsed?.home);
     const drawP = hasDraw ? clamp(parsed?.draw) : null;
     const awayP = clamp(parsed?.away);
-    await writeForecast(fixture, {
+    await writeForecast(fixture, forecastId, {
       home_prob: homeP,
       draw_prob: drawP,
       away_prob: awayP,
