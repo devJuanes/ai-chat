@@ -635,6 +635,21 @@ function ShellSidebar({
               <UserIcon />
               <span>Mi perfil</span>
             </NavLink>
+            <NavLink
+              to="/pronosticos"
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-[6px] px-2.5 py-2 no-underline hover:bg-black/5 ${
+                  isActive ? 'bg-black/5 font-bold' : ''
+                }`
+              }
+              onClick={() => {
+                setMenuOpen(false);
+                onCloseMobile?.();
+              }}
+            >
+              <CompassIcon />
+              <span>Pronósticos</span>
+            </NavLink>
             {!embed ? (
               <NavLink
                 to="/settings/facturacion"

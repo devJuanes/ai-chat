@@ -3,8 +3,8 @@ import { getDb, newId } from '../db.js';
 import { completeUpstreamChat } from '../upstream.js';
 import { FINISHED, PROVIDERS } from './constants.js';
 import { pairKey } from './normalize.js';
-import { isSportsSyncing, sportsTablesReady } from './sync.js';
-import { addDays, dayBoundsUtc, zonedParts } from './time.js';
+import { sportsTablesReady } from './sync.js';
+import { dayBoundsUtc, zonedParts } from './time.js';
 import { insertRow, updateWhere } from './writes.js';
 
 const SYSTEM = `Eres MatuSports Pro, motor cuantitativo de Matu AI SaaS (MatuByte S.A.S.).
@@ -17,14 +17,18 @@ Reglas:
 - Las probabilidades son estimaciones, no certezas.
 - Fútbol: home + draw + away = 1. Incluye btts y over (más de 2.5 goles) entre 0 y 1.
 - Baloncesto, NBA y hockey: draw = null. home + away = 1. btts = null. over puede ser null si no hay línea.
+- summary son 2 frases cortas: la sustentación de por qué ese lado, solo con el paquete. Si faltan forma y H2H, dilo en una frase.
 - Responde únicamente JSON válido, sin markdown:
-{"home":0.42,"draw":0.28,"away":0.30,"btts":0.55,"over":0.48,"pick":"home","confidence":"media","no_bet":true,"summary":"2 a 4 frases como tipster, con el porcentaje del lado elegido","drivers":["factor 1","factor 2"]}
+{"home":0.42,"draw":0.28,"away":0.30,"btts":0.55,"over":0.48,"pick":"home","confidence":"media","no_bet":true,"summary":"dos frases de sustentación","drivers":["factor 1","factor 2"]}
 pick es home, draw o away. El porcentaje de ese lado es el que se guarda.`;
 
 function clamp(n) {
-  const x = Number(n);
+  if (typeof n === 'string') n = n.replace('%', '').trim();
+  let x = Number(n);
   if (!Number.isFinite(x)) return null;
-  return Math.min(1, Math.max(0, x));
+  if (x > 1 && x <= 100) x = x / 100;
+  if (x <= 0) return null;
+  return Math.min(1, x);
 }
 
 function parseJson(text) {
@@ -62,11 +66,11 @@ async function forecastsToday() {
   const start = dayBoundsUtc(zonedParts().date).start.toISOString();
   const { data, error } = await getDb()
     .from('sports_forecasts')
-    .select('id')
+    .select('id, summary')
     .gte('created_at', start)
     .limit(200);
   if (error) return config.sports.forecastCap;
-  return (data || []).length;
+  return (data || []).filter((row) => row.summary && row.summary !== '__pending__').length;
 }
 
 async function loadSide(provider, teamId) {
@@ -124,7 +128,7 @@ async function writeForecast(fixture, forecastId, payload) {
     payload.draw_prob != null
   );
   const now = new Date().toISOString();
-  await updateWhere('sports_forecasts', 'id', forecastId, {
+  const saved = await updateWhere('sports_forecasts', 'id', forecastId, {
     model_id: 'matu-sports-pro',
     home_prob: payload.home_prob,
     draw_prob: payload.draw_prob,
@@ -138,26 +142,36 @@ async function writeForecast(fixture, forecastId, payload) {
     confidence: payload.confidence,
     no_bet: true,
     summary: payload.summary,
-    drivers: payload.drivers,
+    drivers: JSON.stringify(payload.drivers || []),
     raw_text: payload.raw_text,
-    inputs: payload.inputs,
+    inputs: JSON.stringify(payload.inputs || {}),
     updated_at: now,
   });
+  if (saved?.error) {
+    throw new Error(saved.error.message || 'No se pudo guardar el pronóstico');
+  }
+}
+
+function forecastReady(row) {
+  return Boolean(row?.summary) && row.summary !== '__pending__' && Number(row.win_prob) > 0;
 }
 
 async function claimForecast(fixture) {
   const db = getDb();
   const { data: existing } = await db
     .from('sports_forecasts')
-    .select('id, summary, updated_at')
+    .select('id, summary, updated_at, win_prob')
     .eq('fixture_id', fixture.id)
     .limit(1);
   const row = existing?.[0];
-  if (row && row.summary !== '__pending__') return null;
+  if (forecastReady(row)) return null;
   if (row?.summary === '__pending__') {
     const age = Date.now() - new Date(row.updated_at || 0).getTime();
-    if (age < 8 * 60 * 1000) return null;
+    if (age < 45 * 1000) return null;
+  }
+  if (row) {
     await updateWhere('sports_forecasts', 'id', row.id, {
+      summary: '__pending__',
       updated_at: new Date().toISOString(),
     });
     return row.id;
@@ -182,98 +196,61 @@ async function claimForecast(fixture) {
   return id;
 }
 
-export async function forecastPending(limit = 1) {
-  if (!config.sports.enabled || !config.upstream.apiKey) return 0;
-  if (isSportsSyncing()) return 0;
-  if (!(await sportsTablesReady())) return 0;
-  const cap = config.sports.forecastCap || 36;
-  const done = await forecastsToday();
-  if (done >= cap) return 0;
-
-  const today = zonedParts().date;
-  const tomorrow = addDays(today, 1);
-  const from = dayBoundsUtc(today).start.toISOString();
-  const to = dayBoundsUtc(tomorrow).end.toISOString();
+async function forecastOne(fixture, { onDemand = false } = {}) {
+  if (!onDemand) {
+    const cap = config.sports.forecastCap || 36;
+    if ((await forecastsToday()) >= cap) return false;
+  }
+  const forecastId = await claimForecast(fixture);
+  if (!forecastId) return false;
+  const spec = PROVIDERS[fixture.provider] || PROVIDERS.football;
   const db = getDb();
-  const { data: fixtures, error } = await db
-    .from('sports_fixtures')
-    .select('*')
-    .gte('kickoff_at', from)
-    .lte('kickoff_at', to)
-    .limit(200);
-  if (error || !fixtures?.length) return 0;
+  const home = await loadSide(fixture.provider, fixture.home_team_id);
+  const away = await loadSide(fixture.provider, fixture.away_team_id);
+  const [teamA, teamB] = pairKey(fixture.home_team_id, fixture.away_team_id);
+  const { data: h2hRows } = await db
+    .from('sports_h2h')
+    .select('summary, meetings, home_wins, draws, away_wins, btts_count')
+    .eq('provider', fixture.provider)
+    .eq('team_a_id', teamA)
+    .eq('team_b_id', teamB)
+    .limit(1);
+  const packet = packetFor(fixture, home, away, h2hRows?.[0] || null);
+  let raw = '';
+  try {
+    raw = await completeUpstreamChat({
+      system: SYSTEM,
+      messages: [
+        {
+          role: 'user',
+          content: `Pronóstico interno para ${fixture.home_team_name} vs ${fixture.away_team_name} (${spec.sport}).\n${JSON.stringify(packet)}`,
+        },
+      ],
+      maxTokens: 700,
+      signal: AbortSignal.timeout(onDemand ? 28000 : 45000),
+    });
+  } catch (err) {
+    console.warn('[sports] pronóstico', fixture.home_team_name, err?.message || err);
+    await getDb().from('sports_forecasts').eq('id', forecastId).delete();
+    return false;
+  }
 
-  const open = fixtures.filter((fixture) => {
-    if (FINISHED.has(fixture.status_short)) return false;
-    const day = slateDateOf(fixture.kickoff_at);
-    return day === today || day === tomorrow;
-  });
-  const ids = open.map((fixture) => fixture.id);
-  if (!ids.length) return 0;
-  const { data: existing } = await db
-    .from('sports_forecasts')
-    .select('fixture_id, summary')
-    .in('fixture_id', ids.slice(0, 200));
-  const have = new Set(
-    (existing || [])
-      .filter((row) => row.summary !== '__pending__')
-      .map((row) => row.fixture_id)
-  );
-
-  const pending = open
-    .filter((fixture) => !have.has(fixture.id))
-    .sort((a, b) => {
-      if (Boolean(a.is_priority) !== Boolean(b.is_priority)) {
-        return a.is_priority ? -1 : 1;
-      }
-      return String(a.kickoff_at).localeCompare(String(b.kickoff_at));
-    })
-    .slice(0, Math.max(1, limit));
-
-  let wrote = 0;
-  for (const fixture of pending) {
-    if (done + wrote >= cap) break;
-    const forecastId = await claimForecast(fixture);
-    if (!forecastId) continue;
-    const spec = PROVIDERS[fixture.provider] || PROVIDERS.football;
-    const home = await loadSide(fixture.provider, fixture.home_team_id);
-    const away = await loadSide(fixture.provider, fixture.away_team_id);
-    const [teamA, teamB] = pairKey(fixture.home_team_id, fixture.away_team_id);
-    const { data: h2hRows } = await db
-      .from('sports_h2h')
-      .select('summary, meetings, home_wins, draws, away_wins, btts_count')
-      .eq('provider', fixture.provider)
-      .eq('team_a_id', teamA)
-      .eq('team_b_id', teamB)
-      .limit(1);
-    const packet = packetFor(fixture, home, away, h2hRows?.[0] || null);
-    let raw = '';
-    try {
-      raw = await completeUpstreamChat({
-        system: SYSTEM,
-        messages: [
-          {
-            role: 'user',
-            content: `Pronóstico interno para ${fixture.home_team_name} vs ${fixture.away_team_name} (${spec.sport}).\n${JSON.stringify(packet)}`,
-          },
-        ],
-      });
-    } catch (err) {
-      console.warn('[sports] pronóstico', err?.message || err);
-      await getDb().from('sports_forecasts').eq('id', forecastId).delete();
-      continue;
-    }
-
-    let parsed = null;
-    try {
-      parsed = parseJson(raw);
-    } catch {
-      parsed = null;
-    }
-    const hasDraw = spec.hasDraw;
-    const homeP = clamp(parsed?.home);
-    const drawP = hasDraw ? clamp(parsed?.draw) : null;
-    const awayP = clamp(parsed?.away);
+  let parsed = null;
+  try {
+    parsed = parseJson(raw);
+  } catch {
+    parsed = null;
+  }
+  const hasDraw = spec.hasDraw;
+  const homeP = clamp(parsed?.home);
+  const drawP = hasDraw ? clamp(parsed?.draw) : null;
+  const awayP = clamp(parsed?.away);
+  if (homeP == null && awayP == null) {
+    await getDb().from('sports_forecasts').eq('id', forecastId).delete();
+    console.warn('[sports] pronóstico sin porcentaje', fixture.home_team_name);
+    return false;
+  }
+  try {
     await writeForecast(fixture, forecastId, {
       home_prob: homeP,
       draw_prob: drawP,
@@ -283,15 +260,132 @@ export async function forecastPending(limit = 1) {
       confidence: ['baja', 'media', 'alta'].includes(parsed?.confidence)
         ? parsed.confidence
         : 'baja',
-      summary: String(parsed?.summary || raw || 'Sin lectura estructurada').slice(0, 1200),
+      summary: String(parsed?.summary || raw || 'Sin lectura estructurada').slice(0, 320),
       drivers: Array.isArray(parsed?.drivers) ? parsed.drivers.slice(0, 5) : [],
       raw_text: String(raw || '').slice(0, 4000),
       inputs: packet,
     });
-    wrote += 1;
-    console.log(
-      `[sports] pronóstico ${fixture.home_team_name} vs ${fixture.away_team_name}`
-    );
+  } catch (err) {
+    console.warn('[sports] guardar', fixture.home_team_name, err?.message || err);
+    await getDb().from('sports_forecasts').eq('id', forecastId).delete();
+    return false;
   }
+  console.log(
+    `[sports] pronóstico ${fixture.home_team_name} vs ${fixture.away_team_name}`
+  );
+  return true;
+}
+
+async function runForecasts(fixtures, concurrency = 3) {
+  const queue = [...fixtures];
+  let wrote = 0;
+  const workers = Array.from({ length: Math.min(concurrency, queue.length || 1) }, async () => {
+    while (queue.length) {
+      const fixture = queue.shift();
+      if (!fixture) break;
+      if (await forecastOne(fixture)) wrote += 1;
+    }
+  });
+  await Promise.all(workers);
   return wrote;
+}
+
+async function openFixturesBetween(fromIso, toIso) {
+  const { data, error } = await getDb()
+    .from('sports_fixtures')
+    .select('*')
+    .gte('kickoff_at', fromIso)
+    .lte('kickoff_at', toIso)
+    .limit(250);
+  if (error || !data?.length) return [];
+  return data.filter((fixture) => !FINISHED.has(fixture.status_short));
+}
+
+function sortSlate(fixtures) {
+  return fixtures.slice().sort((a, b) => {
+    if (Boolean(a.is_priority) !== Boolean(b.is_priority)) return a.is_priority ? -1 : 1;
+    return String(a.kickoff_at).localeCompare(String(b.kickoff_at));
+  });
+}
+
+async function forecastState(fixtures) {
+  const ids = fixtures.map((fixture) => fixture.id);
+  if (!ids.length) return { ready: 0, missing: [] };
+  const { data: existing } = await getDb()
+    .from('sports_forecasts')
+    .select('fixture_id, summary, win_prob')
+    .in('fixture_id', ids.slice(0, 200));
+  const have = new Set((existing || []).filter(forecastReady).map((row) => row.fixture_id));
+  const missing = sortSlate(fixtures).filter((fixture) => !have.has(fixture.id));
+  return { ready: fixtures.length - missing.length, missing };
+}
+
+const forecastJobs = new Map();
+
+/** Pronósticos del día que se va a mostrar, antes de pintar las tarjetas. */
+export function ensureForecastsForDate(date, limit = 8) {
+  const key = String(date);
+  const running = forecastJobs.get(key);
+  if (running) return running;
+  const job = ensureForecastsForDateNow(date, limit).finally(() => {
+    if (forecastJobs.get(key) === job) forecastJobs.delete(key);
+  });
+  forecastJobs.set(key, job);
+  return job;
+}
+
+async function ensureForecastsForDateNow(date, limit) {
+  if (!config.sports.enabled || !config.upstream.apiKey) return 0;
+  if (!(await sportsTablesReady())) return 0;
+  const bounds = dayBoundsUtc(date);
+  const open = await openFixturesBetween(bounds.start.toISOString(), bounds.end.toISOString());
+  const priority = open.filter((fixture) => fixture.is_priority);
+  const { ready, missing } = await forecastState(priority);
+  const batch = missing.slice(0, Math.max(0, limit - ready));
+  if (!batch.length) return 0;
+  return runForecasts(batch, 2);
+}
+
+const fixtureJobs = new Map();
+
+/**
+ * Un partido, cuando el usuario pulsa generar. Si ya está guardado, no vuelve a llamar al modelo.
+ */
+export function ensureFixtureForecast(fixtureId) {
+  const key = String(fixtureId || '');
+  const running = fixtureJobs.get(key);
+  if (running) return running;
+  const job = ensureFixtureForecastNow(key).finally(() => {
+    if (fixtureJobs.get(key) === job) fixtureJobs.delete(key);
+  });
+  fixtureJobs.set(key, job);
+  return job;
+}
+
+async function ensureFixtureForecastNow(fixtureId) {
+  if (!config.sports.enabled || !config.upstream.apiKey) {
+    throw new Error('El pronóstico no está disponible ahora');
+  }
+  const { data, error } = await getDb()
+    .from('sports_fixtures')
+    .select('*')
+    .eq('id', fixtureId)
+    .limit(1);
+  if (error) throw new Error(error.message || 'No se pudo leer el partido');
+  const fixture = data?.[0];
+  if (!fixture) throw new Error('No encontré ese partido');
+  if (FINISHED.has(fixture.status_short)) throw new Error('Ese partido ya terminó');
+  const { data: existing } = await getDb()
+    .from('sports_forecasts')
+    .select('summary, win_prob')
+    .eq('fixture_id', fixture.id)
+    .limit(1);
+  if (forecastReady(existing?.[0])) return fixture.id;
+  const wrote = await forecastOne(fixture, { onDemand: true });
+  if (!wrote) throw new Error('No pude generar el pronóstico. Inténtalo otra vez.');
+  return fixture.id;
+}
+
+export function forecastsBusy() {
+  return forecastJobs.size > 0;
 }

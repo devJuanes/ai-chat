@@ -7,6 +7,7 @@ import LibraryPage from './pages/LibraryPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import UsagePage from './pages/UsagePage';
+import ForecastsPage from './pages/ForecastsPage';
 import BotsPage from './pages/BotsPage';
 import BotDetailPage from './pages/BotDetailPage';
 import InboxPage from './pages/InboxPage';
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/inbox/:conversationId" element={<InboxPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/usage" element={<UsagePage />} />
+          <Route path="/pronosticos" element={<ForecastsPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route
             path="/settings"

@@ -1,4 +1,4 @@
-import { NavLink, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, NavLink, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { useWorkspace } from '../lib/workspace';
@@ -123,6 +123,13 @@ export default function SettingsPage() {
                     className="fp-input"
                   />
                 </label>
+
+                <Link
+                  to="/pronosticos"
+                  className="mt-6 inline-flex rounded-[6px] border-2 border-black bg-[#f4ed36] px-4 py-2 text-[13px] font-bold no-underline"
+                >
+                  Ver pronósticos
+                </Link>
 
                 <div className="mt-6 flex items-center gap-3">
                   <button

@@ -2,7 +2,7 @@ import { getDb } from '../db.js';
 import { FINISHED } from './constants.js';
 import { pairKey } from './normalize.js';
 import { sportsTablesReady } from './sync.js';
-import { slateRequestFromText } from './slate.js';
+import { findMentionedFixtures, slateRequestFromText } from './slate.js';
 import { dayBoundsUtc, zonedParts } from './time.js';
 
 const SLIM =
@@ -15,25 +15,38 @@ function norm(value) {
     .toLowerCase();
 }
 
-function mentions(text, team) {
-  const name = norm(team);
-  if (name.length < 4) return false;
-  return text.includes(name);
-}
-
 function pct(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '—';
   return `${Math.round(n * 100)}%`;
 }
 
-function lineFixture(row) {
+function lineFixture(row, forecast) {
   const score =
     row.home_score != null && row.away_score != null
       ? ` ${row.home_score}-${row.away_score}`
       : '';
   const when = row.kickoff_at ? String(row.kickoff_at).replace('T', ' ').slice(0, 16) : 'sin hora';
-  return `- ${when} · ${row.league_name || row.sport} · ${row.home_team_name} vs ${row.away_team_name} · ${row.status_short || 'NS'}${score}`;
+  const pick =
+    forecast && Number(forecast.win_prob) > 0
+      ? ` · ${forecast.pick_label || 'pick'} ${pct(forecast.win_prob)}`
+      : '';
+  return `- ${when} · ${row.league_name || row.sport} · ${row.home_team_name} vs ${row.away_team_name} · ${row.status_short || 'NS'}${score}${pick}`;
+}
+
+function wantsCombinada(text) {
+  return /combinad|parlay|acumulad/.test(text);
+}
+
+function legCountFromText(text) {
+  if (/cuadruple|cuádruple/.test(text)) return 4;
+  if (/\btriple\b/.test(text)) return 3;
+  if (/\bdoble\b/.test(text)) return 2;
+  const named = text.match(/\b(\d{1,2})\s*(partidos|picks|selecciones|hilos|items|legs|equipos)/);
+  const de = text.match(/\bde\s+(\d{1,2})\b/);
+  const raw = Number((named || de)?.[1]);
+  if (raw >= 2 && raw <= 8) return raw;
+  return null;
 }
 
 function formLine(label, form) {
@@ -135,25 +148,10 @@ async function detailBlock(fixture) {
   } else {
     lines.push('Pronóstico interno: todavía no generado para este partido.');
   }
-  lines.push('Cuotas: no están en la base. No calcules EV ni stake salvo que el usuario pegue un precio.');
+  lines.push(
+    'Cuotas: no están en la base. Responde con la lectura de porcentaje. No calcules EV, stake ni Kelly, y no pidas la cuota para poder opinar.'
+  );
   return lines.join('\n');
-}
-
-async function searchByPhrase(phrase) {
-  const safe = phrase.replace(/[%_]/g, '').trim();
-  if (safe.length < 4) return [];
-  const db = getDb();
-  const { data: home } = await db
-    .from('sports_fixtures')
-    .select(SLIM)
-    .ilike('home_team_name', `%${safe}%`)
-    .limit(6);
-  const { data: away } = await db
-    .from('sports_fixtures')
-    .select(SLIM)
-    .ilike('away_team_name', `%${safe}%`)
-    .limit(6);
-  return [...(home || []), ...(away || [])];
 }
 
 export async function buildSportsChatContext(userText) {
@@ -176,42 +174,68 @@ export async function buildSportsChatContext(userText) {
   const slate = (data || [])
     .filter((row) => !FINISHED.has(row.status_short))
     .sort((a, b) => String(a.kickoff_at).localeCompare(String(b.kickoff_at)));
-  const matched = new Map();
-  for (const row of slate) {
-    if (mentions(text, row.home_team_name) || mentions(text, row.away_team_name)) {
-      matched.set(row.id, row);
+  const forecastById = new Map();
+  const ids = slate.map((row) => row.id);
+  if (ids.length) {
+    const { data: forecasts } = await db
+      .from('sports_forecasts')
+      .select('fixture_id, win_prob, pick_label, summary, confidence')
+      .in('fixture_id', ids.slice(0, 200));
+    for (const row of forecasts || []) {
+      if (row.summary && row.summary !== '__pending__' && Number(row.win_prob) > 0) {
+        forecastById.set(row.fixture_id, row);
+      }
     }
   }
-
-  if (!matched.size && text.length >= 4) {
-    const words = text.split(/[^a-z0-9]+/).filter((w) => w.length >= 4);
-    const phrases = [];
-    for (let i = 0; i < words.length - 1 && phrases.length < 3; i += 1) {
-      phrases.push(`${words[i]} ${words[i + 1]}`);
-    }
-    if (words[0]) phrases.push(words.sort((a, b) => b.length - a.length)[0]);
-    for (const phrase of phrases) {
-      const found = await searchByPhrase(phrase);
-      for (const row of found) matched.set(row.id, row);
-      if (matched.size >= 3) break;
-    }
-  }
+  const mentioned = await findMentionedFixtures(userText);
 
   const parts = [
     '## Datos deportivos verificados',
     `Fecha de la agenda: ${focusDate} (America/Bogota). Solo partidos de ese día que aún no han finalizado.`,
-    'Habla como tipster: porcentaje de victoria, handicap y cuota solo si el usuario pegó un precio. No armes tablas. Las tarjetas con logo las pinta el chat.',
+    'Habla como tipster: porcentaje de victoria. Sin cuota no hay edge, EV ni stake: la salida es la lectura de porcentaje. No armes tablas. Las tarjetas con logo las pinta el chat.',
     'No cites partidos de días anteriores ni marcadores finales como pronóstico.',
     '',
     '### Agenda del día',
   ];
-  if (slate.length) parts.push(...slate.slice(0, 24).map(lineFixture));
+  if (slate.length) parts.push(...slate.slice(0, 24).map((row) => lineFixture(row, forecastById.get(row.id))));
   else parts.push('Sin partidos abiertos cargados para esta fecha.');
 
-  const focus = [...matched.values()].slice(0, 3);
-  if (focus.length) {
-    parts.push('', '### Partidos que coinciden con la pregunta');
-    for (const fixture of focus) {
+  if (wantsCombinada(text)) {
+    const ranked = slate
+      .map((row) => ({ row, forecast: forecastById.get(row.id) }))
+      .filter((item) => item.forecast)
+      .sort((a, b) => Number(b.forecast.win_prob) - Number(a.forecast.win_prob))
+      .slice(0, 12);
+    const legs = legCountFromText(text);
+    parts.push('', '### Combinada');
+    if (!legs) {
+      parts.push(
+        'Pidió una combinada y no dijo cuántas selecciones. Pregunta solo cuántos partidos quiere, de 2 a 8. No pidas cuotas, bankroll, Kelly ni perfil de riesgo.'
+      );
+    } else {
+      parts.push(
+        `Arma ya la combinada de ${legs} selecciones con los porcentajes más altos de esta lista. Es una lectura de porcentaje, sin cuota. Cada línea lleva su pick y su %. La conjunta aproximada es el producto; di que asumes independencia. No calcules EV, stake ni Kelly. No digas que no puedes porque faltan las cuotas.`
+      );
+    }
+    if (ranked.length) {
+      parts.push(
+        ...ranked.map(
+          (item) =>
+            `- ${pct(item.forecast.win_prob)} · ${item.forecast.pick_label || 'pick'} · ${item.row.home_team_name} vs ${item.row.away_team_name} · ${item.row.league_name || item.row.sport}`
+        )
+      );
+    } else {
+      parts.push('Todavía no hay porcentajes guardados para armar la combinada.');
+    }
+  }
+
+  if (mentioned.length) {
+    parts.push(
+      '',
+      '### Partido del equipo',
+      'Habla de este partido: liga, hora, forma y el pronóstico guardado. La tarjeta ya está en el chat. Si no hay pronóstico interno, di que puede pulsar Generar pronóstico y no inventes el porcentaje.'
+    );
+    for (const fixture of mentioned) {
       parts.push(await detailBlock(fixture));
     }
   }

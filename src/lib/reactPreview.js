@@ -312,6 +312,8 @@ function extractReactFence(cleaned) {
     const langOk = !langRaw || FENCE_LANG.test(langRaw);
     if (!langOk) {
       i += 1;
+      while (i < lines.length && !/^```+\s*$/.test(lines[i])) i += 1;
+      if (i < lines.length) i += 1;
       continue;
     }
     const lang = (langRaw.split(/[ \t]/)[0] || '').toLowerCase() || 'jsx';

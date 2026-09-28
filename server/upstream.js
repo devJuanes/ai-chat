@@ -83,7 +83,7 @@ export function stripThinkTags(text) {
  * Stream a chat completion from the configured upstream runtime.
  * Public surface never exposes vendor names — only Matu model ids.
  */
-export async function streamUpstreamChat({ system, messages, signal }) {
+export async function streamUpstreamChat({ system, messages, signal, maxTokens }) {
   if (!config.upstream.apiKey) {
     throw new Error(
       'UPSTREAM_API_KEY no está configurada. Agrégala a tu archivo .env.'
@@ -100,7 +100,7 @@ export async function streamUpstreamChat({ system, messages, signal }) {
         content: m.content,
       })),
     ],
-    max_completion_tokens: 24576,
+    max_completion_tokens: maxTokens || 24576,
     // MiniMax-M3: desactiva thinking para que no filtre <think> al usuario
     thinking: { type: 'disabled' },
   };
@@ -196,8 +196,8 @@ export async function* parseSseStream(response) {
  * Non-streaming chat completion for channel bots (WhatsApp / Messenger / IG).
  * Accumulates the SSE stream from the upstream so callers get a single string.
  */
-export async function completeUpstreamChat({ system, messages, signal }) {
-  const res = await streamUpstreamChat({ system, messages, signal });
+export async function completeUpstreamChat({ system, messages, signal, maxTokens }) {
+  const res = await streamUpstreamChat({ system, messages, signal, maxTokens });
   let text = '';
   for await (const chunk of parseSseStream(res)) {
     text += chunk;

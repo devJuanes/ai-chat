@@ -38,7 +38,13 @@ import {
 import { registerMetaRoutes, metaConfigured } from './meta/index.js';
 import { startSportsScheduler } from './sports/scheduler.js';
 import { buildSportsChatContext } from './sports/context.js';
-import { buildSportsCardFence } from './sports/slate.js';
+import {
+  buildSportsCardFence,
+  generateCardForecast,
+  listBoardMatches,
+  loadSlateCards,
+} from './sports/slate.js';
+import { zonedParts } from './sports/time.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -52,6 +58,49 @@ app.use(
     },
   })
 );
+
+app.get('/api/sports/slate', authMiddleware(true), async (req, res) => {
+  try {
+    const asked = String(req.query.date || '').slice(0, 10);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : zonedParts().date;
+    const cards = await loadSlateCards(date, { limit: 24 });
+    res.json({ date, cards });
+  } catch (err) {
+    res.status(500).json({
+      error: { message: err?.message || 'No se pudieron leer los pronósticos' },
+    });
+  }
+});
+
+app.get('/api/sports/board', authMiddleware(true), async (req, res) => {
+  try {
+    const asked = String(req.query.date || '').slice(0, 10);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : zonedParts().date;
+    const sport = String(req.query.sport || '');
+    const q = String(req.query.q || '');
+    const matches = await listBoardMatches({ date, sport, q });
+    res.json({ date, matches });
+  } catch (err) {
+    res.status(500).json({
+      error: { message: err?.message || 'No se pudieron leer los partidos' },
+    });
+  }
+});
+
+app.post('/api/sports/forecast', authMiddleware(true), async (req, res) => {
+  const fixtureId = String(req.body?.fixtureId || '');
+  if (!/^[0-9a-f-]{36}$/i.test(fixtureId)) {
+    return res.status(400).json({ error: { message: 'Partido inválido' } });
+  }
+  try {
+    const card = await generateCardForecast(fixtureId);
+    res.json({ card });
+  } catch (err) {
+    res.status(500).json({
+      error: { message: err?.message || 'No se pudo generar el pronóstico' },
+    });
+  }
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({

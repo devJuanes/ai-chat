@@ -26,12 +26,16 @@ export async function sportsTablesReady() {
   const db = getDb();
   const { error } = await db.from('sports_fixtures').select('id').limit(1);
   if (error) {
-    if (!tablesWarned) {
+    const message = String(error.message || error);
+    const missing = /relation|does not exist|schema cache|could not find/i.test(message);
+    if (missing && !tablesWarned) {
       tablesWarned = true;
       console.warn(
         '[sports] Faltan tablas. Ejecuta docs/migrations/sports-feed-v1.sql en MatuDB.',
-        error.message || error
+        message
       );
+    } else if (!missing) {
+      console.warn('[sports] MatuDB no respondió', message);
     }
     return false;
   }
@@ -329,9 +333,13 @@ async function enrichPriority(dates) {
       team_id: String(fixture.away_team_id),
     });
     if (h2hFresh && homeFresh && awayFresh) continue;
-    await fetchH2h(provider, fixture);
-    await fetchTeamForm(provider, fixture, 'home');
-    await fetchTeamForm(provider, fixture, 'away');
+    try {
+      await fetchH2h(provider, fixture);
+      await fetchTeamForm(provider, fixture, 'home');
+      await fetchTeamForm(provider, fixture, 'away');
+    } catch (err) {
+      console.warn('[sports] enriquecer', fixture.home_team_name, err?.message || err);
+    }
     used[provider] += 1;
   }
   console.log('[sports] enriquecidos', used);
