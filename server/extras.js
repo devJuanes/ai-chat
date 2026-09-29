@@ -177,6 +177,84 @@ export function registerExtraRoutes(app) {
     }
   });
 
+  app.get('/api/support/tickets', authMiddleware(true), async (req, res) => {
+    try {
+      const db = getDb();
+      const { data, error } = await db
+        .from('support_tickets')
+        .select('id, kind, category, subject, message, status, created_at')
+        .eq('user_id', req.user.id)
+        .limit(40);
+      if (error) throw error;
+      const tickets = (Array.isArray(data) ? data : [])
+        .slice()
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      res.json({ tickets });
+    } catch (err) {
+      console.error('[support] list', err.message || err);
+      const missing =
+        err.message?.includes('support_tickets') ||
+        err.message?.includes('does not exist');
+      res.status(missing ? 503 : 500).json({
+        error: {
+          message: missing
+            ? 'El centro de ayuda aún no está activo. Ejecuta docs/migrations/support-tickets.sql en MatuDB.'
+            : 'No se pudieron cargar tus solicitudes',
+        },
+      });
+    }
+  });
+
+  app.post('/api/support/tickets', authMiddleware(true), async (req, res) => {
+    try {
+      const body = req.body || {};
+      const kind = body.kind === 'incident' ? 'incident' : 'ticket';
+      const category = String(body.category || '').trim().slice(0, 80);
+      const subject = String(body.subject || '').trim().slice(0, 160);
+      const message = String(body.message || '').trim().slice(0, 4000);
+
+      if (!subject || subject.length < 4) {
+        return res.status(400).json({
+          error: { message: 'Escribe un asunto de al menos 4 caracteres' },
+        });
+      }
+      if (!message || message.length < 10) {
+        return res.status(400).json({
+          error: { message: 'Cuéntanos un poco más (mínimo 10 caracteres)' },
+        });
+      }
+
+      const db = getDb();
+      const row = {
+        id: newId(),
+        user_id: req.user.id,
+        email: req.user.email || '',
+        name: req.user.name || '',
+        kind,
+        category,
+        subject,
+        message,
+        status: 'open',
+        created_at: new Date().toISOString(),
+      };
+      const { error } = await db.from('support_tickets').insert(row);
+      if (error) throw error;
+      res.json({ ok: true, ticket: row });
+    } catch (err) {
+      console.error('[support] create', err.message || err);
+      const missing =
+        err.message?.includes('support_tickets') ||
+        err.message?.includes('does not exist');
+      res.status(missing ? 503 : 500).json({
+        error: {
+          message: missing
+            ? 'El centro de ayuda aún no está activo. Ejecuta docs/migrations/support-tickets.sql en MatuDB.'
+            : 'No se pudo enviar la solicitud',
+        },
+      });
+    }
+  });
+
   app.get('/api/me', authMiddleware(true), async (req, res) => {
     try {
       const { profile, org } = await ensureWorkspace(req.user);
@@ -193,6 +271,7 @@ export function registerExtraRoutes(app) {
           email: profile.email,
           name: profile.display_name,
           is_admin: Boolean(profile.is_admin),
+          email_verified: profile.email_verified === true,
         },
         organization: org
           ? { id: org.id, name: org.name, plan_id: org.plan_id }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { MenuIcon } from '../components/Icons';
+import LoadingRing from '../components/LoadingRing';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
@@ -38,7 +39,7 @@ function hasForecast(match) {
 }
 
 function isTop(match) {
-  return hasForecast(match) && Number(match.winProb) >= 75;
+  return hasForecast(match) && Number(match.winProb) >= 70;
 }
 
 function Crest({ src, name }) {
@@ -197,7 +198,7 @@ export default function ForecastsPage() {
             </button>
           </div>
           <p className="mt-2 text-[12px] font-medium opacity-60">
-            Top del día son las lecturas de 75% o más. En Todos quedan arriba.
+            Top del día son las lecturas de 70% o más. En Todos quedan arriba.
           </p>
 
           <div className="mt-6 flex flex-wrap items-end gap-3">
@@ -260,12 +261,12 @@ export default function ForecastsPage() {
           </div>
 
           {error ? <p className="mt-4 text-[13px] font-bold">{error}</p> : null}
-          {loading ? <p className="mt-6 text-[14px] font-bold opacity-60">Cargando partidos…</p> : null}
+          {loading ? <LoadingRing className="mt-6 min-h-[30vh]" /> : null}
 
           {!loading && !shown.length ? (
             <p className="mt-6 text-[14px] font-bold opacity-60">
               {tab === 'top'
-                ? 'Ningún pronóstico de esta fecha pasa del 75%.'
+                ? 'Ningún pronóstico de esta fecha pasa del 70%.'
                 : 'No hay partidos con esos filtros.'}
             </p>
           ) : null}

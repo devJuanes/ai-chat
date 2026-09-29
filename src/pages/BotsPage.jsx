@@ -23,6 +23,7 @@ import {
 import ProductsPanel from './bots/ProductsPanel';
 import NotesPanel from './bots/NotesPanel';
 import PipelinePanel from './bots/PipelinePanel';
+import LoadingRing from '../components/LoadingRing';
 
 const CHANNEL_LABEL = {
   whatsapp: 'WhatsApp',
@@ -47,6 +48,10 @@ const TABS = [
 ];
 
 const TAB_IDS = new Set(TABS.map((t) => t.id));
+
+const MOBILE_MORE = TABS.filter(
+  (t) => t.id !== 'agentes' && t.id !== 'canales' && t.id !== 'productos'
+);
 
 function ChannelMark({ channel, iconOnly = false, size = 'md' }) {
   const meta = CHANNEL_ICON[channel];
@@ -157,6 +162,16 @@ const EMPTY_FORM = {
   ],
 };
 
+function metaConnectFailure(response) {
+  const metaReason =
+    response?.error_message ||
+    response?.error?.message ||
+    response?.error_description ||
+    '';
+  if (metaReason) return String(metaReason);
+  return 'Facebook no autorizó la conexión. Si el cuadro dice que la app no está disponible o que no está en producción, la app de Meta sigue en modo Development: hay que pasarla a Live y tener aprobados los permisos de WhatsApp, Instagram y Páginas.';
+}
+
 function loadFbSdk(appId, apiVersion) {
   return new Promise((resolve, reject) => {
     if (window.FB) {
@@ -185,6 +200,124 @@ function loadFbSdk(appId, apiVersion) {
   });
 }
 
+function MobileNavIcon({ id, active }) {
+  const pen = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.75,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+      {id === 'agentes' ? (
+        active ? (
+          <>
+            <path d="M12 8V5.2" {...pen} />
+            <circle cx="12" cy="4" r="1.15" fill="currentColor" />
+            <rect x="4.5" y="8" width="15" height="11.5" rx="3.5" fill="currentColor" />
+            <circle cx="9.2" cy="13.2" r="1.15" fill="#faf8f5" />
+            <circle cx="14.8" cy="13.2" r="1.15" fill="#faf8f5" />
+          </>
+        ) : (
+          <>
+            <path d="M12 8V5.2" {...pen} />
+            <circle cx="12" cy="4" r="1.15" fill="currentColor" />
+            <rect x="4.5" y="8" width="15" height="11.5" rx="3.5" {...pen} />
+            <circle cx="9.2" cy="13.2" r="1.1" fill="currentColor" />
+            <circle cx="14.8" cy="13.2" r="1.1" fill="currentColor" />
+          </>
+        )
+      ) : null}
+      {id === 'canales' ? (
+        <>
+          <circle
+            cx="7"
+            cy="12"
+            r="2.3"
+            {...(active ? { fill: 'currentColor' } : pen)}
+          />
+          <circle
+            cx="17"
+            cy="6.5"
+            r="2.3"
+            {...(active ? { fill: 'currentColor' } : pen)}
+          />
+          <circle
+            cx="17"
+            cy="17.5"
+            r="2.3"
+            {...(active ? { fill: 'currentColor' } : pen)}
+          />
+          <path d="M9.1 11.1 14.8 7.6M9.1 12.9 14.8 16.4" {...pen} />
+        </>
+      ) : null}
+      {id === 'productos' ? (
+        active ? (
+          <>
+            <path d="M3 8.2 12 4l9 4.2-9 4.2L3 8.2Z" fill="currentColor" />
+            <path d="M3 8.2V16l9 4 9-4V8.2" {...pen} />
+            <path d="M12 12.4V20" {...pen} />
+          </>
+        ) : (
+          <>
+            <path d="M3 8.2 12 4l9 4.2-9 4.2L3 8.2Z" {...pen} />
+            <path d="M3 8.2V16l9 4 9-4V8.2" {...pen} />
+            <path d="M12 12.4V20" {...pen} />
+          </>
+        )
+      ) : null}
+      {id === 'formularios' ? (
+        <>
+          <rect x="6" y="3.5" width="12" height="17" rx="2" {...(active ? { fill: 'currentColor' } : pen)} />
+          <path d="M9 3.5h6V6H9z" {...pen} />
+          <path
+            d="M8.5 11h7M8.5 14.5h5"
+            stroke={active ? '#faf8f5' : 'currentColor'}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+          />
+        </>
+      ) : null}
+      {id === 'leads' ? (
+        <>
+          <circle cx="12" cy="8" r="3" {...(active ? { fill: 'currentColor' } : pen)} />
+          <path d="M5.5 19.5c1.2-3.2 3.5-4.8 6.5-4.8s5.3 1.6 6.5 4.8" {...pen} />
+        </>
+      ) : null}
+      {id === 'notas' ? (
+        <>
+          <path
+            d="M7 3.5h7.2L19 8.2V20a1.2 1.2 0 0 1-1.2 1.2H7A1.2 1.2 0 0 1 5.8 20V4.7A1.2 1.2 0 0 1 7 3.5Z"
+            {...(active ? { fill: 'currentColor' } : pen)}
+          />
+          <path d="M14 3.5V8.5h5" {...pen} />
+          <path
+            d="M8.5 13h7M8.5 16.5h4.5"
+            stroke={active ? '#faf8f5' : 'currentColor'}
+            strokeWidth="1.75"
+            strokeLinecap="round"
+          />
+        </>
+      ) : null}
+      {id === 'pipeline' ? (
+        <>
+          <rect x="3" y="4" width="5" height="16" rx="1.2" {...(active ? { fill: 'currentColor' } : pen)} />
+          <rect x="10" y="4" width="5" height="11" rx="1.2" {...(active ? { fill: 'currentColor' } : pen)} />
+          <rect x="17" y="4" width="4" height="14" rx="1.2" {...(active ? { fill: 'currentColor' } : pen)} />
+        </>
+      ) : null}
+      {id === 'more' ? (
+        <>
+          <circle cx="12" cy="5" r={active ? 2 : 1.45} fill="currentColor" />
+          <circle cx="12" cy="12" r={active ? 2 : 1.45} fill="currentColor" />
+          <circle cx="12" cy="19" r={active ? 2 : 1.45} fill="currentColor" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
 export default function BotsPage() {
   const { tab: tabParam } = useParams();
   const navigate = useNavigate();
@@ -203,6 +336,7 @@ export default function BotsPage() {
   const [metaCfg, setMetaCfg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [connectError, setConnectError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_BOT);
@@ -216,6 +350,8 @@ export default function BotsPage() {
   const [botModels, setBotModels] = useState(BOT_MODELS_FALLBACK);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
 
   const models = useMemo(
     () => (botModels.length ? botModels : BOT_MODELS_FALLBACK),
@@ -226,7 +362,20 @@ export default function BotsPage() {
     navigate(`/bots/${id}`);
     setEditing(null);
     setEditingForm(null);
+    setMoreOpen(false);
+    setConnectOpen(false);
   };
+
+  useEffect(() => {
+    if (!moreOpen && !connectOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setMoreOpen(false);
+      setConnectOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [moreOpen, connectOpen]);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -302,7 +451,7 @@ export default function BotsPage() {
       navigate('/bots/canales', { replace: true });
       refresh();
     } else if (metaError) {
-      setError(decodeURIComponent(metaError));
+      setConnectError(decodeURIComponent(metaError));
       setSearchParams({}, { replace: true });
       navigate('/bots/canales', { replace: true });
     }
@@ -329,6 +478,18 @@ export default function BotsPage() {
     setSelectedProducts([]);
     setShowWelcome(false);
     setShowAdvanced(false);
+  };
+
+  const openNewForm = () => {
+    setEditingForm('new');
+    setFormDraft({
+      ...EMPTY_FORM,
+      fields: EMPTY_FORM.fields.map((f) => ({ ...f })),
+    });
+  };
+
+  const openNewProduct = () => {
+    window.dispatchEvent(new CustomEvent('bots:new-product'));
   };
 
   const openEdit = async (bot) => {
@@ -680,7 +841,7 @@ export default function BotsPage() {
                 })
                 .catch(reject);
             } else {
-              reject(new Error('Inicio de sesión cancelado'));
+              reject(new Error(metaConnectFailure(response)));
             }
           },
           {
@@ -696,7 +857,7 @@ export default function BotsPage() {
         );
       });
     } catch (err) {
-      setError(err.message || 'No se pudo conectar WhatsApp');
+      setConnectError(err.message || 'No se pudo conectar WhatsApp');
     } finally {
       setConnecting(false);
     }
@@ -713,23 +874,71 @@ export default function BotsPage() {
         : 'bg-transparent text-black hover:bg-black/5'
     }`;
 
+  const mobileCreateLabel =
+    tab === 'agentes'
+      ? 'Nuevo agente'
+      : tab === 'formularios'
+        ? 'Nuevo formulario'
+        : tab === 'productos'
+          ? 'Nuevo producto'
+          : tab === 'canales'
+            ? 'Conectar canal'
+            : null;
+
+  const onMobileCreate = () => {
+    if (tab === 'agentes') openCreate();
+    else if (tab === 'formularios') openNewForm();
+    else if (tab === 'productos') openNewProduct();
+    else if (tab === 'canales') {
+      setMoreOpen(false);
+      setConnectOpen(true);
+    }
+  };
+
+  const moreSelected = moreOpen || MOBILE_MORE.some((t) => t.id === tab);
+
+  const mobileSlot = (id, label) => {
+    const selected = tab === id;
+    return (
+      <button
+        key={id}
+        type="button"
+        className={`flex h-full min-h-12 flex-col items-center justify-center gap-1 ${
+          selected ? 'text-black' : 'text-black/40'
+        }`}
+        aria-current={selected ? 'page' : undefined}
+        onClick={() => setTab(id)}
+      >
+        <MobileNavIcon id={id} active={selected} />
+        <span
+          className={`text-[10px] leading-none ${
+            selected ? 'font-semibold' : 'font-medium'
+          }`}
+        >
+          {label}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <main className="fp-page flex h-dvh min-w-0 flex-col">
-      <header className="fp-page-header flex h-[56px] shrink-0 items-center gap-3 px-4 sm:px-6">
+      <header className="fp-page-header flex h-[56px] min-w-0 shrink-0 items-center gap-3 px-4 sm:px-6">
         <button
           type="button"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border-2 border-black md:hidden"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-black md:hidden"
           onClick={onToggleSidebar}
           aria-label="Menú"
         >
           <MenuIcon />
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <BotIcon />
           <div className="fp-mono text-[12px]">Agentes</div>
         </div>
         <nav
-          className="ml-1 flex w-fit shrink-0 items-center gap-0.5 rounded-full border-2 border-black p-1"
+          aria-label="Secciones de agentes"
+          className="ml-1 hidden w-fit shrink-0 items-center gap-0.5 rounded-full border-2 border-black p-1 sm:flex"
           style={{ background: '#fff' }}
         >
           {TABS.map((t) => (
@@ -737,6 +946,7 @@ export default function BotsPage() {
               key={t.id}
               type="button"
               className={tabClass(t.id)}
+              aria-current={tab === t.id ? 'page' : undefined}
               onClick={() => setTab(t.id)}
             >
               {t.label}
@@ -753,7 +963,7 @@ export default function BotsPage() {
         {tab === 'agentes' ? (
           <button
             type="button"
-            className="fp-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium"
+            className="fp-btn hidden shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium sm:inline-flex"
             onClick={openCreate}
           >
             <PlusIcon className="h-4 w-4" />
@@ -763,14 +973,8 @@ export default function BotsPage() {
         {tab === 'formularios' ? (
           <button
             type="button"
-            className="fp-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium"
-            onClick={() => {
-              setEditingForm('new');
-              setFormDraft({
-                ...EMPTY_FORM,
-                fields: EMPTY_FORM.fields.map((f) => ({ ...f })),
-              });
-            }}
+            className="fp-btn hidden shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium sm:inline-flex"
+            onClick={openNewForm}
           >
             <PlusIcon className="h-4 w-4" />
             Nuevo formulario
@@ -779,11 +983,8 @@ export default function BotsPage() {
         {tab === 'productos' ? (
           <button
             type="button"
-            className="fp-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium"
-            onClick={() => {
-              // ProductsPanel owns its modal; signal via custom event
-              window.dispatchEvent(new CustomEvent('bots:new-product'));
-            }}
+            className="fp-btn hidden shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium sm:inline-flex"
+            onClick={openNewProduct}
           >
             <PlusIcon className="h-4 w-4" />
             Nuevo producto
@@ -791,7 +992,7 @@ export default function BotsPage() {
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:pb-5">
         {notice ? (
           <div className="pointer-events-none fixed left-1/2 top-4 z-[95] w-[min(92vw,360px)] -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0">
             <div className="pointer-events-auto inline-flex w-full max-w-full items-start gap-2 rounded-xl border-2 border-black bg-[#b5c995] px-3 py-2 text-[13px] shadow-[4px_4px_0_#000]">
@@ -829,11 +1030,11 @@ export default function BotsPage() {
 
         {tab === 'canales' ? (
           <section>
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
                 disabled={connecting || !metaCfg?.configured}
-                className="fp-btn rounded-lg border-2 border-black bg-white px-3 py-1.5 text-[13px] disabled:opacity-50"
+                className="fp-btn min-h-11 w-full rounded-lg border-2 border-black bg-white px-3 py-1.5 text-[13px] disabled:opacity-50 sm:min-h-0 sm:w-auto"
                 onClick={connectPages}
               >
                 {connecting ? 'Conectando…' : 'Conectar Facebook / Instagram'}
@@ -841,7 +1042,7 @@ export default function BotsPage() {
               <button
                 type="button"
                 disabled={connecting || !metaCfg?.configured}
-                className="fp-btn rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium disabled:opacity-50"
+                className="fp-btn min-h-11 w-full rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium disabled:opacity-50 sm:min-h-0 sm:w-auto"
                 onClick={connectWhatsApp}
               >
                 WhatsApp Embedded Signup
@@ -851,6 +1052,19 @@ export default function BotsPage() {
               <p className="mb-3 text-center text-[12px] opacity-60">
                 El servidor aún no tiene las variables META_* configuradas.
               </p>
+            ) : null}
+            {connectError ? (
+              <div className="mb-4 flex items-start gap-2 rounded-xl border-2 border-black bg-[#f8c1ba] px-3 py-2 text-[13px]">
+                <span className="min-w-0 flex-1">{connectError}</span>
+                <button
+                  type="button"
+                  className="shrink-0 opacity-60 hover:opacity-100"
+                  onClick={() => setConnectError(null)}
+                  aria-label="Cerrar"
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </button>
+              </div>
             ) : null}
             {connections.length === 0 ? (
               <EmptyState
@@ -870,10 +1084,10 @@ export default function BotsPage() {
                   {connections.map((c) => (
                     <li
                       key={c.id}
-                      className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-black bg-white px-3 py-2.5"
+                      className="flex flex-col gap-3 rounded-xl border-2 border-black bg-white px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:py-2.5"
                     >
                       <ChannelMark channel={c.channel} />
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+                      <span className="min-w-0 flex-1 break-words text-[15px] font-medium sm:truncate sm:text-[14px]">
                         {c.display_name}
                       </span>
                       <StatusSwitch
@@ -904,7 +1118,7 @@ export default function BotsPage() {
               </>
             )}
             {loading ? (
-              <EmptyState title="Cargando…" />
+              <LoadingRing className="min-h-[min(52vh,420px)]" />
             ) : bots.length === 0 ? (
               <EmptyState
                 title="Aún no tienes agentes"
@@ -912,7 +1126,7 @@ export default function BotsPage() {
                 action={
                   <button
                     type="button"
-                    className="fp-btn inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-4 py-2 text-[14px] font-medium"
+                    className="fp-btn hidden items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-4 py-2 text-[14px] font-medium sm:inline-flex"
                     onClick={openCreate}
                   >
                     <PlusIcon className="h-4 w-4" />
@@ -939,15 +1153,15 @@ export default function BotsPage() {
                           navigate(`/bots/agentes/${bot.id}`);
                         }
                       }}
-                      className={`flex w-full flex-wrap items-start gap-3 rounded-xl border-2 border-black bg-white px-3 py-3 text-left transition ${
+                      className={`flex w-full flex-col gap-3 rounded-xl border-2 border-black bg-white px-3 py-3 text-left transition sm:flex-row sm:flex-wrap sm:items-start ${
                         bot._training
                           ? 'cursor-wait opacity-90'
                           : 'cursor-pointer hover:bg-[#faf8f5]'
                       }`}
                     >
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 w-full sm:flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold">{bot.name}</span>
+                          <span className="break-words font-semibold">{bot.name}</span>
                           {bot.company_name ? (
                             <span className="text-[12px] opacity-50">
                               · {bot.company_name}
@@ -965,7 +1179,7 @@ export default function BotsPage() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 line-clamp-2 text-[13px] opacity-70">
+                        <p className="mt-1 line-clamp-2 break-words text-[13px] opacity-70">
                           {bot._training
                             ? 'MatuBot está preparando el guion del agente…'
                             : bot._error || bot.objective || 'Sin objetivo'}
@@ -994,7 +1208,7 @@ export default function BotsPage() {
                         </div>
                       </div>
                       <div
-                        className="flex items-center gap-2"
+                        className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <StatusSwitch
@@ -1005,14 +1219,14 @@ export default function BotsPage() {
                         <button
                           type="button"
                           disabled={bot._training || bot.id.startsWith('pending-')}
-                          className="rounded-lg border-2 border-black bg-[#f4ed36] px-2.5 py-1 text-[12px] font-medium disabled:opacity-40"
+                          className="min-h-11 rounded-lg border-2 border-black bg-[#f4ed36] px-4 text-[13px] font-medium disabled:opacity-40 sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[12px]"
                           onClick={() => openEdit(bot)}
                         >
                           Editar
                         </button>
                         <button
                           type="button"
-                          className="inline-flex rounded-lg border-2 border-black bg-white p-1.5 opacity-70 hover:opacity-100"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border-2 border-black bg-white opacity-70 hover:opacity-100 sm:min-h-0 sm:min-w-0 sm:p-1.5"
                           onClick={() => {
                             if (bot.id.startsWith('pending-')) {
                               setBots((prev) =>
@@ -1058,14 +1272,8 @@ export default function BotsPage() {
                 action={
                   <button
                     type="button"
-                    className="fp-btn inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-4 py-2 text-[14px] font-medium"
-                    onClick={() => {
-                      setEditingForm('new');
-                      setFormDraft({
-                        ...EMPTY_FORM,
-                        fields: EMPTY_FORM.fields.map((f) => ({ ...f })),
-                      });
-                    }}
+                    className="fp-btn hidden items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-4 py-2 text-[14px] font-medium sm:inline-flex"
+                    onClick={openNewForm}
                   >
                     <PlusIcon className="h-4 w-4" />
                     Nuevo formulario
@@ -1110,17 +1318,17 @@ export default function BotsPage() {
                           });
                         }
                       }}
-                      className="flex w-full cursor-pointer flex-wrap items-start gap-3 rounded-xl border-2 border-black bg-white px-3 py-3 text-left transition hover:bg-[#faf8f5]"
+                      className="flex w-full cursor-pointer flex-col gap-3 rounded-xl border-2 border-black bg-white px-3 py-3 text-left transition hover:bg-[#faf8f5] sm:flex-row sm:flex-wrap sm:items-start"
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold">{lf.name}</div>
-                        <p className="mt-1 text-[12px] opacity-60">
+                      <div className="min-w-0 w-full sm:flex-1">
+                        <div className="break-words font-semibold">{lf.name}</div>
+                        <p className="mt-1 break-words text-[13px] opacity-60 sm:text-[12px]">
                           {(lf.fields || []).map((f) => f.label).join(' · ') ||
                             'Sin campos'}
                         </p>
                       </div>
                       <div
-                        className="flex items-center gap-2"
+                        className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <StatusSwitch
@@ -1129,7 +1337,7 @@ export default function BotsPage() {
                         />
                         <button
                           type="button"
-                          className="rounded-lg border-2 border-black bg-[#f4ed36] px-2.5 py-1 text-[12px] font-medium"
+                          className="min-h-11 rounded-lg border-2 border-black bg-[#f4ed36] px-4 text-[13px] font-medium sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[12px]"
                           onClick={() => {
                             setEditingForm(lf.id);
                             setFormDraft({
@@ -1149,7 +1357,7 @@ export default function BotsPage() {
                         </button>
                         <button
                           type="button"
-                          className="inline-flex rounded-lg border-2 border-black bg-white p-1.5 opacity-70 hover:opacity-100"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border-2 border-black bg-white opacity-70 hover:opacity-100 sm:min-h-0 sm:min-w-0 sm:p-1.5"
                           onClick={async () => {
                             if (!window.confirm('¿Eliminar formulario?')) return;
                             try {
@@ -1221,7 +1429,7 @@ export default function BotsPage() {
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <ChannelMark channel={lead.channel} iconOnly />
-                      <span className="font-medium">
+                      <span className="min-w-0 break-words font-medium">
                         {lead.contact_name || lead.contact_external_id}
                       </span>
                       <span
@@ -1237,10 +1445,10 @@ export default function BotsPage() {
                     <dl className="mt-2 grid gap-1 text-[13px] sm:grid-cols-2">
                       {Object.entries(lead.data || {}).map(([k, v]) => (
                         <div key={k}>
-                          <dt className="fp-mono text-[10px] opacity-50">
+                          <dt className="fp-mono break-words text-[10px] opacity-50">
                             {k}
                           </dt>
-                          <dd>{String(v)}</dd>
+                          <dd className="break-words">{String(v)}</dd>
                         </div>
                       ))}
                     </dl>
@@ -1284,6 +1492,139 @@ export default function BotsPage() {
           onSave={saveLeadForm}
           onCancel={() => setEditingForm(null)}
         />
+      ) : null}
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-black bg-[#faf8f5] sm:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        aria-label="Secciones"
+      >
+        <div className="grid h-16 grid-cols-5">
+          {mobileSlot('agentes', 'Agentes')}
+          {mobileSlot('canales', 'Canales')}
+          <div className="relative">
+            <button
+              type="button"
+              className="absolute left-1/2 top-1/2 inline-flex h-14 w-14 -translate-x-1/2 -translate-y-[calc(50%+12px)] items-center justify-center rounded-full border-2 border-black bg-[#f4ed36] text-black shadow-[3px_3px_0_#000] disabled:cursor-default disabled:text-black disabled:opacity-100"
+              aria-label={mobileCreateLabel || 'Nada que crear en esta sección'}
+              disabled={!mobileCreateLabel}
+              onClick={onMobileCreate}
+            >
+              <PlusIcon className="h-6 w-6" />
+            </button>
+          </div>
+          {mobileSlot('productos', 'Productos')}
+          <button
+            type="button"
+            className={`flex h-full min-h-12 flex-col items-center justify-center gap-1 ${
+              moreSelected ? 'text-black' : 'text-black/40'
+            }`}
+            aria-expanded={moreOpen}
+            aria-haspopup="dialog"
+            aria-current={moreSelected ? 'page' : undefined}
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            <MobileNavIcon id="more" active={moreSelected} />
+            <span
+              className={`text-[10px] leading-none ${
+                moreSelected ? 'font-semibold' : 'font-medium'
+              }`}
+            >
+              Más
+            </span>
+          </button>
+        </div>
+      </nav>
+
+      {moreOpen ? (
+        <div className="fixed inset-0 z-50 sm:hidden">
+          <style>{'@keyframes bots-more-sheet{from{transform:translateY(110%)}to{transform:translateY(0)}}'}</style>
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45"
+            aria-label="Cerrar"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Más secciones"
+            className="absolute inset-x-0 bottom-0 rounded-t-2xl border-2 border-black bg-[#faf8f5] pb-[max(1rem,env(safe-area-inset-bottom,0px))] shadow-[0_-6px_0_#000] [animation:bots-more-sheet_200ms_ease-out]"
+          >
+            <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-black/25" />
+            <p className="px-4 pb-1 pt-3 text-[13px] font-semibold">Más</p>
+            <ul>
+              {MOBILE_MORE.map((t) => {
+                const selected = tab === t.id;
+                return (
+                  <li key={t.id}>
+                    <button
+                      type="button"
+                      className={`flex min-h-12 w-full items-center gap-3 px-4 text-left text-[15px] ${
+                        selected
+                          ? 'bg-black font-semibold text-[#f4ed36]'
+                          : 'text-black'
+                      }`}
+                      aria-current={selected ? 'page' : undefined}
+                      onClick={() => setTab(t.id)}
+                    >
+                      <MobileNavIcon id={t.id} active={selected} />
+                      {t.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+
+      {connectOpen ? (
+        <div className="fixed inset-0 z-50 sm:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45"
+            aria-label="Cerrar"
+            onClick={() => setConnectOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Conectar canal"
+            className="absolute inset-x-0 bottom-0 rounded-t-2xl border-2 border-black bg-[#faf8f5] pb-[max(1rem,env(safe-area-inset-bottom,0px))] shadow-[0_-6px_0_#000] [animation:bots-more-sheet_200ms_ease-out]"
+          >
+            <style>{'@keyframes bots-more-sheet{from{transform:translateY(110%)}to{transform:translateY(0)}}'}</style>
+            <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-black/25" />
+            <p className="px-4 pb-1 pt-3 text-[13px] font-semibold">
+              Conectar canal
+            </p>
+            <button
+              type="button"
+              disabled={connecting || !metaCfg?.configured}
+              className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-[15px] disabled:opacity-40"
+              onClick={() => {
+                setConnectOpen(false);
+                connectPages();
+              }}
+            >
+              <FacebookIcon className="h-5 w-5 shrink-0" style={{ color: '#1877F2' }} />
+              <InstagramIcon className="h-5 w-5 shrink-0" style={{ color: '#E4405F' }} />
+              Conectar Facebook / Instagram
+            </button>
+            <button
+              type="button"
+              disabled={connecting || !metaCfg?.configured}
+              className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-[15px] disabled:opacity-40"
+              onClick={() => {
+                setConnectOpen(false);
+                connectWhatsApp();
+              }}
+            >
+              <WhatsAppIcon className="h-5 w-5 shrink-0" style={{ color: '#25D366' }} />
+              WhatsApp Embedded Signup
+            </button>
+          </div>
+        </div>
       ) : null}
     </main>
   );

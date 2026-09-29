@@ -103,6 +103,15 @@
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+.fp-app .fp-nav-btn .fp-nav-ico.fp-nav-avatar,
+.fp-app .fp-nav-btn:hover .fp-nav-ico.fp-nav-avatar,
+.fp-app .fp-nav-active .fp-nav-ico.fp-nav-avatar {
+  background: transparent !important;
+  border: none !important;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
 .fp-app .fp-nav-btn:hover .fp-nav-ico {
   background: rgba(0, 0, 0, 0.28);
   border-color: rgba(0, 0, 0, 0.35);

@@ -53,6 +53,19 @@ export const config = {
     process.env.PUBLIC_APP_URL,
     'http://127.0.0.1:5173'
   ).replace(/\/$/, ''),
+  /** Zoho Mail — soporte@matubyte.com */
+  mail: {
+    host: trim(process.env.SMTP_HOST, 'smtp.zoho.com'),
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: trim(process.env.SMTP_SECURE, 'true') !== 'false',
+    user: trim(process.env.SMTP_USER, 'soporte@matubyte.com'),
+    pass: trim(process.env.SMTP_PASS),
+    from: trim(
+      process.env.SMTP_FROM,
+      'Matu AI <soporte@matubyte.com>'
+    ),
+    alertTo: trim(process.env.SUPPORT_ALERT_EMAIL, 'contacto@devjuanes.com'),
+  },
   /** Meta platform (WhatsApp / Messenger / Instagram) */
   meta: {
     appId: trim(process.env.META_APP_ID),

@@ -31,11 +31,25 @@ function extractWhatsAppText(message) {
   if (message.type === 'interactive') {
     const t =
       message.interactive?.button_reply?.title ||
-      message.interactive?.list_reply?.title;
+      message.interactive?.list_reply?.title ||
+      message.interactive?.nfm_reply?.body;
     if (t) return { text: String(t).trim(), isMedia: false };
   }
+  if (message.type === 'edit') {
+    const edited =
+      message.edit?.message?.text?.body ||
+      message.edit?.text?.body ||
+      message.text?.body;
+    if (edited) return { text: String(edited).trim(), isMedia: false };
+  }
+  if (message.type === 'request_welcome') {
+    return {
+      text: '[El cliente abrió el chat. Salúdalo breve y pregunta en qué puedes ayudar.]',
+      isMedia: true,
+    };
+  }
   if (
-    ['image', 'audio', 'video', 'document', 'sticker', 'location'].includes(
+    ['image', 'audio', 'video', 'document', 'sticker', 'location', 'contacts', 'order'].includes(
       message.type
     )
   ) {
@@ -44,7 +58,38 @@ function extractWhatsAppText(message) {
       isMedia: true,
     };
   }
+  // Polls, view-once, and other types Cloud API labels "unsupported" still need a reply.
+  if (message.type === 'unsupported') {
+    return {
+      text: '[El cliente envió un mensaje que WhatsApp no deja leer (archivo, encuesta o mensaje temporal). Pídele que lo escriba en texto.]',
+      isMedia: true,
+    };
+  }
   return { text: '', isMedia: false };
+}
+
+function digitsOnly(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+/**
+ * Inbound user messages sometimes omit `from` and only include contacts[].wa_id.
+ * Echoes of our own sends use the business display number as `from`, or `to` without `from`.
+ */
+function resolveWhatsAppSender(message, contacts, displayPhone) {
+  const rawFrom = message?.from != null ? String(message.from).trim() : '';
+  const fromDigits = digitsOnly(rawFrom);
+  const businessDigits = digitsOnly(displayPhone);
+  if (fromDigits && businessDigits && fromDigits === businessDigits) {
+    return { echo: true, sender: rawFrom };
+  }
+  if (rawFrom) return { echo: false, sender: rawFrom };
+  if (message?.to) return { echo: true, sender: '' };
+  const list = Array.isArray(contacts) ? contacts : [];
+  if (list.length === 1 && list[0]?.wa_id) {
+    return { echo: false, sender: String(list[0].wa_id).trim() };
+  }
+  return { echo: false, sender: '' };
 }
 
 async function processMessengerLikeEntry(entry, channelHint) {
@@ -102,15 +147,45 @@ async function processWhatsAppEntry(entry) {
     if (change.field !== 'messages') continue;
     const value = change.value || {};
     const phoneNumberId = value.metadata?.phone_number_id;
+    const displayPhone = value.metadata?.display_phone_number;
     const contacts = value.contacts || [];
     for (const message of value.messages || []) {
-      const contact = contacts.find((c) => c.wa_id === message.from);
+      if (message?.type === 'reaction' || message?.type === 'system') {
+        continue;
+      }
+      const { echo, sender } = resolveWhatsAppSender(
+        message,
+        contacts,
+        displayPhone
+      );
+      if (echo) continue;
+
+      const contact =
+        contacts.find((c) => c.wa_id === sender) ||
+        (contacts.length === 1 ? contacts[0] : null);
       const profileName = String(contact?.profile?.name || '').trim();
       const { text, isMedia } = extractWhatsAppText(message);
+      if (!sender) {
+        await logMetaBotEvent({
+          channel: 'whatsapp',
+          externalMessageId: message.id || null,
+          stage: 'webhook',
+          severity: 'warn',
+          code: 'no_sender',
+          message: 'WhatsApp sin from ni contacto para responder',
+          detail: {
+            phoneNumberId: phoneNumberId || null,
+            type: message.type || null,
+            contactCount: contacts.length,
+            hasTo: Boolean(message?.to),
+          },
+        });
+        continue;
+      }
       if (!text && !isMedia) {
         await logMetaBotEvent({
           channel: 'whatsapp',
-          externalUserId: message.from,
+          externalUserId: sender,
           externalMessageId: message.id || null,
           stage: 'webhook',
           severity: 'info',
@@ -124,9 +199,9 @@ async function processWhatsAppEntry(entry) {
         await handleInboundMessage({
           channel: 'whatsapp',
           phoneNumberId,
-          externalUserId: message.from,
+          externalUserId: sender,
           contactName: profileName,
-          contactPhone: message.from,
+          contactPhone: sender,
           text,
           externalMessageId: message.id || null,
           isMediaStub: isMedia,
@@ -135,7 +210,7 @@ async function processWhatsAppEntry(entry) {
         console.error('[meta/webhook] whatsapp handler', err.message);
         await logMetaBotEvent({
           channel: 'whatsapp',
-          externalUserId: message.from,
+          externalUserId: sender,
           externalMessageId: message.id || null,
           stage: 'webhook',
           severity: 'error',
@@ -213,6 +288,13 @@ export function registerMetaWebhook(app) {
           for (const entry of body.entry || []) {
             await processWhatsAppEntry(entry);
           }
+        } else if (object) {
+          await logMetaBotEvent({
+            stage: 'webhook',
+            severity: 'warn',
+            code: 'unknown_object',
+            message: `Webhook Meta con object no manejado: ${object}`,
+          });
         }
       } catch (err) {
         console.error('[meta/webhook] process error', err);

@@ -17,7 +17,7 @@ export default function PricingPage() {
     <MarketingShell>
       <SeoHead
         title="Precios — Free, Pro $29, Team $99"
-        description={`Precios Matu AI by Matubyte: plan gratis, Pro $29/mes y Team $99/mes. IA sectorizada a precio accesible. ${SITE.domain}`}
+        description={`Precios de Matu AI by ${SITE.companyShort}: plan gratis, Pro $29/mes y Team $99/mes. Chat con modelos propios. ${SITE.domain}`}
         path="/precios"
         jsonLd={graphLd(
           buildOrganizationLd(),

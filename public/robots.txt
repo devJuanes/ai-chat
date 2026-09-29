@@ -14,6 +14,13 @@ Disallow: /settings
 Disallow: /library
 Disallow: /search
 Disallow: /usage
+Disallow: /explore
+Disallow: /imagine
+Disallow: /bots
+Disallow: /inbox
+Disallow: /pronosticos
+Disallow: /s/
+Disallow: /conectar-sizor
 Disallow: /api/
 
 Sitemap: https://matubyte.com/sitemap.xml

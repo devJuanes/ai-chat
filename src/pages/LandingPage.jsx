@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { BrandMascot, ConfettiBit } from '../components/BrandMascot';
+import { ConfettiBit } from '../components/BrandMascot';
+import BrandLogo from '../components/BrandLogo';
 import {
   InstagramIcon,
   MessengerIcon,
@@ -78,14 +79,26 @@ export default function LandingPage() {
     buildWebSiteLd(),
     buildSoftwareLd(),
     buildFaqLd(FAQ),
-    buildBreadcrumbLd([{ name: 'Inicio', path: '/' }])
+    buildBreadcrumbLd([{ name: 'Inicio', path: '/' }]),
+    {
+      '@type': 'ItemList',
+      '@id': `${SITE.url.replace(/\/$/, '')}/#modelos`,
+      name: 'Modelos de Matu AI',
+      itemListElement: MODELS_PUBLIC.map((m, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: m.name,
+        description: m.body,
+        url: `${SITE.url.replace(/\/$/, '')}/modelos/${m.id}`,
+      })),
+    }
   );
 
   return (
     <MarketingShell onContact={openContact}>
       <SeoHead
-        title="IA para negocios, marketing, e-commerce y diseño web"
-        description={`Matu AI by ${SITE.companyName} (${SITE.companyShort}): chat con modelos propios y agentes para WhatsApp, Instagram y Messenger. Plan gratis · Pro $29 · Team $99. ${SITE.domain}`}
+        title="Chat con modelos propios para negocio, diseño y agentes"
+        description={`Matu AI SaaS by ${SITE.companyShort}: chat con modelos propios para negocio, growth, e-commerce, diseño web, ingeniería, deportes y agentes MatuBot. Plan gratis.`}
         path="/"
         jsonLd={jsonLd}
       />
@@ -114,7 +127,10 @@ export default function LandingPage() {
         </p>
 
         <div className="relative w-full max-w-[1100px]">
-          <BrandMascot className="anim-bob absolute -right-2 top-1/2 z-0 hidden h-[180px] w-[165px] -translate-y-1/2 md:block lg:right-8 lg:h-[220px] lg:w-[200px]" />
+          <BrandLogo
+            decorative
+            className="anim-bob absolute -right-2 top-1/2 z-0 hidden h-[180px] w-[180px] -translate-y-1/2 md:block lg:right-8 lg:h-[220px] lg:w-[220px]"
+          />
           <h1 className="display hero-title anim-rise anim-rise-delay-1 relative z-10 text-center">
             <span style={{ color: 'var(--color-hi-vis-yellow)' }}>Habla.</span>
             <br />
@@ -169,36 +185,42 @@ export default function LandingPage() {
           className="section-lead mx-auto mb-8 max-w-xl text-center text-[14px] leading-relaxed sm:mb-10 sm:text-[15px] sm:leading-snug"
           style={{ color: 'rgba(249,245,242,0.88)' }}
         >
-          Si buscas una IA para marketing, e-commerce, diseño web, ventas u
-          operaciones, Matu AI — desarrollado por {SITE.companyName} — tiene un
-          modelo pensado para eso.
+          El catálogo completo de Matu AI. Cada modelo tiene un trabajo
+          concreto.
         </p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODELS_PUBLIC.map((f) => (
-            <Link
-              key={f.id}
-              to={`/modelos/${f.id}`}
-              className="model-card card flex flex-col gap-2.5 border-[2.5px] border-black shadow-[4px_4px_0_#000] no-underline"
-              style={{ background: f.color, color: f.ink }}
+        <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 5].map((start) => (
+            <div
+              key={start}
+              className="flex w-full min-w-0 gap-4 overflow-x-auto overscroll-x-contain pb-1.5 [scrollbar-width:none] [-ms-overflow-style:none] sm:contents [&::-webkit-scrollbar]:hidden"
             >
-              <span className="mono opacity-80">{f.tag}</span>
-              <h3
-                className="display"
-                style={{
-                  fontSize: 'clamp(26px, 6vw, 40px)',
-                  lineHeight: 1.1,
-                }}
-              >
-                {f.name}
-              </h3>
-              <p className="text-[12px] font-bold uppercase tracking-wide opacity-70 sm:text-[13px]">
-                {f.niche}
-              </p>
-              <p className="text-[14px] font-bold leading-relaxed opacity-90 sm:text-[15px] sm:leading-snug">
-                {f.body}
-              </p>
-              <span className="mono mt-auto pt-2 opacity-70">Ver detalle →</span>
-            </Link>
+              {MODELS_PUBLIC.slice(start, start + 5).map((f) => (
+                <Link
+                  key={f.id}
+                  to={`/modelos/${f.id}`}
+                  className="model-card card flex w-[82%] shrink-0 flex-col gap-2.5 border-[2.5px] border-black shadow-[4px_4px_0_#000] no-underline sm:w-auto sm:min-w-0 sm:shrink"
+                  style={{ background: f.color, color: f.ink }}
+                >
+                  <span className="mono opacity-80">{f.tag}</span>
+                  <h3
+                    className="display break-words"
+                    style={{
+                      fontSize: 'clamp(26px, 6vw, 40px)',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {f.name}
+                  </h3>
+                  <p className="text-[12px] font-bold uppercase tracking-wide opacity-70 sm:text-[13px]">
+                    {f.niche}
+                  </p>
+                  <p className="text-[14px] font-bold leading-relaxed opacity-90 sm:text-[15px] sm:leading-snug">
+                    {f.body}
+                  </p>
+                  <span className="mono mt-auto pt-2 opacity-70">Ver detalle →</span>
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       </section>

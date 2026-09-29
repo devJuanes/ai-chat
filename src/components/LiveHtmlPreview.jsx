@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CloseIcon, CodeBracketIcon, PlayIcon } from './Icons';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -416,6 +416,169 @@ function slugifyName(name) {
   );
 }
 
+function guessAppName(html) {
+  return (
+    /<title[^>]*>([^<]+)<\/title>/i.exec(html || '')?.[1]?.trim() || 'Mi app'
+  ).slice(0, 60);
+}
+
+/**
+ * Mismo diálogo que el panel de preview. El overlay puede ser el panel
+ * (absolute) o la pantalla (fixed) cuando se abre desde el header móvil.
+ */
+export function SitePublishDialog({
+  open,
+  onClose,
+  html,
+  conversationId = null,
+  onPublished,
+  overlayClassName = 'absolute inset-0 z-20 flex items-end justify-center bg-black/40 p-4 sm:items-center',
+}) {
+  const auth = useAuth();
+  const [appName, setAppName] = useState('');
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState(null);
+  const [publishedUrl, setPublishedUrl] = useState(null);
+  const wasOpenRef = useRef(false);
+
+  const complete = useMemo(() => {
+    if (!html) return false;
+    return /<\/html>/i.test(html) && !isIncompleteHtml(html);
+  }, [html]);
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setPublishError(null);
+      setPublishedUrl(null);
+      setAppName((current) => (current.trim() ? current : guessAppName(html)));
+    }
+    wasOpenRef.current = open;
+  }, [open, html]);
+
+  const handlePublish = async () => {
+    const token = auth.getToken?.();
+    if (!token) {
+      setPublishError('Inicia sesión para publicar.');
+      return;
+    }
+    const name = appName.trim();
+    if (!name) {
+      setPublishError('Pon un nombre a la aplicación.');
+      return;
+    }
+    if (!html?.trim()) {
+      setPublishError('No hay HTML para publicar.');
+      return;
+    }
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const data = await api('/api/sites', {
+        token,
+        method: 'POST',
+        body: {
+          name,
+          slug: slugifyName(name),
+          html,
+          conversation_id: conversationId || undefined,
+        },
+      });
+      const url = data?.site?.url || data?.url;
+      if (!url) throw new Error('No se recibió URL pública');
+      setPublishedUrl(url);
+      onPublished?.(url);
+    } catch (err) {
+      setPublishError(err.message || 'No se pudo publicar');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className={overlayClassName}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Publicar aplicación"
+        className="w-full max-w-md rounded-2xl border-2 border-black bg-[#f9f5f2] p-4 shadow-[4px_4px_0_#000]"
+      >
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div>
+            <h3 className="text-[15px] font-bold">Publicar en producción</h3>
+            <p className="mt-0.5 text-[12px] text-black/60">
+              Queda en <span className="font-mono">ai.matubyte.com/sites/…</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] border-2 border-black bg-white"
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            <CloseIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <label className="block text-[12px] font-bold uppercase tracking-wide">
+          Nombre de la app
+          <input
+            value={appName}
+            onChange={(e) => setAppName(e.target.value)}
+            className="mt-1 w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-[14px] font-normal normal-case tracking-normal outline-none focus:bg-[#f4ed36]/40"
+            placeholder="BibliKids"
+            maxLength={60}
+            autoFocus
+          />
+        </label>
+        <p className="mt-1.5 font-mono text-[11px] text-black/50">
+          /sites/{slugifyName(appName || 'app')}
+        </p>
+        {publishError ? (
+          <p className="mt-2 text-[12px] font-medium text-[#c94245]">
+            {publishError}
+          </p>
+        ) : null}
+        {publishedUrl ? (
+          <div className="mt-3 flex flex-col gap-2">
+            <a
+              href={publishedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="break-all text-[13px] font-medium underline"
+            >
+              {publishedUrl}
+            </a>
+            <button
+              type="button"
+              className="rounded-[8px] border-2 border-black bg-[#f4ed36] px-3 py-2 text-[13px] font-bold"
+              onClick={() => {
+                window.open(publishedUrl, '_blank', 'noopener,noreferrer');
+                onClose?.();
+              }}
+            >
+              Abrir sitio publicado
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={publishing || !complete}
+            className="mt-3 w-full rounded-[8px] border-2 border-black bg-[#f4ed36] px-3 py-2.5 text-[13px] font-bold disabled:opacity-50"
+            onClick={handlePublish}
+          >
+            {publishing
+              ? 'Publicando…'
+              : complete
+                ? 'Publicar ahora'
+                : 'HTML incompleto'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Panel lateral tipo navegador (solo desktop).
  * Al terminar el stream fuerza un render limpio (sin animación ghost).
@@ -429,10 +592,10 @@ export default function LiveHtmlPreview({
   title = 'Vista previa',
   conversationId = null,
 }) {
-  const auth = useAuth();
   const isIncomplete = Boolean(incomplete);
   const [mode, setMode] = useState('preview');
   const iframeRef = useRef(null);
+  const codeScrollRef = useRef(null);
   const lastWrittenRef = useRef('');
   const writeTimerRef = useRef(null);
   const blobUrlRef = useRef(null);
@@ -441,15 +604,7 @@ export default function LiveHtmlPreview({
   const [doneFlash, setDoneFlash] = useState(false);
 
   const [publishOpen, setPublishOpen] = useState(false);
-  const [appName, setAppName] = useState('');
-  const [publishing, setPublishing] = useState(false);
-  const [publishError, setPublishError] = useState(null);
   const [publishedUrl, setPublishedUrl] = useState(null);
-
-  const complete = useMemo(() => {
-    if (!html) return false;
-    return /<\/html>/i.test(html) && !isIncompleteHtml(html);
-  }, [html]);
 
   const showGenerating = streaming;
   const liveMode = streaming;
@@ -467,6 +622,17 @@ export default function LiveHtmlPreview({
   useEffect(() => {
     if (streaming) setMode('preview');
   }, [streaming]);
+
+  useLayoutEffect(() => {
+    const el = codeScrollRef.current;
+    if (!el) return;
+    if (!streaming || mode !== 'code') {
+      el.classList.remove('is-fading');
+      return;
+    }
+    el.scrollTop = el.scrollHeight;
+    el.classList.toggle('is-fading', el.scrollHeight > el.clientHeight + 12);
+  }, [html, streaming, mode]);
 
   // Al cortar el stream: remount iframe + HTML limpio final.
   useEffect(() => {
@@ -556,57 +722,12 @@ export default function LiveHtmlPreview({
   }, [html, streaming, liveMode, mode, frameKey]);
 
   const openPublish = () => {
-    setPublishError(null);
     setPublishedUrl(null);
-    if (!appName.trim()) {
-      const guess =
-        /<title[^>]*>([^<]+)<\/title>/i.exec(html || '')?.[1]?.trim() ||
-        'Mi app';
-      setAppName(guess.slice(0, 60));
-    }
     setPublishOpen(true);
   };
 
-  const handlePublish = async () => {
-    const token = auth.getToken?.();
-    if (!token) {
-      setPublishError('Inicia sesión para publicar.');
-      return;
-    }
-    const name = appName.trim();
-    if (!name) {
-      setPublishError('Pon un nombre a la aplicación.');
-      return;
-    }
-    if (!html?.trim()) {
-      setPublishError('No hay HTML para publicar.');
-      return;
-    }
-    setPublishing(true);
-    setPublishError(null);
-    try {
-      const data = await api('/api/sites', {
-        token,
-        method: 'POST',
-        body: {
-          name,
-          slug: slugifyName(name),
-          html,
-          conversation_id: conversationId || undefined,
-        },
-      });
-      const url = data?.site?.url || data?.url;
-      if (!url) throw new Error('No se recibió URL pública');
-      setPublishedUrl(url);
-    } catch (err) {
-      setPublishError(err.message || 'No se pudo publicar');
-    } finally {
-      setPublishing(false);
-    }
-  };
-
   return (
-    <aside className="hidden h-full min-h-0 w-[min(52%,720px)] shrink-0 flex-col border-l-[2.5px] border-black bg-[#f9f5f2] lg:flex">
+    <aside className="hidden h-full min-h-0 w-full min-w-0 max-w-[min(420px,40%)] shrink flex-col border-l-[2.5px] border-black bg-[#f9f5f2] lg:flex xl:max-w-[min(600px,44%)]">
       <div className="flex shrink-0 items-center gap-2 border-b-[2.5px] border-black bg-[#8584bd] px-3 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full border border-black/30 bg-[#c94245]" />
@@ -720,7 +841,10 @@ export default function LiveHtmlPreview({
 
       <div className="relative min-h-0 flex-1 bg-white">
         {mode === 'code' ? (
-          <pre className="h-full overflow-auto p-4 font-mono text-[11px] leading-relaxed text-[#1a1a1a]">
+          <pre
+            ref={codeScrollRef}
+            className="code-editor-body h-full overflow-auto overscroll-contain p-4 font-mono text-[11px] leading-relaxed text-[#1a1a1a]"
+          >
             {html || '—'}
             {streaming ? (
               <span className="inline-block w-2 animate-pulse bg-[#f4ed36]">
@@ -740,88 +864,13 @@ export default function LiveHtmlPreview({
             <DesignerOverlay html={html} streaming={streaming} />          </>
         )}
 
-        {publishOpen ? (
-          <div className="absolute inset-0 z-20 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Publicar aplicación"
-              className="w-full max-w-md rounded-2xl border-2 border-black bg-[#f9f5f2] p-4 shadow-[4px_4px_0_#000]"
-            >
-              <div className="mb-3 flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="text-[15px] font-bold">Publicar en producción</h3>
-                  <p className="mt-0.5 text-[12px] text-black/60">
-                    Queda en{' '}
-                    <span className="font-mono">ai.matubyte.com/sites/…</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] border-2 border-black bg-white"
-                  onClick={() => setPublishOpen(false)}
-                  aria-label="Cerrar"
-                >
-                  <CloseIcon className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <label className="block text-[12px] font-bold uppercase tracking-wide">
-                Nombre de la app
-                <input
-                  value={appName}
-                  onChange={(e) => setAppName(e.target.value)}
-                  className="mt-1 w-full rounded-[8px] border-2 border-black bg-white px-3 py-2 text-[14px] font-normal normal-case tracking-normal outline-none focus:bg-[#f4ed36]/40"
-                  placeholder="BibliKids"
-                  maxLength={60}
-                  autoFocus
-                />
-              </label>
-              <p className="mt-1.5 font-mono text-[11px] text-black/50">
-                /sites/{slugifyName(appName || 'app')}
-              </p>
-              {publishError ? (
-                <p className="mt-2 text-[12px] font-medium text-[#c94245]">
-                  {publishError}
-                </p>
-              ) : null}
-              {publishedUrl ? (
-                <div className="mt-3 flex flex-col gap-2">
-                  <a
-                    href={publishedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="break-all text-[13px] font-medium underline"
-                  >
-                    {publishedUrl}
-                  </a>
-                  <button
-                    type="button"
-                    className="rounded-[8px] border-2 border-black bg-[#f4ed36] px-3 py-2 text-[13px] font-bold"
-                    onClick={() => {
-                      window.open(publishedUrl, '_blank', 'noopener,noreferrer');
-                      setPublishOpen(false);
-                    }}
-                  >
-                    Abrir sitio publicado
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={publishing || !complete}
-                  className="mt-3 w-full rounded-[8px] border-2 border-black bg-[#f4ed36] px-3 py-2.5 text-[13px] font-bold disabled:opacity-50"
-                  onClick={handlePublish}
-                >
-                  {publishing
-                    ? 'Publicando…'
-                    : complete
-                      ? 'Publicar ahora'
-                      : 'HTML incompleto'}
-                </button>
-              )}
-            </div>
-          </div>
-        ) : null}
+        <SitePublishDialog
+          open={publishOpen}
+          onClose={() => setPublishOpen(false)}
+          html={html}
+          conversationId={conversationId}
+          onPublished={setPublishedUrl}
+        />
       </div>
     </aside>
   );

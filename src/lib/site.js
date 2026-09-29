@@ -38,7 +38,7 @@ export const MODELS_PUBLIC = [
     name: 'Matu',
     tag: 'Flagship',
     niche: 'Negocio general',
-    body: 'Copiloto diario: copy, pricing, GTM y decisiones claras.',
+    body: 'Copiloto diario: decisiones claras, copy preciso y planes accionables.',
     search: ['IA para negocios', 'asistente de ventas', 'copiloto SaaS'],
     color: '#f8c1ba',
     ink: '#1a1a1a',
@@ -56,7 +56,7 @@ export const MODELS_PUBLIC = [
     name: 'VO0',
     tag: 'Relámpago',
     niche: 'Respuestas rápidas',
-    body: 'Borradores y replies en segundos. Listos para pegar.',
+    body: 'Respuestas y borradores en segundos.',
     search: ['IA rápida', 'borrador de email IA'],
     color: '#b5c995',
     ink: '#1a1a1a',
@@ -74,7 +74,7 @@ export const MODELS_PUBLIC = [
     name: 'VO5',
     tag: 'Estrategia',
     niche: 'Estrategia profunda',
-    body: 'Unit economics, escenarios y roadmaps sin relleno.',
+    body: 'Estrategia profunda: unit economics, escenarios y roadmaps.',
     search: ['IA estrategia', 'análisis de negocio IA'],
     color: '#f9cc73',
     ink: '#1a1a1a',
@@ -92,7 +92,7 @@ export const MODELS_PUBLIC = [
     name: 'Matu Forge',
     tag: '3 en 1',
     niche: 'Ingeniería · ventas · ops',
-    body: 'Ingeniero + ventas + operaciones. Planes que se ejecutan.',
+    body: 'Ingeniero de producto, estratega comercial y operador.',
     search: ['IA operaciones', 'IA para startups'],
     color: '#ac4f98',
     ink: '#f9f5f2',
@@ -110,7 +110,7 @@ export const MODELS_PUBLIC = [
     name: 'Matu Dev 3.5',
     tag: 'UI elite',
     niche: 'Diseño web · frontend',
-    body: 'UI/UX y demos HTML listas para vista previa en el chat.',
+    body: 'Diseño web y UI engineering, con demos HTML en el chat.',
     search: ['IA diseño web', 'IA frontend', 'generar landing IA'],
     color: '#f4ed36',
     ink: '#1a1a1a',
@@ -128,7 +128,7 @@ export const MODELS_PUBLIC = [
     name: 'Matu Space Ultra',
     tag: 'Frontier',
     niche: 'Ingeniería · agentes',
-    body: 'Arquitectura, debug, código de producción y ejecución verificada.',
+    body: 'Razonamiento, ingeniería de software y ejecución de agente.',
     search: ['IA programación', 'agente de código', 'IA ingeniería'],
     color: '#8584bd',
     ink: '#f9f5f2',
@@ -146,7 +146,7 @@ export const MODELS_PUBLIC = [
     name: 'Matu Commerce',
     tag: 'Revenue',
     niche: 'E-commerce · CRM',
-    body: 'Pricing, pipeline, retención y acciones que mueven ingresos.',
+    body: 'E-commerce, CRM y operaciones de ingresos.',
     search: ['IA e-commerce', 'IA CRM', 'IA ventas online'],
     color: '#c94245',
     ink: '#f9f5f2',
@@ -164,7 +164,7 @@ export const MODELS_PUBLIC = [
     name: 'Matu Marketing',
     tag: 'Growth',
     niche: 'Growth · copy',
-    body: 'Ofertas, landings, ads y adquisición medible — no vanity metrics.',
+    body: 'Marketing, growth, copy y adquisición.',
     search: ['IA marketing', 'IA copywriting', 'IA growth'],
     color: '#61609a',
     ink: '#f9f5f2',
@@ -182,7 +182,7 @@ export const MODELS_PUBLIC = [
     name: 'MatuSports Pro',
     tag: 'Deportes',
     niche: 'Analítica · pronósticos',
-    body: 'Probabilidades, valor esperado y riesgo cuantitativo en mercados deportivos.',
+    body: 'Analítica deportiva, pronósticos y valor esperado.',
     search: [
       'IA pronósticos deportivos',
       'analítica deportiva',
@@ -200,11 +200,11 @@ export const MODELS_PUBLIC = [
     cta: 'chat',
   },
   {
-    id: 'matubot',
-    name: 'MatuBot',
+    id: 'matu-bot-3-5',
+    name: 'MatuBot 3.5',
     tag: 'Agentes',
-    niche: 'WhatsApp · Instagram · Messenger',
-    body: 'Atiende clientes en Meta: responde, califica leads y mueve el pipeline.',
+    niche: 'Ventas · WhatsApp · atención',
+    body: 'Chatbot de ventas y atención: califica leads y avanza la conversación.',
     search: [
       'chatbot WhatsApp',
       'agente Instagram',
@@ -213,11 +213,11 @@ export const MODELS_PUBLIC = [
     color: '#0f7a3a',
     ink: '#f9f5f2',
     summary:
-      'Tu agente comercial en WhatsApp, Instagram y Messenger. Habla con clientes, entiende qué necesitan y avanza la venta — o pasa el caso a tu equipo.',
+      'Motor de conversación comercial para ventas, atención al cliente y calificación de leads en WhatsApp, Instagram y Messenger.',
     points: [
-      'Responde y califica leads en los canales donde ya te escriben.',
-      'Usa tu catálogo, notas y etapas del embudo sin que se pierda el contexto.',
-      'Cuando hace falta una persona, hace handoff con el contexto listo.',
+      'Entiende qué busca la persona antes de vender.',
+      'Califica leads y trabaja objeciones en la conversación.',
+      'Avanza la venta o la atención con un tono profesional.',
     ],
     cta: 'bots',
   },
@@ -323,7 +323,7 @@ export const TESTIMONIALS = [
 export const FAQ = [
   {
     q: '¿Qué es Matu AI?',
-    a: 'Matu AI es el copiloto de Matubyte: modelos propios para negocio, marketing, e-commerce, diseño web e ingeniería, más agentes MatuBot para canales Meta.',
+    a: 'Matu AI es el chat de Matubyte: modelos propios para negocio, estrategia, diseño web, e-commerce, marketing, ingeniería y deportes, más MatuBot 3.5 para WhatsApp, Instagram y Messenger.',
   },
   {
     q: '¿Quién desarrolla Matu AI?',
@@ -331,7 +331,7 @@ export const FAQ = [
   },
   {
     q: '¿En qué se diferencia de un chat genérico?',
-    a: 'No es un chat genérico: tienes modelos de nicho (Commerce, Marketing, Dev, Forge, VO0, VO5) y MatuBot para WhatsApp, Instagram y Messenger.',
+    a: 'El catálogo es Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y MatuBot 3.5 para agentes de WhatsApp, Instagram y Messenger.',
   },
   {
     q: '¿Hay plan gratis?',
@@ -343,7 +343,7 @@ export const FAQ = [
   },
   {
     q: '¿Puedo conectar WhatsApp, Instagram y Messenger?',
-    a: 'Sí. Con MatuBot conectas WhatsApp, Instagram y Messenger: inbox unificado, catálogo, pipeline de leads y handoff a tu equipo cuando hace falta.',
+    a: 'Sí. MatuBot 3.5 atiende WhatsApp, Instagram y Messenger: responde, califica leads y puede pasar el caso a tu equipo.',
   },
 ];
 
@@ -371,5 +371,5 @@ export function absoluteUrl(path = '/') {
 }
 
 export function defaultDescription() {
-  return `Matu AI SaaS by Matubyte (MatByte S.A.S.): chat con modelos propios para negocio, marketing, e-commerce, diseño web e ingeniería. Plan gratis y Pro desde $29. Colombia · ${SITE.domain}`;
+  return `Matu AI SaaS by Matubyte: chat con modelos propios para negocio, growth, e-commerce, diseño web, ingeniería, deportes y agentes MatuBot. Plan gratis.`;
 }

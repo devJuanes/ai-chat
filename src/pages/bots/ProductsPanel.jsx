@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { PlusIcon, TrashIcon, CloseIcon } from '../../components/Icons';
+import LoadingRing from '../../components/LoadingRing';
 
 const TYPE_LABEL = {
   physical: 'Físico',
@@ -200,7 +201,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
 
   return (
     <section>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="min-w-0 flex-1">
           <h2 className="text-[18px] font-semibold tracking-tight">
             Productos y servicios
@@ -211,7 +212,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
         </div>
         <button
           type="button"
-          className="fp-btn inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium"
+          className="fp-btn hidden shrink-0 items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium sm:inline-flex"
           onClick={openNew}
         >
           <PlusIcon className="h-4 w-4" />
@@ -220,7 +221,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
       </div>
 
       {loading ? (
-        <EmptyState title="Cargando…" />
+        <LoadingRing className="min-h-[min(48vh,380px)]" />
       ) : products.length === 0 ? (
         <EmptyState
           title="Aún no hay productos"
@@ -228,7 +229,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
           action={
             <button
               type="button"
-              className="rounded-lg border-2 border-black bg-[#f4ed36] px-4 py-2 text-[14px] font-medium"
+              className="hidden rounded-lg border-2 border-black bg-[#f4ed36] px-4 py-2 text-[14px] font-medium sm:inline-flex"
               onClick={openNew}
             >
               Nuevo producto
@@ -262,7 +263,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
                 <div className="flex flex-1 flex-col gap-2 p-3">
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold">{p.name}</div>
+                      <div className="break-words font-semibold">{p.name}</div>
                       <div className="fp-mono text-[10px] uppercase opacity-50">
                         {TYPE_LABEL[p.product_type] || p.product_type}
                       </div>
@@ -278,7 +279,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
                     {p.description || 'Sin descripción'}
                   </p>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-                    <span className="text-[13px] font-medium">
+                    <span className="min-w-0 break-words text-[13px] font-medium">
                       {p.hide_price
                         ? 'Precio oculto'
                         : p.price != null
@@ -287,7 +288,7 @@ export default function ProductsPanel({ token, onNotice, onError }) {
                     </span>
                     <button
                       type="button"
-                      className="rounded-lg border-2 border-black bg-white p-1.5 opacity-70 hover:opacity-100"
+                      className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white opacity-70 hover:opacity-100 sm:min-h-0 sm:min-w-0 sm:p-1.5"
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (!window.confirm('¿Eliminar producto?')) return;

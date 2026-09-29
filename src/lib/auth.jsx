@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { COMPANY_NAME, COMPANY_URL, db } from './matudb';
+import { api } from './api';
 import { apiUrl, readJsonResponse } from './apiBase';
 
 const SESSION_KEY = 'matu_ai_session';
@@ -241,7 +242,7 @@ export function AuthProvider({ children }) {
         await bootstrapWorkspace(next.access_token);
         return { user: next.user, session: next };
       },
-      async signUp(email, password, name) {
+      async requestSignupCode(email, password, name) {
         const cleanEmail = String(email || '')
           .trim()
           .toLowerCase();
@@ -256,28 +257,93 @@ export function AuthProvider({ children }) {
         if (cleanPassword.length < 8) {
           throw new Error('La contraseña debe tener al menos 8 caracteres');
         }
-
-        const { data, error } = await db.auth.signUp({
-          email: cleanEmail,
-          password: cleanPassword,
-          options: { data: { name: cleanName } },
+        return api('/api/auth/register/code', {
+          method: 'POST',
+          body: { email: cleanEmail, password: cleanPassword, name: cleanName },
+        });
+      },
+      async confirmSignup(email, code, password) {
+        const cleanEmail = String(email || '')
+          .trim()
+          .toLowerCase();
+        const json = await api('/api/auth/register/confirm', {
+          method: 'POST',
+          body: { email: cleanEmail, code },
         });
 
-        if (error) {
-          throw new Error(friendlyAuthError(error.message, 'register'));
+        let next = null;
+        if (password) {
+          const { data, error } = await db.auth.signInWithPassword({
+            email: cleanEmail,
+            password: String(password),
+          });
+          if (!error) next = sessionFromMatu(data?.session, data?.user);
         }
-
-        const next = sessionFromMatu(data?.session, data?.user);
-        if (!next) {
-          throw new Error('No se pudo crear la cuenta');
+        if (!next && json?.token && json?.user?.id) {
+          next = {
+            access_token: json.token,
+            token_type: 'bearer',
+            expires_at: Math.floor(Date.now() / 1000) + 86400,
+            user: {
+              id: String(json.user.id),
+              email: String(json.user.email || cleanEmail),
+              name: json.user.name || cleanEmail.split('@')[0],
+            },
+          };
         }
-        // Prefer display name from form
-        next.user.name = cleanName || next.user.name;
-
+        if (!next) throw new Error('No se pudo crear la cuenta');
+        if (json?.user?.name) next.user.name = json.user.name;
         writeLocalSession(next);
         setSession(next);
         await bootstrapWorkspace(next.access_token);
         return { user: next.user, session: next };
+      },
+      /**
+       * Pide a MatuDB el correo de recuperación.
+       * `db.auth.resetPasswordForEmail` hace POST /auth/recover; el servidor envía el enlace.
+       * Si la cuenta no existe, devolvemos el mismo ok para no revelarlo.
+       */
+      async requestPasswordReset(email) {
+        const cleanEmail = String(email || '')
+          .trim()
+          .toLowerCase();
+        if (!cleanEmail) {
+          throw new Error('Escribe tu correo');
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+          throw new Error('El correo no es válido');
+        }
+
+        const { error } = await db.auth.resetPasswordForEmail(cleanEmail);
+        if (error) {
+          const raw = String(error.message || '').toLowerCase();
+          const missingAccount =
+            raw.includes('not found') ||
+            raw.includes('no encontr') ||
+            raw.includes('does not exist') ||
+            raw.includes('no existe') ||
+            raw.includes('unknown user') ||
+            raw.includes('no user') ||
+            raw.includes('user not');
+          if (missingAccount) return { ok: true };
+
+          if (
+            raw.includes('network') ||
+            raw.includes('fetch') ||
+            raw.includes('failed to fetch')
+          ) {
+            throw new Error(
+              'No pudimos conectar. Revisa tu internet e inténtalo de nuevo.'
+            );
+          }
+          if (!error.message || raw === 'error requesting recovery') {
+            throw new Error(
+              'No pudimos enviar el enlace. Inténtalo de nuevo.'
+            );
+          }
+          throw new Error(error.message);
+        }
+        return { ok: true };
       },
       async signOut({ redirectTo = '/' } = {}) {
         try {

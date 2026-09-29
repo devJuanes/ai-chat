@@ -15,6 +15,13 @@ function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
+function isMobileViewport() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px)').matches
+  );
+}
+
 export default function Composer({
   onSend,
   onStartCall,
@@ -48,16 +55,16 @@ export default function Composer({
   }, [value]);
 
   useEffect(() => {
+    if (isMobileViewport()) return;
     // Mantener focus listo para escribir
     const t = requestAnimationFrame(() => taRef.current?.focus());
     return () => cancelAnimationFrame(t);
   }, []);
 
   useEffect(() => {
-    if (!disabled) {
-      const t = requestAnimationFrame(() => taRef.current?.focus());
-      return () => cancelAnimationFrame(t);
-    }
+    if (disabled || isMobileViewport()) return;
+    const t = requestAnimationFrame(() => taRef.current?.focus());
+    return () => cancelAnimationFrame(t);
   }, [disabled]);
 
   useEffect(() => {
@@ -113,6 +120,7 @@ export default function Composer({
   }, []);
 
   const focusInput = () => {
+    if (isMobileViewport()) return;
     requestAnimationFrame(() => {
       taRef.current?.focus();
     });

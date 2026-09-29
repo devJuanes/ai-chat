@@ -57,6 +57,7 @@ async function flushQueue(key) {
   try {
     result = await fn();
   } catch (err) {
+    console.error('[meta/reply-queue]', err?.message || err);
     result = { error: err?.message || String(err) };
   }
 

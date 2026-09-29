@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { setSizorEmbed } from '../lib/sizorEmbed';
 import BrandLogo from '../components/BrandLogo';
+import SeoHead from '../components/seo/SeoHead';
 
 function resolveSizorBaseUrl(sizorUrlParam) {
   let raw = (
@@ -87,6 +88,12 @@ export default function ConnectSizorPage() {
 
   return (
     <div className="grid min-h-dvh place-items-center bg-[#f9f5f2] px-4">
+      <SeoHead
+        title="Conectar con Sizor"
+        description="Conecta una cuenta de Sizor con Matu AI para abrir el chat."
+        path="/conectar-sizor"
+        noindex
+      />
       <div className="w-full max-w-md rounded-2xl border-2 border-black bg-white p-8 text-center shadow-[6px_6px_0_#000]">
         <div className="mb-4 flex justify-center">
           <BrandLogo size={48} decorative />

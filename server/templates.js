@@ -122,11 +122,62 @@ export function loadTemplate(id) {
   return { id: item.id, label: item.label, html };
 }
 
+/** Id de catálogo de Matu Dev 3.5 (docs/models/MatuDev3-5.md). */
+const MATU_DEV_MODEL_ID = 'matu-dev-3-5';
+
+/**
+ * React o JSX explícitos. "Tailwind" a secas no cuenta:
+ * en Matu Dev 3.5 eso sigue siendo HTML + CDN.
+ */
+function wantsExplicitReact(text = '') {
+  const t = String(text || '');
+  return (
+    /\b(react|jsx|tsx)\b/i.test(t) ||
+    /\b(componente|component).{0,40}\b(react|jsx|tsx)\b/i.test(t)
+  );
+}
+
+/**
+ * Nota corta para Matu Dev 3.5. Sustituye las plantillas CSS
+ * (landing, blog, app-shell) y el esqueleto react-tailwind,
+ * que fijan un layout. No repite el arranque: eso ya está en la piel.
+ */
+function matuDevPageNote() {
+  return `
+## Página Matu Dev 3.5
+El usuario pidió una página o UI. No hay plantilla inyectada (ni landing, ni blog, ni dashboard, ni esqueleto React).
+
+- Entrega un \`\`\`html\`\`\` completo con Tailwind por CDN (\`https://cdn.tailwindcss.com\`), como en tu arranque. No pases a JSX: no pidieron React.
+- Responsive obligatorio: teléfono vertical y horizontal, tablet y escritorio. Layout fluido, sin ancho fijo de escritorio, sin scroll horizontal de la página.
+- Varía composición, motion e interacción. No repitas el mismo hero + 3 cards ni el mismo dashboard de KPIs.
+- Tienda, catálogo, galería, testimonios o set visual repetido: carrusel real (swipe, botones, más de un slide) en esos mismos tamaños. Slider en hero, antes/después o destacados si encaja. No un grid estático solo.
+`;
+}
+
+/** React/JSX explícito: permitir JSX, sin copiar el HTML fijo de react-tailwind. */
+function matuDevReactNote() {
+  return `
+## Página Matu Dev 3.5 — React
+El usuario pidió React o JSX. No hay plantilla HTML inyectada: no copies un layout fijo.
+
+- Entrega un componente en \`\`\`jsx\`\`\` / \`\`\`tsx\`\`\` (la app lo monta con Tailwind) o, si es una página entera, un \`\`\`html\`\`\` con Tailwind CDN y React por CDN. Sin \`import\` de npm. Sin Next.js ni Vite.
+- La composición sale del brief. No reutilices un esqueleto único.
+- Responsive obligatorio: teléfono vertical y horizontal, tablet y escritorio. Layout fluido, sin ancho fijo de escritorio, sin scroll horizontal de la página.
+- Tienda, catálogo, galería, testimonios o set visual repetido: carrusel real (swipe, botones, más de un slide) en esos mismos tamaños. Slider en hero, antes/después o destacados si encaja. No un grid estático solo.
+`;
+}
+
 /**
  * Bloque para inyectar en el system prompt cuando el usuario pide una página.
  * La IA adapta la plantilla en vez de inventar estructura desde cero.
+ * Matu Dev 3.5 no recibe esqueletos: HTML + Tailwind, o una nota corta si pidieron React/JSX.
  */
-export function buildTemplatePromptBlock(userText = '') {
+export function buildTemplatePromptBlock(userText = '', modelId = '') {
+  if (modelId === MATU_DEV_MODEL_ID) {
+    if (!wantsHtmlPage(userText)) return '';
+    return wantsExplicitReact(userText) ? matuDevReactNote() : matuDevPageNote();
+  }
+
   if (!wantsHtmlPage(userText)) return '';
   const picked = loadTemplate(pickTemplateId(userText));
   if (!picked) return '';

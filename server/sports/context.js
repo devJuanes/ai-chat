@@ -96,7 +96,7 @@ async function detailBlock(fixture) {
     .limit(1);
   const { data: forecastRows } = await db
     .from('sports_forecasts')
-    .select('home_prob, draw_prob, away_prob, btts_prob, over_prob, confidence, summary, drivers')
+    .select('home_prob, draw_prob, away_prob, btts_prob, over_prob, win_prob, pick_label, confidence, summary, drivers')
     .eq('fixture_id', fixture.id)
     .limit(1);
   const h2h = h2hRows?.[0];
@@ -142,7 +142,7 @@ async function detailBlock(fixture) {
   }
   if (forecast) {
     lines.push(
-      `Pronóstico interno previo (estimación, no certeza): local ${pct(forecast.home_prob)}, empate ${pct(forecast.draw_prob)}, visita ${pct(forecast.away_prob)}, ambos marcan ${pct(forecast.btts_prob)}, over ${pct(forecast.over_prob)}, confianza ${forecast.confidence || 'baja'}.`
+      `Pronóstico interno previo (estimación, no certeza): ${forecast.pick_label || 'sin mercado'} ${pct(forecast.win_prob)}. Contexto 1X2 local ${pct(forecast.home_prob)}, empate ${pct(forecast.draw_prob)}, visita ${pct(forecast.away_prob)}, ambos marcan ${pct(forecast.btts_prob)}, over ${pct(forecast.over_prob)}, confianza ${forecast.confidence || 'baja'}.`
     );
     if (forecast.summary) lines.push(`Lectura guardada: ${forecast.summary}`);
   } else {
@@ -192,7 +192,7 @@ export async function buildSportsChatContext(userText) {
   const parts = [
     '## Datos deportivos verificados',
     `Fecha de la agenda: ${focusDate} (America/Bogota). Solo partidos de ese día que aún no han finalizado.`,
-    'Habla como tipster: porcentaje de victoria. Sin cuota no hay edge, EV ni stake: la salida es la lectura de porcentaje. No armes tablas. Las tarjetas con logo las pinta el chat.',
+    'Habla como tipster. El pick guardado es el mercado (totales, ambos marcan, handicap, doble oportunidad o 1X2), no siempre el ganador. Sin cuota no hay edge, EV ni stake: la salida es la lectura de porcentaje. No armes tablas. Las tarjetas con logo las pinta el chat.',
     'No cites partidos de días anteriores ni marcadores finales como pronóstico.',
     '',
     '### Agenda del día',

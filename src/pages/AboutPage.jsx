@@ -12,7 +12,7 @@ export default function AboutPage() {
     <MarketingShell>
       <SeoHead
         title={`Acerca de ${SITE.companyName} · creadores de Matu AI`}
-        description={`${SITE.companyName} (${SITE.companyShort}) desarrolla Matu AI SaaS: inteligencia artificial sectorizada para negocios. Colombia · ${SITE.domain}`}
+        description={`${SITE.companyName} (${SITE.companyShort}) desarrolla Matu AI: chat con modelos propios para negocio, diseño, comercio y agentes. Colombia · ${SITE.domain}`}
         path="/acerca"
         jsonLd={graphLd(
           buildOrganizationLd(),
@@ -62,10 +62,10 @@ export default function AboutPage() {
           <article className="card card-bone border-[2.5px] border-black shadow-[4px_4px_0_#000]">
             <h2 className="display text-[32px] leading-none">Qué construimos</h2>
             <p className="mt-4 text-[15px] font-bold leading-snug opacity-85">
-              Chat con contexto, proyectos, tablas exportables, preview HTML y
-              modelos sectorizados (Commerce, Marketing, Dev, Space Ultra,
-              Forge…). Parte de la industria global de IA, con foco en nichos
-              accionables.
+              Chat con contexto, proyectos, tablas exportables y preview HTML.
+              El catálogo es Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu
+              Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y
+              MatuBot 3.5.
             </p>
           </article>
           <article

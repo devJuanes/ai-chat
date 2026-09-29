@@ -51,6 +51,11 @@ export default function SeoHead({
     setMeta('meta[property="og:site_name"]', 'content', SITE.productLegal);
     setMeta('meta[property="og:locale"]', 'content', SITE.locale);
     setMeta('meta[property="og:image"]', 'content', ogImage);
+    setMeta(
+      'meta[property="og:image:alt"]',
+      'content',
+      `${SITE.productName} — chat de ${SITE.companyShort}`
+    );
 
     setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image');
     setMeta('meta[name="twitter:title"]', 'content', fullTitle);
@@ -143,10 +148,10 @@ export function buildSoftwareLd() {
     publisher: { '@id': absoluteUrl('/#organization') },
     inLanguage: 'es',
     featureList: [
-      'Modelos de IA sectorizados',
-      'Chat y proyectos con contexto',
-      'Tablas, CSV/Excel y preview HTML',
-      'Plan gratis y planes premium económicos',
+      'Chat con modelos propios: Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing y MatuSports Pro',
+      'MatuBot 3.5 para WhatsApp, Instagram y Messenger',
+      'Proyectos con contexto, tablas CSV/Excel y preview HTML',
+      'Plan gratis, Pro y Team',
     ],
   };
 }
@@ -160,11 +165,6 @@ export function buildWebSiteLd() {
     description: defaultDescription(),
     publisher: { '@id': absoluteUrl('/#organization') },
     inLanguage: 'es-CO',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${absoluteUrl('/explore')}?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
   };
 }
 

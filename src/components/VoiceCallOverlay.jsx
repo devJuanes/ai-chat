@@ -4,8 +4,8 @@ import {
   MicIcon,
   MicOffIcon,
   PhoneOffIcon,
-  SparkIcon,
 } from './Icons';
+import MatuAvatar from './MatuAvatar';
 import {
   ensureVoicesLoaded,
   getSpeechRecognition,
@@ -518,9 +518,11 @@ export default function VoiceCallOverlay({
               phase === 'speaking' || phase === 'hearing' ? orbPulse : ''
             }`}
           />
-          <div className="relative flex h-28 w-28 items-center justify-center rounded-full border border-white/15 bg-gradient-to-b from-white/15 to-white/5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
-            <SparkIcon className="h-10 w-10 text-white" />
-          </div>
+          <MatuAvatar
+            size={112}
+            alt="Matu"
+            className="relative shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+          />
         </button>
 
         <div className="text-center">

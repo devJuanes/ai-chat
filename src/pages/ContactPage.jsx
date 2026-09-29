@@ -15,7 +15,7 @@ export default function ContactPage() {
     <MarketingShell onContact={() => setOpen(true)}>
       <SeoHead
         title="Contacto"
-        description={`Contacta a ${SITE.companyName} (${SITE.companyShort}), desarrolladores de Matu AI. ${SITE.contactEmail} · WhatsApp ${SITE.whatsappDisplay} · ${SITE.domain}`}
+        description={`Contacta a ${SITE.companyName} (${SITE.companyShort}), quienes desarrollan Matu AI. ${SITE.contactEmail} · WhatsApp ${SITE.whatsappDisplay}.`}
         path="/contacto"
         jsonLd={graphLd(
           buildOrganizationLd(),

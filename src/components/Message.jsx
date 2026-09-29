@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AgentLoader from './AgentLoader';
+import MatuAvatar from './MatuAvatar';
 import CodeBlock from './CodeBlock';
 import DataTable, { parseDelimited } from './DataTable';
 import RichMarkdown from './RichMarkdown';
@@ -59,7 +60,7 @@ function isDataLang(lang) {
   return l === 'csv' || l === 'tsv' || l === 'excel';
 }
 
-function renderContent(text, isUser, { flushCode = false } = {}) {
+function renderContent(text, isUser, { flushCode = false, streaming = false } = {}) {
   const tokens = tokenize(text);
   return tokens.map((tok, i) => {
     if (tok.type === 'code') {
@@ -104,6 +105,7 @@ function renderContent(text, isUser, { flushCode = false } = {}) {
           code={tok.content}
           language={tok.lang}
           isUser={isUser}
+          streaming={Boolean(streaming && tok.streaming)}
         />
       );
     }
@@ -188,6 +190,11 @@ export default function Message({
     .trim();
   const isTyping = Boolean(streaming) && !isUser && !visibleContent;
   const hasCode = /```/.test(visibleContent);
+  const codeStreaming =
+    !isUser &&
+    Boolean(streaming) &&
+    hasCode &&
+    tokenize(visibleContent).some((part) => part.type === 'code' && part.streaming);
 
   const copy = async () => {
     try {
@@ -214,26 +221,24 @@ export default function Message({
         isUser ? 'flex-row-reverse' : 'flex-row'
       }`}
     >
-      <div
-        className={`hidden h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border-2 border-black text-[12px] font-bold sm:inline-flex sm:h-8 sm:w-8 sm:text-[13px] ${
-          isUser ? 'bg-[#f4ed36] text-black' : 'bg-[#8584bd] text-[#f4ed36]'
-        }`}
-        aria-hidden="true"
-      >
-        {isUser ? (
+      {isUser ? (
+        <div
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border-2 border-black bg-[#f4ed36] text-black sm:h-8 sm:w-8"
+          aria-hidden="true"
+        >
           <UserIcon className="h-4 w-4" />
-        ) : (
-          <span className="tracking-tight">M</span>
-        )}
-      </div>
+        </div>
+      ) : (
+        <MatuAvatar size={32} decorative />
+      )}
 
       <div
-        className={`flex min-w-0 flex-1 flex-col gap-1 sm:gap-1.5 ${
+        className={`flex min-w-0 max-w-full flex-1 flex-col gap-1 sm:gap-1.5 ${
           isUser
-            ? 'items-end sm:max-w-[min(100%,560px)] sm:flex-none'
+            ? 'items-end'
             : hasCode
-              ? 'items-stretch sm:max-w-[min(100%,760px)]'
-              : 'items-start sm:max-w-[min(100%,760px)] sm:flex-none'
+              ? 'items-stretch'
+              : 'items-start'
         }`}
       >
         <div
@@ -255,11 +260,13 @@ export default function Message({
         <div
           className={`max-w-full min-w-0 text-[15px] leading-relaxed sm:text-base ${
             isUser
-              ? 'w-fit max-w-[min(100%,92%)] rounded-[6px] rounded-br-[2px] border-2 border-black bg-[#1a1a1a] px-3 py-2.5 text-[#f9f5f2] sm:px-4 sm:py-3'
+              ? 'w-fit max-w-full break-words rounded-[6px] rounded-br-[2px] border-2 border-black bg-[#1a1a1a] px-3 py-2.5 text-[#f9f5f2] [overflow-wrap:anywhere] sm:px-4 sm:py-3'
               : isTyping
                 ? 'w-fit rounded-[6px] border-0 bg-transparent px-1 py-1'
                 : hasCode
-                  ? 'w-full overflow-hidden rounded-[6px] border-2 border-black bg-white text-[#1a1a1a] shadow-[2px_2px_0_#000] sm:border-[2.5px] sm:shadow-[3px_3px_0_#000]'
+                  ? `w-full overflow-hidden rounded-[6px] border-2 border-black bg-white text-[#1a1a1a] shadow-[2px_2px_0_#000] sm:border-[2.5px] sm:shadow-[3px_3px_0_#000] ${
+                      codeStreaming ? 'code-msg-streaming' : ''
+                    }`
                   : 'w-full max-w-full overflow-x-auto rounded-[6px] rounded-bl-[2px] border-2 border-black bg-[#f9f5f2] px-3 py-2.5 text-[#1a1a1a] sm:w-fit sm:px-4 sm:py-3'
           }`}
           aria-label={isTyping ? 'El asistente está respondiendo' : undefined}
@@ -274,6 +281,7 @@ export default function Message({
             >
               {renderContent(visibleContent, isUser, {
                 flushCode: hasCode && !isUser,
+                streaming: Boolean(streaming) && !isUser,
               })}
             </div>
           )}

@@ -364,8 +364,15 @@ function wantsHandoff(text, keywordsCsv) {
   const keys = String(keywordsCsv || '')
     .split(',')
     .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return keys.some((k) => lower.includes(k));
+    .filter((s) => s.length >= 3);
+  return keys.some((k) => {
+    const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Whole phrase only, so "asesor" does not match "asesoría".
+    return new RegExp(
+      `(?:^|[^\\p{L}\\p{N}])${escaped}(?=$|[^\\p{L}\\p{N}])`,
+      'iu'
+    ).test(lower);
+  });
 }
 
 async function findConnectionByAsset({
@@ -589,19 +596,31 @@ async function sendOutbound({ connection, recipientId, text }) {
   });
 }
 
-/** Try send; one retry on transient failure. */
+function isRetryableSend(err) {
+  const status = Number(err?.status || 0);
+  const code = Number(err?.graph?.code || 0);
+  const msg = String(err?.message || err);
+  if (status === 429 || status >= 500) return true;
+  // Meta 131000 is a transient Cloud API failure.
+  if (code === 131000 || code === 1 || code === 2) return true;
+  return /timeout|ECONN|ETIMEDOUT|429|temporar|rate|something went wrong/i.test(
+    msg
+  );
+}
+
+/** Try send; retry transient Graph failures (HTTP 5xx / 131000). */
 async function sendOutboundReliable({ connection, recipientId, text }) {
-  try {
-    return await sendOutbound({ connection, recipientId, text });
-  } catch (err) {
-    const msg = String(err?.message || err);
-    const retryable = /timeout|ECONN|ETIMEDOUT|429|5\d\d|temporar|rate/i.test(
-      msg
-    );
-    if (!retryable) throw err;
-    await new Promise((r) => setTimeout(r, 700));
-    return sendOutbound({ connection, recipientId, text });
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await sendOutbound({ connection, recipientId, text });
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryableSend(err) || attempt === 2) throw err;
+      await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+    }
   }
+  throw lastErr;
 }
 
 async function upsertLeadSubmission({
@@ -860,10 +879,6 @@ export async function handleInboundMessage({
   }
 
   if (wantsHandoff(inboundContent, bot.handoff_keywords)) {
-    await db
-      .from('conversations')
-      .eq('id', conversation.id)
-      .update({ assignee: 'human' });
     const notice =
       'Claro, te conecto con alguien del equipo para darte una respuesta precisa. En un momento te escriben.';
     try {
@@ -884,7 +899,13 @@ export async function handleInboundMessage({
         code: 'handoff_send_failed',
         message: err.message || 'No se pudo enviar aviso de handoff',
       });
+      // Keep the bot assigned so a later message can still be answered.
+      return { error: `handoff_send_failed: ${err.message}` };
     }
+    await db
+      .from('conversations')
+      .eq('id', conversation.id)
+      .update({ assignee: 'human' });
     const aid = newId();
     await db.from('messages').insert({
       id: aid,
@@ -907,19 +928,34 @@ export async function handleInboundMessage({
   }
 
   const queueKey = `${connection.id}::${externalUserId}`;
-  return enqueueDebouncedReply(queueKey, () =>
-    generateAndSendBotReply({
-      connection,
-      bot,
-      thread,
-      conversationId: conversation.id,
-      ownerUserId,
-      externalUserId,
-      externalMessageId,
-      identity,
-      inboundContent,
-    })
-  );
+  return enqueueDebouncedReply(queueKey, async () => {
+    try {
+      return await generateAndSendBotReply({
+        connection,
+        bot,
+        thread,
+        conversationId: conversation.id,
+        ownerUserId,
+        externalUserId,
+        externalMessageId,
+        identity,
+        inboundContent,
+      });
+    } catch (err) {
+      console.error('[meta] reply exception', err?.message || err);
+      await logMetaBotEvent({
+        ...baseLog,
+        orgId: connection.org_id,
+        botId: bot.id,
+        conversationId: conversation.id,
+        stage: 'reply',
+        severity: 'error',
+        code: 'reply_exception',
+        message: err?.message || 'Excepción generando la respuesta',
+      });
+      throw err;
+    }
+  });
 }
 
 async function generateAndSendBotReply({
@@ -1019,12 +1055,13 @@ async function generateAndSendBotReply({
 
   const companyName = resolveCompanyName(bot, org);
   const catalogProducts = await loadProductsForBot(bot, connection.org_id);
-  const { data: history } = await db
+  const { data: historyDesc } = await db
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(HISTORY_LIMIT);
+  const history = (historyDesc || []).slice().reverse();
 
   const currentStage = conversation.pipeline_stage || 'nuevo';
   const opsPrompt = buildAgentSystemPrompt({

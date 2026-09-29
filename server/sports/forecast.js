@@ -7,20 +7,31 @@ import { sportsTablesReady } from './sync.js';
 import { dayBoundsUtc, zonedParts } from './time.js';
 import { insertRow, updateWhere } from './writes.js';
 
+const MARKET_V = 2;
+
 const SYSTEM = `Eres MatuSports Pro, motor cuantitativo de Matu AI SaaS (MatuByte S.A.S.).
-Generas un pronóstico interno para guardarlo en base de datos.
+Generas UN pronóstico de mercado para guardarlo en base de datos. No es siempre el ganador del partido.
 
 Reglas:
-- Usa solo los datos del paquete. No inventes lesiones, alineaciones, cuotas, xG ni resultados.
-- No hay cuotas en el paquete: no calcules edge, EV ni stake. no_bet debe ser true.
-- Si la muestra es corta o faltan forma y H2H, baja la confianza y dilo.
-- Las probabilidades son estimaciones, no certezas.
-- Fútbol: home + draw + away = 1. Incluye btts y over (más de 2.5 goles) entre 0 y 1.
-- Baloncesto, NBA y hockey: draw = null. home + away = 1. btts = null. over puede ser null si no hay línea.
-- summary son 2 frases cortas: la sustentación de por qué ese lado, solo con el paquete. Si faltan forma y H2H, dilo en una frase.
-- Responde únicamente JSON válido, sin markdown:
-{"home":0.42,"draw":0.28,"away":0.30,"btts":0.55,"over":0.48,"pick":"home","confidence":"media","no_bet":true,"summary":"dos frases de sustentación","drivers":["factor 1","factor 2"]}
-pick es home, draw o away. El porcentaje de ese lado es el que se guarda.`;
+- Usa solo los datos del paquete. No inventes lesiones, alineaciones, cuotas, xG, córners, tarjetas ni goleadores.
+- El paquete no trae córners, tarjetas ni estadísticas de jugadores: no pronostiques esos mercados.
+- No hay cuotas: no calcules edge, EV ni stake. no_bet debe ser true.
+- Si faltan forma y H2H, baja la confianza y dilo. No subas el porcentaje para que parezca un top.
+- Elige el mercado que mejor describe ESTE partido. Prohibido usar victoria local por defecto.
+- Si ningún lado del 1X2 pasa de 0.62, no elijas 1X2: elige totales, ambos marcan, doble oportunidad o handicap.
+- "prob" es la probabilidad de ESE pick, entre 0 y 1.
+- Fútbol: home + draw + away = 1. btts y over (más de 2.5 goles) entre 0 y 1.
+- Baloncesto, NBA y hockey: draw = null y home + away = 1. btts = null en baloncesto y NBA.
+- summary: 2 frases cortas que sustentan el mercado elegido, solo con el paquete.
+
+El campo pick debe ser un texto exacto de la lista del deporte. Puedes ajustar el número .5 de puntos, goles o handicap al promedio del paquete.
+
+Fútbol: Victoria local, Victoria visita, Empate, Doble oportunidad 1X, Doble oportunidad X2, Doble oportunidad 12, Más de 1.5 goles, Menos de 1.5 goles, Más de 2.5 goles, Menos de 2.5 goles, Más de 3.5 goles, Menos de 3.5 goles, Ambos marcan, Ambos no marcan, Handicap local -1, Handicap visita +1, Handicap local -1.5, Handicap visita +1.5.
+Baloncesto y NBA: Victoria local, Victoria visita, Más de N.5 puntos, Menos de N.5 puntos, Handicap local -N.5, Handicap visita +N.5.
+Hockey: Victoria local, Victoria visita, Más de N.5 goles, Menos de N.5 goles, Ambos marcan, Ambos no marcan, Handicap local -1.5, Handicap visita +1.5.
+
+Responde únicamente JSON válido, sin markdown:
+{"home":0.42,"draw":0.28,"away":0.30,"btts":0.55,"over":0.48,"pick":"Más de 2.5 goles","prob":0.64,"confidence":"media","no_bet":true,"summary":"dos frases de sustentación","drivers":["factor 1","factor 2"]}`;
 
 function clamp(n) {
   if (typeof n === 'string') n = n.replace('%', '').trim();
@@ -47,19 +58,105 @@ function slateDateOf(kickoff) {
   return zonedParts(parsed).date;
 }
 
-function choosePick(homeP, drawP, awayP, hasDraw) {
-  const options = [
-    { key: 'home', label: 'Victoria local', p: homeP },
-    hasDraw ? { key: 'draw', label: 'Empate', p: drawP } : null,
-    { key: 'away', label: 'Victoria visita', p: awayP },
+function allowedPick(sport, label) {
+  const text = String(label || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+  if (!text || text.length > 48) return '';
+  if (/^(Victoria local|Victoria visita)$/.test(text)) return text;
+  if (sport === 'football' && text === 'Empate') return text;
+  if (sport === 'football' && /^Doble oportunidad (1X|X2|12)$/.test(text)) return text;
+  if (sport === 'football' && /^(Más|Menos) de (1\.5|2\.5|3\.5) goles$/.test(text)) return text;
+  if ((sport === 'football' || sport === 'hockey') && /^(Ambos marcan|Ambos no marcan)$/.test(text)) {
+    return text;
+  }
+  if (sport === 'football' && /^Handicap (local -[12](\.5)?|visita \+[12](\.5)?)$/.test(text)) {
+    return text;
+  }
+  if (
+    (sport === 'basketball' || sport === 'nba') &&
+    /^(Más|Menos) de \d{2,3}\.5 puntos$/.test(text)
+  ) {
+    return text;
+  }
+  if (
+    (sport === 'basketball' || sport === 'nba') &&
+    /^Handicap (local -|visita \+)\d{1,2}\.5$/.test(text)
+  ) {
+    return text;
+  }
+  if (sport === 'hockey' && /^(Más|Menos) de \d{1,2}\.5 goles$/.test(text)) return text;
+  if (sport === 'hockey' && /^Handicap (local -|visita \+)\d\.5$/.test(text)) return text;
+  return '';
+}
+
+function isSidePick(label) {
+  return /^(Victoria |Empate$)/.test(label);
+}
+
+function fallbackPick(sport, homeP, drawP, awayP, bttsP, overP) {
+  const options = [];
+  const sides = [
+    { label: 'Victoria local', p: homeP },
+    sport === 'football' ? { label: 'Empate', p: drawP } : null,
+    { label: 'Victoria visita', p: awayP },
   ].filter((item) => item && item.p != null);
+  sides.sort((a, b) => b.p - a.p);
+  if (sides[0]) options.push(sides[0]);
+  if ((sport === 'football' || sport === 'hockey') && bttsP != null) {
+    options.push(
+      bttsP >= 0.5
+        ? { label: 'Ambos marcan', p: bttsP }
+        : { label: 'Ambos no marcan', p: Number((1 - bttsP).toFixed(4)) }
+    );
+  }
+  if (sport === 'football' && overP != null) {
+    options.push(
+      overP >= 0.5
+        ? { label: 'Más de 2.5 goles', p: overP }
+        : { label: 'Menos de 2.5 goles', p: Number((1 - overP).toFixed(4)) }
+    );
+  }
   options.sort((a, b) => b.p - a.p);
   const best = options[0];
+  const other = options.find((item) => !isSidePick(item.label));
+  const chosen =
+    best && other && isSidePick(best.label) && best.p < 0.62 ? other : best;
+  return chosen || null;
+}
+
+function resolvePick(sport, parsed, homeP, drawP, awayP, bttsP, overP) {
+  const label = allowedPick(sport, parsed?.pick);
+  const prob = clamp(parsed?.prob);
+  const derived = fallbackPick(sport, homeP, drawP, awayP, bttsP, overP);
+  let chosen = label && prob ? { label, p: prob } : derived;
+  if (
+    chosen &&
+    isSidePick(chosen.label) &&
+    chosen.p < 0.62 &&
+    derived &&
+    !isSidePick(derived.label) &&
+    derived.p >= chosen.p
+  ) {
+    chosen = derived;
+  }
   return {
-    pick_label: best?.label || 'Sin lado claro',
-    win_prob: best?.p ?? null,
-    is_premium: (best?.p || 0) >= 0.8,
+    pick_label: chosen?.label || 'Sin lado claro',
+    win_prob: chosen?.p ?? null,
+    is_premium: (chosen?.p || 0) >= 0.7,
   };
+}
+
+function marketVersion(row) {
+  let drivers = row?.drivers;
+  if (typeof drivers === 'string') {
+    try {
+      drivers = JSON.parse(drivers);
+    } catch {
+      return 0;
+    }
+  }
+  return drivers && !Array.isArray(drivers) && Number(drivers.v) === MARKET_V ? MARKET_V : 0;
 }
 
 async function forecastsToday() {
@@ -101,6 +198,24 @@ async function loadSide(provider, teamId) {
   return { form: form?.[0] || null, recent: games };
 }
 
+function sidePack(side) {
+  if (!side?.form && !side?.recent?.length) return null;
+  const summary = side.form?.summary || {};
+  return {
+    jugados: side.form?.played ?? summary.played ?? null,
+    victorias: side.form?.wins ?? summary.wins ?? null,
+    empates: side.form?.draws ?? summary.draws ?? null,
+    derrotas: side.form?.losses ?? summary.losses ?? null,
+    a_favor: side.form?.goals_for ?? summary.goals_for ?? null,
+    en_contra: side.form?.goals_against ?? summary.goals_against ?? null,
+    ambos_marcan: summary.btts || side.form?.btts_rate || null,
+    over_2_5: summary.over || side.form?.over_rate || null,
+    promedio_total: summary.avg_total ?? null,
+    racha: summary.streak || null,
+    ultimos: side.recent,
+  };
+}
+
 function packetFor(fixture, home, away, h2h) {
   return {
     deporte: fixture.sport,
@@ -111,22 +226,26 @@ function packetFor(fixture, home, away, h2h) {
     local: fixture.home_team_name,
     visita: fixture.away_team_name,
     marcador: [fixture.home_score, fixture.away_score],
-    forma_local: home.form?.summary || null,
-    forma_visita: away.form?.summary || null,
-    ultimos_local: home.recent,
-    ultimos_visita: away.recent,
+    forma_local: sidePack(home),
+    forma_visita: sidePack(away),
     h2h: h2h?.summary || null,
-    nota: 'Sin cuotas. No calcules valor de mercado.',
+    nota: 'Sin cuotas, córners, tarjetas ni goleadores. Elige un mercado de la lista del deporte.',
   };
 }
 
 async function writeForecast(fixture, forecastId, payload) {
-  const picked = choosePick(
+  const picked = resolvePick(
+    fixture.sport,
+    payload.parsed,
     payload.home_prob,
     payload.draw_prob,
     payload.away_prob,
-    payload.draw_prob != null
+    payload.btts_prob,
+    payload.over_prob
   );
+  if (!picked.win_prob || picked.pick_label === 'Sin lado claro') {
+    throw new Error('Sin mercado utilizable');
+  }
   const now = new Date().toISOString();
   const saved = await updateWhere('sports_forecasts', 'id', forecastId, {
     model_id: 'matu-sports-pro',
@@ -142,7 +261,7 @@ async function writeForecast(fixture, forecastId, payload) {
     confidence: payload.confidence,
     no_bet: true,
     summary: payload.summary,
-    drivers: JSON.stringify(payload.drivers || []),
+    drivers: JSON.stringify({ v: MARKET_V, items: payload.drivers || [] }),
     raw_text: payload.raw_text,
     inputs: JSON.stringify(payload.inputs || {}),
     updated_at: now,
@@ -153,14 +272,19 @@ async function writeForecast(fixture, forecastId, payload) {
 }
 
 function forecastReady(row) {
-  return Boolean(row?.summary) && row.summary !== '__pending__' && Number(row.win_prob) > 0;
+  return (
+    Boolean(row?.summary) &&
+    row.summary !== '__pending__' &&
+    Number(row.win_prob) > 0 &&
+    marketVersion(row) >= MARKET_V
+  );
 }
 
 async function claimForecast(fixture) {
   const db = getDb();
   const { data: existing } = await db
     .from('sports_forecasts')
-    .select('id, summary, updated_at, win_prob')
+    .select('id, summary, updated_at, win_prob, drivers')
     .eq('fixture_id', fixture.id)
     .limit(1);
   const row = existing?.[0];
@@ -252,10 +376,11 @@ async function forecastOne(fixture, { onDemand = false } = {}) {
   }
   try {
     await writeForecast(fixture, forecastId, {
+      parsed,
       home_prob: homeP,
       draw_prob: drawP,
       away_prob: awayP,
-      btts_prob: hasDraw ? clamp(parsed?.btts) : null,
+      btts_prob: hasDraw || fixture.sport === 'hockey' ? clamp(parsed?.btts) : null,
       over_prob: clamp(parsed?.over),
       confidence: ['baja', 'media', 'alta'].includes(parsed?.confidence)
         ? parsed.confidence
@@ -313,7 +438,7 @@ async function forecastState(fixtures) {
   if (!ids.length) return { ready: 0, missing: [] };
   const { data: existing } = await getDb()
     .from('sports_forecasts')
-    .select('fixture_id, summary, win_prob')
+    .select('fixture_id, summary, win_prob, drivers')
     .in('fixture_id', ids.slice(0, 200));
   const have = new Set((existing || []).filter(forecastReady).map((row) => row.fixture_id));
   const missing = sortSlate(fixtures).filter((fixture) => !have.has(fixture.id));
@@ -377,7 +502,7 @@ async function ensureFixtureForecastNow(fixtureId) {
   if (FINISHED.has(fixture.status_short)) throw new Error('Ese partido ya terminó');
   const { data: existing } = await getDb()
     .from('sports_forecasts')
-    .select('summary, win_prob')
+    .select('summary, win_prob, drivers')
     .eq('fixture_id', fixture.id)
     .limit(1);
   if (forecastReady(existing?.[0])) return fixture.id;

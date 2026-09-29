@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
+import LoadingRing from '../components/LoadingRing';
 import {
   BotIcon,
   MenuIcon,
@@ -175,7 +176,7 @@ export default function BotDetailPage() {
   if (loading) {
     return (
       <main className="fp-page flex h-dvh items-center justify-center">
-        <p className="text-[16px] opacity-50">Cargando agente…</p>
+        <LoadingRing />
       </main>
     );
   }
@@ -198,23 +199,17 @@ export default function BotDetailPage() {
 
   return (
     <main className="fp-page flex h-dvh min-w-0 flex-col">
-      <header className="fp-page-header flex h-[56px] shrink-0 items-center gap-3 px-4 sm:px-6">
+      <header className="fp-page-header flex h-[52px] min-w-0 shrink-0 flex-nowrap items-center gap-1.5 px-2.5 sm:h-[56px] sm:gap-3 sm:px-6">
         <button
           type="button"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border-2 border-black md:hidden"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-black md:hidden"
           onClick={onToggleSidebar}
           aria-label="Menú"
         >
           <MenuIcon />
         </button>
-        <Link
-          to="/bots/agentes"
-          className="fp-mono text-[11px] underline opacity-70"
-        >
-          ← Agentes
-        </Link>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <BotIcon />
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+          <BotIcon className="shrink-0" />
           <div className="min-w-0 truncate font-semibold">{bot.name}</div>
           {bot.company_name ? (
             <span className="hidden truncate text-[12px] opacity-50 sm:inline">
@@ -222,32 +217,34 @@ export default function BotDetailPage() {
             </span>
           ) : null}
         </div>
-        <span
-          className={`rounded-full border-2 border-black px-2.5 py-0.5 text-[11px] font-medium ${
-            bot.active !== false
-              ? 'bg-[#22c55e] text-white'
-              : 'bg-[#ef4444] text-white'
-          }`}
-        >
-          {bot.active !== false ? 'Activo' : 'Apagado'}
-        </span>
-        <button
-          type="button"
-          className="fp-btn inline-flex items-center gap-1.5 rounded-lg border-2 border-black bg-[#f4ed36] px-3 py-1.5 text-[13px] font-medium"
-          onClick={() =>
-            navigate(`/bots/agentes?edit=${encodeURIComponent(bot.id)}`)
-          }
-        >
-          <PencilIcon className="h-4 w-4" />
-          Editar
-        </button>
+        <div className="flex shrink-0 flex-nowrap items-center gap-1.5 sm:gap-2">
+          <span
+            className={`shrink-0 rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-medium whitespace-nowrap sm:px-2.5 sm:text-[11px] ${
+              bot.active !== false
+                ? 'bg-[#22c55e] text-white'
+                : 'bg-[#ef4444] text-white'
+            }`}
+          >
+            {bot.active !== false ? 'Activo' : 'Apagado'}
+          </span>
+          <button
+            type="button"
+            className="fp-btn inline-flex shrink-0 items-center gap-1 rounded-lg border-2 border-black bg-[#f4ed36] px-2 py-1 text-[12px] font-medium whitespace-nowrap sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-[13px]"
+            onClick={() =>
+              navigate(`/bots/agentes?edit=${encodeURIComponent(bot.id)}`)
+            }
+          >
+            <PencilIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            Editar
+          </button>
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="min-h-0 w-full min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-5 [overflow-wrap:anywhere] sm:px-6">
+        <div className="mx-auto grid w-full min-w-0 max-w-5xl grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           {/* Live robot / activity */}
-          <section className="rounded-2xl border-2 border-black bg-white p-5">
-            <div className="mb-4 flex items-center justify-between gap-2">
+          <section className="min-w-0 rounded-2xl border-2 border-black bg-white p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[16px] font-semibold">En vivo</h2>
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border border-black/20 px-2 py-0.5 text-[11px] ${
@@ -263,42 +260,44 @@ export default function BotDetailPage() {
               </span>
             </div>
 
-            <div className="relative mx-auto mb-5 flex h-36 w-36 items-center justify-center">
-              <div
-                className={`absolute inset-0 rounded-full border-2 border-black ${
-                  pulse ? 'animate-ping opacity-20' : 'opacity-0'
-                }`}
-                style={{ animationDuration: '2s' }}
-              />
-              <div
-                className={`absolute inset-3 rounded-full border-2 border-dashed border-black/30 ${
-                  pulse ? 'animate-spin' : ''
-                }`}
-                style={{ animationDuration: '8s' }}
-              />
-              <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-black bg-[#f4ed36] shadow-[4px_4px_0_#000]">
-                <BotIcon className="h-10 w-10" />
-                <span className="mt-1 fp-mono text-[9px] uppercase opacity-60">
-                  {bot.name.slice(0, 10)}
-                </span>
+            <div className="flex min-w-0 flex-col items-center">
+              <div className="relative mx-auto mb-5 flex h-36 w-36 max-w-full shrink-0 items-center justify-center">
+                <div
+                  className={`absolute inset-0 rounded-full border-2 border-black ${
+                    pulse ? 'animate-ping opacity-20' : 'opacity-0'
+                  }`}
+                  style={{ animationDuration: '2s' }}
+                />
+                <div
+                  className={`absolute inset-3 rounded-full border-2 border-dashed border-black/30 ${
+                    pulse ? 'animate-spin' : ''
+                  }`}
+                  style={{ animationDuration: '8s' }}
+                />
+                <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-black bg-[#f4ed36] shadow-[4px_4px_0_#000]">
+                  <BotIcon className="h-10 w-10" />
+                  <span className="mt-1 max-w-full truncate px-1 fp-mono text-[9px] uppercase opacity-60">
+                    {bot.name.slice(0, 10)}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <p className="text-center text-[13px] opacity-70">
-              Ahora:{' '}
-              <strong className="text-black">
-                {flow[liveStep]?.title || '—'}
-              </strong>
-            </p>
-            <p className="mt-1 text-center text-[12px] opacity-50">
-              {flow[liveStep]?.detail}
-            </p>
+              <p className="w-full min-w-0 text-center text-[13px] break-words opacity-70">
+                Ahora:{' '}
+                <strong className="text-black">
+                  {flow[liveStep]?.title || '—'}
+                </strong>
+              </p>
+              <p className="mt-1 w-full min-w-0 text-center text-[12px] break-words opacity-50">
+                {flow[liveStep]?.detail}
+              </p>
+            </div>
           </section>
 
           {/* Stats */}
-          <section className="rounded-2xl border-2 border-black bg-[#faf8f5] p-5">
+          <section className="min-w-0 rounded-2xl border-2 border-black bg-[#faf8f5] p-5">
             <h2 className="mb-4 text-[16px] font-semibold">Resultados</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid min-w-0 grid-cols-2 gap-3">
               {[
                 ['Conversaciones', stats?.conversations ?? 0],
                 ['Respuestas enviadas', stats?.replies ?? 0],
@@ -307,12 +306,12 @@ export default function BotDetailPage() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="rounded-xl border-2 border-black bg-white px-3 py-3"
+                  className="min-w-0 rounded-xl border-2 border-black bg-white px-3 py-3"
                 >
                   <div className="text-[22px] font-semibold tracking-tight">
                     {value}
                   </div>
-                  <div className="fp-mono text-[10px] uppercase opacity-50">
+                  <div className="fp-mono text-[10px] uppercase break-words opacity-50">
                     {label}
                   </div>
                 </div>
@@ -345,23 +344,23 @@ export default function BotDetailPage() {
           </section>
 
           {/* Flow */}
-          <section className="rounded-2xl border-2 border-black bg-white p-5 lg:col-span-2">
+          <section className="min-w-0 rounded-2xl border-2 border-black bg-white p-5 lg:col-span-2">
             <h2 className="mb-1 text-[16px] font-semibold">
               Cómo trabaja este agente
             </h2>
             <p className="mb-5 text-[13px] opacity-60">
               Flujo que sigue en cada conversación (paso a paso).
             </p>
-            <ol className="relative flex flex-col gap-0 sm:flex-row sm:items-stretch sm:gap-2">
+            <ol className="relative flex w-full min-w-0 flex-col gap-0 sm:flex-row sm:items-stretch sm:gap-2">
               {flow.map((step, i) => {
                 const active = i === liveStep;
                 return (
                   <li
                     key={step.id}
-                    className="relative flex flex-1 flex-col sm:min-w-0"
+                    className="relative flex min-w-0 flex-1 flex-col"
                   >
                     <div
-                      className={`flex flex-1 flex-col rounded-xl border-2 border-black px-3 py-3 transition ${
+                      className={`flex min-w-0 flex-1 flex-col rounded-xl border-2 border-black px-3 py-3 transition ${
                         active
                           ? 'bg-[#f4ed36] shadow-[3px_3px_0_#000]'
                           : 'bg-[#faf8f5]'
@@ -369,17 +368,17 @@ export default function BotDetailPage() {
                     >
                       <div className="mb-1 flex items-center gap-2">
                         <span
-                          className={`flex h-6 w-6 items-center justify-center rounded-full border-2 border-black text-[11px] font-semibold ${
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-black text-[11px] font-semibold ${
                             active ? 'bg-black text-[#f4ed36]' : 'bg-white'
                           }`}
                         >
                           {i + 1}
                         </span>
-                        <span className="text-[13px] font-semibold">
+                        <span className="min-w-0 break-words text-[13px] font-semibold">
                           {step.title}
                         </span>
                       </div>
-                      <p className="text-[12px] leading-snug opacity-70">
+                      <p className="break-words text-[12px] leading-snug opacity-70">
                         {step.detail}
                       </p>
                     </div>
@@ -396,44 +395,44 @@ export default function BotDetailPage() {
           </section>
 
           {/* Personality / brief (user-friendly, not "system prompt") */}
-          <section className="rounded-2xl border-2 border-black bg-[#faf8f5] p-5 lg:col-span-2">
+          <section className="min-w-0 rounded-2xl border-2 border-black bg-[#faf8f5] p-5 lg:col-span-2">
             <h2 className="mb-1 text-[16px] font-semibold">
               Personalidad y guion
             </h2>
             <p className="mb-4 text-[13px] opacity-60">
               Cómo habla y qué tiene en cuenta (sin jerga técnica).
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border-2 border-black bg-white px-3 py-3">
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <div className="min-w-0 rounded-xl border-2 border-black bg-white px-3 py-3">
                 <div className="fp-mono mb-1 text-[10px] uppercase opacity-50">
                   Objetivo
                 </div>
-                <p className="text-[13px] leading-relaxed">
+                <p className="break-words text-[13px] leading-relaxed">
                   {bot.objective || 'Sin objetivo definido.'}
                 </p>
               </div>
-              <div className="rounded-xl border-2 border-black bg-white px-3 py-3">
+              <div className="min-w-0 rounded-xl border-2 border-black bg-white px-3 py-3">
                 <div className="fp-mono mb-1 text-[10px] uppercase opacity-50">
                   Tono
                 </div>
-                <p className="text-[13px] leading-relaxed">
+                <p className="break-words text-[13px] leading-relaxed">
                   {bot.tone || 'Profesional y cercano'}
                 </p>
               </div>
-              <div className="rounded-xl border-2 border-black bg-white px-3 py-3 sm:col-span-2">
+              <div className="min-w-0 rounded-xl border-2 border-black bg-white px-3 py-3 sm:col-span-2">
                 <div className="fp-mono mb-1 text-[10px] uppercase opacity-50">
                   Instrucciones de trabajo
                 </div>
-                <p className="whitespace-pre-wrap text-[13px] leading-relaxed">
+                <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
                   {bot.instructions || 'Sin instrucciones extra.'}
                 </p>
               </div>
               {bot.business_context ? (
-                <div className="rounded-xl border-2 border-black bg-white px-3 py-3 sm:col-span-2">
+                <div className="min-w-0 rounded-xl border-2 border-black bg-white px-3 py-3 sm:col-span-2">
                   <div className="fp-mono mb-1 text-[10px] uppercase opacity-50">
                     Contexto del negocio
                   </div>
-                  <p className="whitespace-pre-wrap text-[13px] leading-relaxed">
+                  <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
                     {bot.business_context}
                   </p>
                 </div>
@@ -450,8 +449,8 @@ export default function BotDetailPage() {
           </section>
 
           {/* Recent chats */}
-          <section className="rounded-2xl border-2 border-black bg-white p-5 lg:col-span-2">
-            <div className="mb-3 flex items-center justify-between gap-2">
+          <section className="min-w-0 rounded-2xl border-2 border-black bg-white p-5 lg:col-span-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[16px] font-semibold">Chats recientes</h2>
               <Link
                 to="/inbox"

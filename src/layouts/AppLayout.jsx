@@ -12,7 +12,7 @@ import {
   ChevronDownIcon,
   CompassIcon,
   InboxIcon,
-  LibraryIcon,
+  // LibraryIcon,
   LogoutIcon,
   MoreIcon,
   PencilIcon,
@@ -23,7 +23,10 @@ import {
 } from '../components/Icons';
 import { CloseIcon, MenuIcon } from '../components/Icons';
 import BrandLogo from '../components/BrandLogo';
-import NotificationBell from '../components/NotificationBell';
+import MatuAvatar from '../components/MatuAvatar';
+import LoadingRing from '../components/LoadingRing';
+import VerifyEmailModal from '../components/VerifyEmailModal';
+import LiveSupportChat from '../components/LiveSupportChat';
 import { isSizorEmbed } from '../lib/sizorEmbed';
 
 const PROJECTS_PREVIEW = 6;
@@ -129,6 +132,7 @@ function ShellSidebar({
   filter,
   setFilter,
   embed = false,
+  showMobileClose = false,
   className = '',
 }) {
   const auth = useAuth();
@@ -221,14 +225,24 @@ function ShellSidebar({
     <aside
       className={`fp-aside flex h-full max-h-dvh flex-col overflow-hidden text-[14px] ${className}`}
     >      <div className="flex flex-col gap-3 px-3 pb-2 pt-3.5">
-        <div className="flex items-center gap-2.5 px-1.5">
+        <div className="flex items-center gap-2.5 pl-1.5">
           <span className="fp-mark inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden">
             <BrandLogo size={36} decorative />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="fp-brand truncate">Matu AI</div>
             <div className="fp-brand-sub truncate">Espacio de trabajo</div>
           </div>
+          {showMobileClose ? (
+            <button
+              type="button"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border-2 border-black bg-[#f4ed36] text-black shadow-[2px_2px_0_#000] md:hidden"
+              onClick={onCloseMobile}
+              aria-label="Cerrar menú"
+            >
+              <CloseIcon />
+            </button>
+          ) : null}
         </div>
 
         <button
@@ -314,6 +328,7 @@ function ShellSidebar({
           </span>
           <span>Inbox</span>
         </NavLink>
+        {/* Biblioteca — oculto por ahora
         <NavLink
           to="/library"
           className={({ isActive }) => linkClass(isActive)}
@@ -324,6 +339,29 @@ function ShellSidebar({
           </span>
           <span>Biblioteca</span>
         </NavLink>
+        */}
+        <NavLink
+          to="/soporte"
+          className={({ isActive }) => linkClass(isActive)}
+          onClick={onCloseMobile}
+        >
+          <span className="fp-nav-ico fp-nav-avatar">
+            <MatuAvatar size={28} decorative className="!border-0" />
+          </span>
+          <span>Ayuda</span>
+        </NavLink>
+        {auth.profile?.user?.is_admin ? (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) => linkClass(isActive)}
+            onClick={onCloseMobile}
+          >
+            <span className="fp-nav-ico">
+              <UserIcon />
+            </span>
+            <span>Admin</span>
+          </NavLink>
+        ) : null}
       </nav>
 
       <div className="fp-divider mx-3 mt-2 h-px" />
@@ -590,21 +628,18 @@ function ShellSidebar({
             </span>
           </button>
           {!embed ? (
-            <>
-              <NotificationBell className="shrink-0" placement="top" />
-              <button
-                type="button"
-                className="fp-pill shrink-0 px-2 py-1.5 text-[10px]"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(false);
-                  onCloseMobile?.();
-                  navigate('/usage');
-                }}
-              >
-                Mejorar
-              </button>
-            </>
+            <button
+              type="button"
+              className="fp-pill shrink-0 px-2 py-1.5 text-[10px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onCloseMobile?.();
+                navigate('/usage');
+              }}
+            >
+              Mejorar
+            </button>
           ) : null}
         </div>
 
@@ -691,6 +726,10 @@ function ShellSidebar({
 }
 
 function LayoutInner() {
+  const auth = useAuth();
+  const { pathname } = useLocation();
+  const showLiveSupport = pathname === '/soporte';
+  const mustVerify = auth.profile?.user?.email_verified === false;
   const embed = isSizorEmbed();
   const [sidebarOpen, setSidebarOpen] = useState(
     typeof window === 'undefined'
@@ -795,6 +834,8 @@ function LayoutInner() {
           onSubmit={handleCreateProject}
           busy={creatingProject}
         />
+        {mustVerify ? <VerifyEmailModal /> : null}
+        {showLiveSupport ? <LiveSupportChat /> : null}
       </div>
     );
   }
@@ -805,23 +846,13 @@ function LayoutInner() {
         sidebarOpen ? 'md:grid-cols-[280px_1fr]' : 'grid-cols-1'
       }`}
     >
-      {sidebarOpen ? (
-        <button
-          type="button"
-          className="fixed left-3 top-3 z-60 inline-flex h-9 w-9 items-center justify-center rounded-[6px] border-2 border-black bg-[#f4ed36] text-black md:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-label="Cerrar menú"
-        >
-          <CloseIcon />
-        </button>
-      ) : null}
-
       <div
         className={`fixed inset-y-0 left-0 z-50 w-[280px] max-w-[100vw] overflow-hidden transition-transform duration-200 md:static md:w-auto md:max-w-none md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <ShellSidebar
+          showMobileClose
           onOpenCreateProject={() => setProjectModalOpen(true)}
           onCloseMobile={closeOnMobile}
           filter={filter}
@@ -848,6 +879,8 @@ function LayoutInner() {
         onSubmit={handleCreateProject}
         busy={creatingProject}
       />
+      {mustVerify ? <VerifyEmailModal /> : null}
+      {showLiveSupport ? <LiveSupportChat /> : null}
     </div>
   );
 }
@@ -859,14 +892,18 @@ export default function AppLayout() {
   if (auth.loading) {
     return (
       <div className="fp-app grid h-dvh place-items-center bg-[#f9f5f2]">
-        <p className="text-[14px] font-bold opacity-60">Cargando sesión…</p>
+        <LoadingRing />
       </div>
     );
   }
 
   if (!auth.user?.id || !auth.getToken()) {
     return (
-      <Navigate to="/login" replace state={{ from: location.pathname }} />
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
     );
   }
 

@@ -297,7 +297,7 @@ export function registerMetaOAuth(app, { authMiddleware, ensureWorkspace }) {
     if (errDesc) {
       return res.redirect(
         frontRedirect(
-          `/bots?meta_error=${encodeURIComponent(String(errDesc))}`
+          `/bots/canales?meta_error=${encodeURIComponent(String(errDesc))}`
         )
       );
     }
@@ -306,7 +306,7 @@ export function registerMetaOAuth(app, { authMiddleware, ensureWorkspace }) {
     const state = verifyOAuthState(req.query.state);
     if (!code || !state?.orgId) {
       return res.redirect(
-        frontRedirect('/bots?meta_error=state_invalido')
+        frontRedirect('/bots/canales?meta_error=state_invalido')
       );
     }
 
@@ -339,13 +339,13 @@ export function registerMetaOAuth(app, { authMiddleware, ensureWorkspace }) {
 
       const count = pages.length + wa.length;
       return res.redirect(
-        frontRedirect(`/bots?meta_connected=${count}`)
+        frontRedirect(`/bots/canales?meta_connected=${count}`)
       );
     } catch (err) {
       console.error('[meta] oauth callback', err);
       return res.redirect(
         frontRedirect(
-          `/bots?meta_error=${encodeURIComponent(err.message || 'oauth_failed')}`
+          `/bots/canales?meta_error=${encodeURIComponent(err.message || 'oauth_failed')}`
         )
       );
     }

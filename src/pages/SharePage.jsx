@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Message from '../components/Message';
-import { BrandMascot } from '../components/BrandMascot';
 import BrandLogo from '../components/BrandLogo';
+import SeoHead from '../components/seo/SeoHead';
+import LoadingRing from '../components/LoadingRing';
 import '../styles/landing.css';
 
 export default function SharePage() {
@@ -32,8 +33,16 @@ export default function SharePage() {
     };
   }, [token]);
 
+  const shareTitle = data?.conversation?.title || 'Chat compartido';
+
   return (
     <div className="landing fp min-h-dvh">
+      <SeoHead
+        title={`${shareTitle} — chat compartido`}
+        description="Conversación compartida desde Matu AI by Matubyte."
+        path={`/s/${token}`}
+        noindex
+      />
       <header className="relative z-20 flex items-center justify-between px-5 py-[17px] md:px-10">
         <Link to="/" className="link-underline inline-flex items-center gap-2">
           <BrandLogo
@@ -64,7 +73,7 @@ export default function SharePage() {
 
       <div className="mx-auto max-w-[768px] px-5 pb-16 pt-6 md:px-10">
         <div className="mb-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
-          <BrandMascot className="h-16 w-14 shrink-0" />
+          <BrandLogo decorative className="h-16 w-16 shrink-0" />
           <div>
             <p className="mono mb-2" style={{ color: 'rgba(249,245,242,0.7)' }}>
               Vista pública
@@ -83,11 +92,7 @@ export default function SharePage() {
         </div>
 
         <div className="card card-bone border-[2.5px] border-black shadow-[4px_4px_0_#000]">
-          {loading && (
-            <p className="text-[14px] font-medium opacity-55">
-              Cargando conversación…
-            </p>
-          )}
+          {loading && <LoadingRing className="py-10" />}
           {error && (
             <p
               className="rounded-[6px] px-3 py-2 text-[14px] font-medium"

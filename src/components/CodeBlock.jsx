@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
@@ -133,26 +133,134 @@ img,video,svg{max-width:100%;height:auto;}
 </style></head><body>${raw}</body></html>`;
 }
 
-export default function CodeBlock({ code, language = 'text', isUser = false }) {
+const REEL_ROWS = 18;
+const REEL_ROW_H = 24;
+
+function highlightCode(src, lang) {
+  const text = String(src || '');
+  if (!text) return '';
+  try {
+    if (lang && lang !== 'text' && hljs.getLanguage(lang)) {
+      return hljs.highlight(text, { language: lang }).value;
+    }
+    return hljs.highlightAuto(text).value;
+  } catch {
+    return escapeHtml(text);
+  }
+}
+
+/** Parte el HTML resaltado por líneas reales, sin cortar un tag a la mitad. */
+function splitHighlightedLines(html) {
+  const lines = [];
+  let cur = '';
+  let inTag = false;
+  const src = String(html || '');
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '<') inTag = true;
+    else if (ch === '>') inTag = false;
+    if (ch === '\n' && !inTag) {
+      lines.push(cur);
+      cur = '';
+    } else if (ch !== '\r') {
+      cur += ch;
+    }
+  }
+  lines.push(cur);
+  return lines;
+}
+
+function poseReel(reel, rows) {
+  const box = reel.getBoundingClientRect();
+  const half = box.height / 2 || 1;
+  const cy = box.top + half;
+  rows.forEach((row) => {
+    const face = row.firstElementChild;
+    if (!face) return;
+    const r = row.getBoundingClientRect();
+    const rel = (r.top + r.height / 2 - cy) / half;
+    const ad = Math.min(1.15, Math.abs(rel));
+    const tilt = rel * -54;
+    const z = (1 - Math.min(1, ad)) * 48;
+    face.style.transform = `rotateX(${tilt.toFixed(2)}deg) translateZ(${z.toFixed(1)}px) scale(${(1.12 - ad * 0.42).toFixed(3)})`;
+    face.style.opacity = String(Math.max(0.04, 1 - ad * 0.9));
+  });
+}
+
+/** La última línea real queda en la zona nítida, un poco bajo el centro. */
+function tailSlotFor(reel) {
+  const visible = Math.max(6, Math.round((reel?.clientHeight || 280) / REEL_ROW_H));
+  return Math.min(REEL_ROWS - 3, Math.round(visible * 0.62));
+}
+
+function CodeReel({ lines }) {
+  const reelRef = useRef(null);
+  const trackRef = useRef(null);
+  const source = lines?.length ? lines : [''];
+
+  useLayoutEffect(() => {
+    const reel = reelRef.current;
+    const track = trackRef.current;
+    if (!reel || !track) return;
+    const rows = [...track.children];
+    const tailSlot = tailSlotFor(reel);
+    const tailIndex = Math.max(0, source.length - 1);
+    const start = tailIndex - tailSlot;
+    rows.forEach((row, i) => {
+      const face = row.firstElementChild;
+      if (!face) return;
+      const lineIndex = start + i;
+      const html =
+        lineIndex >= 0 && lineIndex < source.length ? source[lineIndex] : '';
+      if (face.innerHTML !== html) face.innerHTML = html;
+    });
+    if (track.style.transform) track.style.transform = '';
+    poseReel(reel, rows);
+  }, [source]);
+
+  useEffect(() => {
+    const reel = reelRef.current;
+    const track = trackRef.current;
+    if (!reel || !track) return undefined;
+    const onResize = () => poseReel(reel, [...track.children]);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  return (
+    <div className="code-reel" ref={reelRef}>
+      <div className="code-reel__track" ref={trackRef}>
+        {Array.from({ length: REEL_ROWS }, (_, i) => (
+          <div className="code-reel__row" key={i}>
+            <div className="code-reel__face" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function CodeBlock({
+  code,
+  language = 'text',
+  isUser = false,
+  streaming = false,
+}) {
   const lang = normalizeLang(language);
   const previewable = canPreview(lang) && !isUser;
   const hasContent = Boolean(String(code || '').trim());
+  const live = Boolean(streaming) && !isUser;
+  const studio = !isUser;
   // Código primero mientras llega el stream; el usuario cambia a preview
   const [mode, setMode] = useState('code');
   const [copied, setCopied] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const highlighted = useMemo(() => {
-    const src = String(code || '');
-    try {
-      if (lang && lang !== 'text' && hljs.getLanguage(lang)) {
-        return hljs.highlight(src, { language: lang }).value;
-      }
-      return hljs.highlightAuto(src).value;
-    } catch {
-      return escapeHtml(src);
-    }
-  }, [code, lang]);
+  const highlighted = useMemo(() => highlightCode(code, lang), [code, lang]);
+  const liveLines = useMemo(
+    () => (live ? splitHighlightedLines(highlighted) : []),
+    [live, highlighted],
+  );
 
   useEffect(() => {
     if (mode !== 'preview' || !previewable) {
@@ -183,27 +291,41 @@ export default function CodeBlock({ code, language = 'text', isUser = false }) {
   const showPreview = mode === 'preview' && previewable;
 
   return (
+    <div className={`code-stream-shell ${live ? 'is-live' : ''}`}>
+      {live ? (
+        <span className="code-stream-led" aria-hidden="true">
+          <span className="code-stream-led__spin" />
+        </span>
+      ) : null}
     <div
-      className={`code-editor w-full min-w-0 overflow-hidden ${
+      className={`code-editor relative z-[1] w-full min-w-0 overflow-hidden ${
+        studio ? 'code-editor--studio' : ''
+      } ${live ? 'code-editor--streaming' : ''} ${
         isUser
           ? 'my-1 rounded-xl border border-white/20 bg-black/30'
-          : 'border-y border-hairline bg-white first:border-t-0 last:border-b-0'
+          : 'border-y border-transparent first:border-t-0 last:border-b-0'
       }`}
     >
       <div
-        className={`flex items-center gap-2 border-b px-3 py-2 ${
-          isUser ? 'border-white/15 bg-black/20' : 'border-hairline bg-[#f7f7f8]'
+        className={`relative z-[2] flex items-center gap-2 border-b px-3 py-2 ${
+          isUser
+            ? 'border-white/15 bg-black/20'
+            : 'border-white/10 bg-[#10182a]'
         }`}
       >
         <span
           className={`inline-flex h-2 w-2 rounded-full ${
-            isUser ? 'bg-white/50' : 'bg-[#c4c4c4]'
+            live
+              ? 'code-stream-dot'
+              : isUser
+                ? 'bg-white/50'
+                : 'bg-[#3c4d66]'
           }`}
           aria-hidden="true"
         />
         <span
           className={`text-[12px] font-medium tracking-wide ${
-            isUser ? 'text-white/80' : 'text-mid-ash'
+            isUser ? 'text-white/80' : 'text-[#d5deea]'
           }`}
         >
           {label}
@@ -222,10 +344,10 @@ export default function CodeBlock({ code, language = 'text', isUser = false }) {
                 mode === 'code'
                   ? isUser
                     ? 'bg-white/15 text-white'
-                    : 'bg-white text-graphite-ink shadow-sm ring-1 ring-black/10'
+                    : 'bg-[#f4ed36] text-black shadow-sm ring-1 ring-black/30'
                   : isUser
                     ? 'text-white/70 hover:bg-white/10'
-                    : 'text-hollow hover:bg-white hover:text-graphite-ink'
+                    : 'text-[#b7c3d6] hover:bg-white/10 hover:text-white'
               }`}
               title="Ver código"
               aria-label="Ver código"
@@ -239,10 +361,10 @@ export default function CodeBlock({ code, language = 'text', isUser = false }) {
                 mode === 'preview'
                   ? isUser
                     ? 'bg-white/15 text-white'
-                    : 'bg-[#f4ed36] text-black shadow-sm ring-1 ring-black/20'
+                    : 'bg-[#f4ed36] text-black shadow-sm ring-1 ring-black/30'
                   : isUser
                     ? 'text-white/70 hover:bg-white/10'
-                    : 'text-hollow hover:bg-white hover:text-graphite-ink'
+                    : 'text-[#b7c3d6] hover:bg-white/10 hover:text-white'
               }`}
               title="Vista previa"
               aria-label="Vista previa"
@@ -257,7 +379,7 @@ export default function CodeBlock({ code, language = 'text', isUser = false }) {
           className={`inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium transition ${
             isUser
               ? 'text-white/80 hover:bg-white/10 hover:text-white'
-              : 'text-mid-ash hover:bg-white hover:text-graphite-ink'
+              : 'text-[#b7c3d6] hover:bg-white/10 hover:text-white'
           }`}
           onClick={copy}
           title="Copiar código"
@@ -291,24 +413,27 @@ export default function CodeBlock({ code, language = 'text', isUser = false }) {
             Preparando vista previa…
           </div>
         )
+      ) : live ? (
+        <CodeReel lines={liveLines} />
       ) : (
         <div className="code-editor-body max-h-[420px] min-h-[48px] overflow-auto">
           {hasContent ? (
-            <pre className="m-0 p-0">
+            <pre className="m-0 max-w-full p-0">
               <code
                 className={`hljs block px-4 py-3 font-mono text-[13px] leading-[1.55] ${
-                  isUser ? 'bg-transparent text-white' : 'bg-white text-[#24292e]'
+                  isUser ? 'bg-transparent text-white' : 'bg-transparent text-[#d5deea]'
                 }`}
                 dangerouslySetInnerHTML={{ __html: highlighted }}
               />
             </pre>
           ) : (
-            <p className="px-4 py-3 text-[13px] text-mid-ash">
+            <p className={`px-4 py-3 text-[13px] ${studio ? 'text-[#8ea0b8]' : 'text-mid-ash'}`}>
               El bloque de código llegó vacío. Pide regenerar la respuesta.
             </p>
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

@@ -11,7 +11,9 @@ import {
   getPlanForOrg,
   verifyAccessToken,
 } from './auth.js';
-import { matudbLogin, matudbRegister } from './matudb-auth.js';
+import { matudbLogin } from './matudb-auth.js';
+import { ensureEmailSchema, registerEmailRoutes } from './email-verify.js';
+import { ensureLiveSupportSchema, registerLiveSupportRoutes } from './live-support.js';
 import { getDb, newId } from './db.js';
 import {
   listPublicModels,
@@ -118,49 +120,16 @@ registerExtraRoutes(app);
 registerGeneratedImageRoutes(app);
 registerMetaRoutes(app, { authMiddleware, ensureWorkspace });
 
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const email = String(req.body?.email || '')
-      .trim()
-      .toLowerCase();
-    const password = String(req.body?.password || '');
-    const name = String(req.body?.name || email.split('@')[0]).trim();
+registerEmailRoutes(app, { authMiddleware, ensureWorkspace, verifyAccessToken });
+registerLiveSupportRoutes(app, { authMiddleware, ensureWorkspace });
 
-    if (!email || !password || password.length < 8) {
-      return res.status(400).json({
-        error: { message: 'Email y contraseña (mín. 8) son requeridos' },
-      });
-    }
-
-    const { user, token } = await matudbRegister({ email, password, name });
-    if (!token || !user?.id) {
-      return res.status(500).json({
-        error: { message: 'MatuDB no devolvió sesión' },
-      });
-    }
-
-    const verified = await verifyAccessToken(token);
-    if (!verified) {
-      return res.status(500).json({
-        error: { message: 'Token de MatuDB no verificable' },
-      });
-    }
-
-    // Asegura que el nombre del registro quede en el perfil
-    verified.name = name || verified.name;
-    const { profile } = await ensureWorkspace(verified);
-
-    return res.status(201).json({
-      token,
-      user: {
-        id: profile.id,
-        email: profile.email,
-        name: profile.display_name || name,
-      },
-    });
-  } catch (err) {
-    return res.status(400).json({ error: { message: err.message } });
-  }
+app.post('/api/auth/register', (_req, res) => {
+  res.status(400).json({
+    error: {
+      message:
+        'Confirma el código que enviamos a tu correo para crear la cuenta.',
+    },
+  });
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -618,7 +587,9 @@ app.post('/api/chat', authMiddleware(true), async (req, res) => {
     }
 
     const system = loadSystemPrompt(modelId, projectContext, {
-      templateBlock: continueOf ? '' : buildTemplatePromptBlock(userContent),
+      templateBlock: continueOf
+        ? ''
+        : buildTemplatePromptBlock(userContent, modelId),
       sportsBlock,
     });
     const assistantId = continueMsgId || newId();
@@ -848,6 +819,13 @@ if (fs.existsSync(indexHtml)) {
 }
 
 const host = process.env.HOST || '127.0.0.1';
+ensureEmailSchema().catch((err) => {
+  console.warn('[email] schema', err?.message || err);
+});
+ensureLiveSupportSchema().catch((err) => {
+  console.warn('[live] schema', err?.message || err);
+});
+
 app.listen(config.port, host, () => {
   console.log(
     `Matu AI → http://${host}:${config.port} | project=${config.matudb.projectId.slice(0, 8)}… | model=${config.upstream.model} | upstream=${config.upstream.apiKey ? 'ok' : 'missing'} | static=${fs.existsSync(indexHtml) ? 'dist' : 'off'}`

@@ -4,10 +4,11 @@ import Message from './Message';
 import ProjectBadge from './ProjectBadge';
 import ShareModal from './ShareModal';
 import AgentLoader from './AgentLoader';
-import { BrandMascot } from './BrandMascot';
+import BrandLogo from './BrandLogo';
 import LiveHtmlPreview, {
   extractHtmlFromText,
   isIncompleteHtml,
+  SitePublishDialog,
 } from './LiveHtmlPreview';
 import {
   ArchiveIcon,
@@ -102,6 +103,13 @@ export default function ChatArea({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [livePreviewOpen, setLivePreviewOpen] = useState(true);
+  const [sitePublishOpen, setSitePublishOpen] = useState(false);
+  const chatId = conversation?.id ?? null;
+  const [sitePublishChatId, setSitePublishChatId] = useState(chatId);
+  if (chatId !== sitePublishChatId) {
+    setSitePublishChatId(chatId);
+    setSitePublishOpen(false);
+  }
 
   const liveHtml = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -121,6 +129,7 @@ export default function ChatArea({
   }, [streaming, liveHtml]);
 
   const showLivePreview = Boolean(liveHtml) && livePreviewOpen;
+  const canPublishSite = Boolean(liveHtml) && !streaming;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -302,6 +311,17 @@ export default function ChatArea({
 
         {isAuthenticated ? <NotificationBell className="shrink-0" /> : null}
 
+        {canPublishSite ? (
+          <button
+            type="button"
+            className="inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full border-2 border-black bg-[#f4ed36] px-2.5 text-[11px] font-bold lg:hidden"
+            title="Publicar en ai.matubyte.com"
+            onClick={() => setSitePublishOpen(true)}
+          >
+            Publicar
+          </button>
+        ) : null}
+
         {liveHtml && !livePreviewOpen ? (
           <button
             type="button"
@@ -442,10 +462,18 @@ export default function ChatArea({
         onClose={() => setShareOpen(false)}
       />
 
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <SitePublishDialog
+        open={sitePublishOpen}
+        onClose={() => setSitePublishOpen(false)}
+        html={liveHtml || ''}
+        conversationId={conversation?.id || null}
+        overlayClassName="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      />
+
+      <div className="flex min-h-0 min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 basis-[60%] flex-col overflow-x-hidden">
       <div
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-quiet"
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto scrollbar-quiet"
         ref={scrollRef}
       >
         {view === 'explore' ? (
@@ -604,7 +632,10 @@ export default function ChatArea({
           </div>
         ) : isEmpty ? (
           <div className="mx-auto my-auto flex w-full max-w-[var(--spacing-content)] flex-col items-center gap-4 px-4 pb-8 pt-6 text-center sm:gap-5 sm:px-6 sm:pb-12 sm:pt-8">
-            <BrandMascot className="h-16 w-14 sm:h-20 sm:w-[72px]" />
+            <BrandLogo
+              decorative
+              className="h-20 w-20 sm:h-24 sm:w-24"
+            />
             <div>
               <p className="fp-mono mb-2 opacity-50">
                 {view === 'library' ? 'Archivados' : 'Nuevo chat'}
@@ -622,7 +653,7 @@ export default function ChatArea({
               </p>
             </div>
             {view !== 'library' && (
-              <div className="mt-1 grid w-full grid-cols-1 gap-2.5 sm:mt-2 sm:grid-cols-2 sm:gap-3">
+              <div className="mt-1 hidden w-full gap-2.5 md:mt-2 md:grid md:grid-cols-2 md:gap-3">
                 {visibleSuggestions.map((s) => (
                   <button
                     key={s.title}
@@ -648,7 +679,7 @@ export default function ChatArea({
             )}
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[var(--spacing-content)] flex-col gap-4 px-3 pb-6 pt-4 sm:gap-5 sm:px-6 sm:pb-8 sm:pt-6">
+          <div className="mx-auto flex w-full min-w-0 max-w-[var(--spacing-content)] flex-col gap-4 px-3 pb-6 pt-4 sm:gap-5 sm:px-5 sm:pb-8 sm:pt-6">
             {messages.map((m, i) => {
               const isLastAssistant =
                 streaming &&
@@ -686,7 +717,7 @@ export default function ChatArea({
       )}
 
       {view !== 'library' && !inProjectHome && !loading && (
-        <div className="fp-page border-t border-black/10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:border-0 sm:px-6 sm:pb-4 sm:pt-0">
+        <div className="fp-page shrink-0 border-t border-black/10 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:border-0 sm:px-5 sm:pb-4 sm:pt-0">
           <Composer
             onSend={onSend}
             disabled={streaming}

@@ -180,6 +180,66 @@
 .code-editor .hljs-addition {
   background: #f0fff4;
 }
+
+/* Assistant code card — estudio azul-negro */
+.code-editor--studio {
+  background: #0c1220;
+  color: #d5deea;
+}
+.code-editor--studio .code-editor-body {
+  background: #0c1220;
+}
+.code-editor--studio .hljs {
+  background: transparent;
+  color: #d5deea;
+}
+.code-editor--studio .hljs-comment,
+.code-editor--studio .hljs-quote {
+  color: #7d8ca4;
+}
+.code-editor--studio .hljs-keyword,
+.code-editor--studio .hljs-selector-tag {
+  color: #f4ed36;
+}
+.code-editor--studio .hljs-name,
+.code-editor--studio .hljs-title,
+.code-editor--studio .hljs-section,
+.code-editor--studio .hljs-selector-id,
+.code-editor--studio .hljs-selector-class {
+  color: #c4c2ff;
+}
+.code-editor--studio .hljs-attr,
+.code-editor--studio .hljs-attribute,
+.code-editor--studio .hljs-variable,
+.code-editor--studio .hljs-template-variable,
+.code-editor--studio .hljs-type {
+  color: #f9cc73;
+}
+.code-editor--studio .hljs-string,
+.code-editor--studio .hljs-meta .hljs-meta-string,
+.code-editor--studio .hljs-regexp {
+  color: #b5c995;
+}
+.code-editor--studio .hljs-number,
+.code-editor--studio .hljs-literal {
+  color: #f8c1ba;
+}
+.code-editor--studio .hljs-meta,
+.code-editor--studio .hljs-built_in,
+.code-editor--studio .hljs-builtin-name,
+.code-editor--studio .hljs-symbol {
+  color: #9eb0e8;
+}
+.code-editor--studio .hljs-tag {
+  color: #d5deea;
+}
+.code-editor--studio .hljs-deletion,
+.code-editor--studio .hljs-addition {
+  background: transparent;
+}
+.code-editor--studio .code-editor-body::-webkit-scrollbar-thumb {
+  background: #2c3a52;
+}
 .code-editor .code-editor-body::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -189,6 +249,210 @@
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
+}
+
+/* Streaming code card: follow the tail inside the card, not the chat scroll. */
+.code-editor .code-editor-body {
+  overscroll-behavior: contain;
+}
+
+.code-stream-shell {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.code-stream-shell.is-live {
+  overflow: hidden;
+  border-radius: 26px;
+  padding: 4px;
+  background: #1a1a1a;
+}
+
+.code-stream-led {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.code-stream-led__spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 75rem;
+  height: 75rem;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    #1a1a1a 0deg 14deg,
+    #f4ed36 16deg 32deg,
+    #1a1a1a 34deg 48deg,
+    #b5c995 50deg 66deg,
+    #1a1a1a 68deg 82deg,
+    #f9f5f2 84deg 98deg,
+    #1a1a1a 100deg 114deg,
+    #8584bd 116deg 132deg,
+    #1a1a1a 134deg 148deg,
+    #f8c1ba 150deg 166deg,
+    #1a1a1a 168deg 182deg,
+    #f4ed36 184deg 200deg,
+    #1a1a1a 202deg 216deg,
+    #b5c995 218deg 234deg,
+    #1a1a1a 236deg 250deg,
+    #f9f5f2 252deg 266deg,
+    #1a1a1a 268deg 282deg,
+    #8584bd 284deg 300deg,
+    #1a1a1a 302deg 316deg,
+    #f8c1ba 318deg 334deg,
+    #1a1a1a 336deg 360deg
+  );
+  animation: code-led-spin 1.7s linear infinite;
+}
+
+@keyframes code-led-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.code-stream-shell.is-live .code-editor {
+  border-radius: 22px;
+  border-color: transparent;
+  background: #0c1220;
+}
+
+.code-reel {
+  position: relative;
+  height: min(42vh, 280px);
+  overflow: clip;
+  contain: paint;
+  perspective: 520px;
+  background:
+    radial-gradient(ellipse 100% 62% at 50% 46%, #1b2a48 0%, #10182c 58%, #090e18 100%);
+  border-radius: 0 0 50% 50% / 0 0 42px 42px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.25) 7%,
+    rgba(0, 0, 0, 0.72) 16%,
+    #000 26%,
+    #000 74%,
+    rgba(0, 0, 0, 0.72) 84%,
+    rgba(0, 0, 0, 0.25) 93%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.25) 7%,
+    rgba(0, 0, 0, 0.72) 16%,
+    #000 26%,
+    #000 74%,
+    rgba(0, 0, 0, 0.72) 84%,
+    rgba(0, 0, 0, 0.25) 93%,
+    transparent 100%
+  );
+}
+
+@media (min-width: 768px) {
+  .code-reel {
+    height: min(46vh, 380px);
+  }
+}
+
+.code-reel__track {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.code-reel__row {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  transform-style: preserve-3d;
+}
+
+.code-reel__face {
+  width: 100%;
+  transform-origin: center center;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 24px;
+  color: #d5deea;
+  backface-visibility: hidden;
+}
+
+.code-editor-body.is-fading::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: block;
+  height: 76px;
+  margin-bottom: -76px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    #fff 0%,
+    rgba(255, 255, 255, 0.88) 28%,
+    rgba(255, 255, 255, 0.42) 62%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.code-stream-dot {
+  background: #b5c995;
+  box-shadow: 0 0 8px #b5c995;
+  animation: code-caret 1.05s steps(1) infinite;
+}
+
+.code-stream-caret {
+  display: block;
+  width: 8px;
+  height: 1.05em;
+  margin: 0 0 12px 16px;
+  background: #b5c995;
+  box-shadow: 0 0 8px #b5c995;
+  animation: code-caret 0.85s steps(1) infinite;
+}
+
+@keyframes code-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.code-msg-streaming {
+  border-width: 0;
+  border-radius: 28px;
+  background: #0c1220;
+  box-shadow:
+    0 0 10px rgba(181, 201, 149, 0.55),
+    0 0 4px rgba(244, 237, 54, 0.35),
+    2px 2px 0 #000;
+}
+
+@media (min-width: 640px) {
+  .code-msg-streaming {
+    box-shadow:
+      0 0 12px rgba(181, 201, 149, 0.55),
+      0 0 5px rgba(244, 237, 54, 0.35),
+      3px 3px 0 #000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-stream-led__spin,
+  .code-stream-caret,
+  .code-stream-dot {
+    animation: none;
+  }
 }
 
 /* Loader 4 puntos escalonados (estado “respondiendo”) */

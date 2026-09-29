@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
 import ChatPage from './pages/ChatPage';
 import ExplorePage from './pages/ExplorePage';
@@ -7,6 +7,8 @@ import LibraryPage from './pages/LibraryPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import UsagePage from './pages/UsagePage';
+import SupportPage from './pages/SupportPage';
+import AdminPage from './pages/AdminPage';
 import ForecastsPage from './pages/ForecastsPage';
 import BotsPage from './pages/BotsPage';
 import BotDetailPage from './pages/BotDetailPage';
@@ -25,6 +27,16 @@ import TermsPage from './pages/TermsPage';
 import ConnectSizorPage from './pages/ConnectSizorPage';
 import GoogleAnalytics from './components/seo/GoogleAnalytics';
 import ScrollToTop from './components/ScrollToTop';
+
+function BotsIndexRedirect() {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  const tab =
+    params.has('meta_error') || params.has('meta_connected')
+      ? 'canales'
+      : 'agentes';
+  return <Navigate to={{ pathname: `/bots/${tab}`, search }} replace />;
+}
 
 export default function App() {
   return (
@@ -54,16 +66,14 @@ export default function App() {
           />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/imagine" element={<ImaginePage />} />
-          <Route
-            path="/bots"
-            element={<Navigate to="/bots/agentes" replace />}
-          />
+          <Route path="/bots" element={<BotsIndexRedirect />} />
           <Route path="/bots/agentes/:botId" element={<BotDetailPage />} />
           <Route path="/bots/:tab" element={<BotsPage />} />
-          <Route path="/inbox" element={<InboxPage />} />
-          <Route path="/inbox/:conversationId" element={<InboxPage />} />
+          <Route path="/inbox/:conversationId?" element={<InboxPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/usage" element={<UsagePage />} />
+          <Route path="/soporte" element={<SupportPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/pronosticos" element={<ForecastsPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route

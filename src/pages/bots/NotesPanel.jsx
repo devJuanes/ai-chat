@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
+import LoadingRing from '../../components/LoadingRing';
 import {
   WhatsAppIcon,
   InstagramIcon,
@@ -75,7 +76,7 @@ function ChannelMark({ channel }) {
 
 function ChartCard({ title, children }) {
   return (
-    <div className="rounded-2xl border-2 border-black bg-white p-4">
+    <div className="min-w-0 overflow-x-hidden rounded-2xl border-2 border-black bg-white p-4">
       <h3 className="mb-3 text-[14px] font-semibold">{title}</h3>
       {children}
     </div>
@@ -130,7 +131,7 @@ function PieChart({ data }) {
           {total}
         </text>
       </svg>
-      <ul className="flex min-w-[140px] flex-col gap-1.5 text-[12px]">
+      <ul className="flex min-w-0 flex-1 flex-col gap-1.5 text-[12px] sm:min-w-[140px] sm:flex-none">
         {slices.map((s) => (
           <li key={s.label} className="flex items-center gap-2">
             <span
@@ -154,7 +155,7 @@ function BarChartVertical({ data }) {
   const barW = Math.min(36, (w - pad * 2) / data.length - 8);
 
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h + 36}`} className="max-w-full">
+    <svg viewBox={`0 0 ${w} ${h + 36}`} className="block h-auto w-full max-w-full">
       <line
         x1={pad}
         y1={h}
@@ -210,7 +211,7 @@ function BarChartHorizontal({ data }) {
   const labelW = 88;
 
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h}`} className="max-w-full">
+    <svg viewBox={`0 0 ${w} ${h}`} className="block h-auto w-full max-w-full">
       {data.map((d, i) => {
         const bw = ((w - labelW - 40) * d.value) / max;
         const y = i * rowH + 4;
@@ -287,7 +288,7 @@ function TimelineChart({ data }) {
 
   return (
     <div>
-      <svg width="100%" viewBox={`0 0 ${w} ${h}`} className="max-w-full">
+      <svg viewBox={`0 0 ${w} ${h}`} className="block h-auto w-full max-w-full">
         {[0, 0.5, 1].map((t) => {
           const y = pad.t + innerH * (1 - t);
           return (
@@ -381,7 +382,7 @@ function MetricsView({ metrics }) {
   }, [metrics]);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid min-w-0 gap-4 lg:grid-cols-2">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:col-span-2">
         {[
           ['Chats', metrics?.conversations ?? 0],
@@ -462,7 +463,7 @@ export default function NotesPanel({ token, onError }) {
         </p>
       </div>
 
-      <div className="mb-4 inline-flex rounded-full border-2 border-black bg-white p-0.5">
+      <div className="mb-4 flex w-full rounded-full border-2 border-black bg-white p-0.5 sm:inline-flex sm:w-auto">
         {[
           ['notas', 'Notas'],
           ['metricas', 'Métricas'],
@@ -470,7 +471,7 @@ export default function NotesPanel({ token, onError }) {
           <button
             key={id}
             type="button"
-            className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition ${
+            className={`min-h-11 flex-1 rounded-full px-4 text-[13px] font-medium transition sm:min-h-0 sm:flex-none sm:py-1.5 sm:text-[12px] ${
               subTab === id ? 'bg-black text-[#f4ed36]' : 'hover:bg-black/5'
             }`}
             onClick={() => setSubTab(id)}
@@ -490,7 +491,7 @@ export default function NotesPanel({ token, onError }) {
           <button
             key={id}
             type="button"
-            className={`rounded-lg border-2 border-black px-2.5 py-1 text-[12px] ${
+            className={`min-h-11 rounded-lg border-2 border-black px-3 text-[13px] sm:min-h-0 sm:px-2.5 sm:py-1 sm:text-[12px] ${
               range === id ? 'bg-[#f4ed36]' : 'bg-white'
             }`}
             onClick={() => setRange(id)}
@@ -500,7 +501,7 @@ export default function NotesPanel({ token, onError }) {
         ))}
         {subTab === 'notas' ? (
           <select
-            className="rounded-lg border-2 border-black bg-white px-2 py-1 text-[12px]"
+            className="min-h-11 w-full max-w-full rounded-lg border-2 border-black bg-white px-2 text-[14px] sm:w-auto sm:min-h-0 sm:py-1 sm:text-[12px]"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
@@ -516,12 +517,12 @@ export default function NotesPanel({ token, onError }) {
 
       {subTab === 'metricas' ? (
         loading || !metrics ? (
-          <p className="text-[14px] opacity-50">Cargando métricas…</p>
+          <LoadingRing className="min-h-[28vh]" />
         ) : (
           <MetricsView metrics={metrics} />
         )
       ) : loading ? (
-        <p className="text-[14px] opacity-50">Cargando notas…</p>
+        <LoadingRing className="min-h-[40vh]" />
       ) : notes.length === 0 ? (
         <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
           <p className="text-[22px] font-semibold">Aún no hay notas</p>
@@ -542,22 +543,20 @@ export default function NotesPanel({ token, onError }) {
             return (
               <li key={n.id}>
                 <div
-                  className="relative flex min-h-[160px] flex-col rounded-sm border border-black/10 px-4 pb-3 pt-5 shadow-[3px_4px_12px_rgba(0,0,0,0.08)]"
-                  style={{
-                    background: bg,
-                    transform:
-                      i % 3 === 1
-                        ? 'rotate(0.6deg)'
-                        : i % 3 === 2
-                          ? 'rotate(-0.5deg)'
-                          : 'none',
-                  }}
+                  className={`relative flex min-h-[160px] min-w-0 flex-col rounded-sm border border-black/10 px-4 pb-3 pt-5 shadow-[3px_4px_12px_rgba(0,0,0,0.08)] ${
+                    i % 3 === 1
+                      ? 'sm:rotate-[0.6deg]'
+                      : i % 3 === 2
+                        ? 'sm:-rotate-[0.5deg]'
+                        : ''
+                  }`}
+                  style={{ background: bg }}
                 >
                   <div
                     className="absolute left-1/2 top-0 h-3 w-12 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-[#7eb6d9]/70 shadow-sm"
                     aria-hidden
                   />
-                  <div className="mb-1 flex items-center gap-2">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
                     <span className="fp-mono text-[9px] uppercase opacity-50">
                       {TYPE_LABEL[n.note_type] || n.note_type}
                     </span>
@@ -568,10 +567,10 @@ export default function NotesPanel({ token, onError }) {
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="text-[15px] font-bold leading-snug text-[#1a2a4a]">
+                  <h3 className="break-words text-[15px] font-bold leading-snug text-[#1a2a4a]">
                     {n.title}
                   </h3>
-                  <p className="mt-1 flex-1 text-[13px] leading-relaxed text-[#1a2a4a]/90">
+                  <p className="mt-1 flex-1 break-words text-[13px] leading-relaxed text-[#1a2a4a]/90">
                     {n.body || '—'}
                   </p>
                   <div className="mt-3 flex items-center gap-2 border-t border-dashed border-black/20 pt-2">
@@ -589,7 +588,7 @@ export default function NotesPanel({ token, onError }) {
                     {n.conversation_id ? (
                       <Link
                         to={`/inbox/${n.conversation_id}`}
-                        className="text-[11px] font-medium underline opacity-70"
+                        className="inline-flex min-h-11 items-center text-[13px] font-medium underline opacity-70 sm:min-h-0 sm:text-[11px]"
                       >
                         Ver chat
                       </Link>

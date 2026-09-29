@@ -29,7 +29,7 @@ export default function ModelsPage() {
     <MarketingShell>
       <SeoHead
         title="Modelos de IA sectorizados"
-        description={`Catálogo Matu AI by Matubyte: Matu, VO0, VO5, Forge, Dev 3.5, Space Ultra, Commerce, Marketing y MatuBot para WhatsApp, Instagram y Messenger.`}
+        description="Catálogo de Matu AI: Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y MatuBot 3.5."
         path="/modelos"
         jsonLd={graphLd(
           buildOrganizationLd(),
@@ -75,8 +75,9 @@ export default function ModelsPage() {
                 Elige el modelo.
               </h1>
               <p className="mt-4 text-[14px] font-bold leading-relaxed opacity-85 sm:mt-3 sm:text-[15px]">
-                Stack sectorizado de {SITE.companyName}: negocio, growth,
-                e-commerce, diseño web e ingeniería — no un chat genérico.
+                Los diez modelos de {SITE.companyName}. Cada uno tiene un
+                trabajo concreto: negocio, estrategia, diseño, ingeniería,
+                e-commerce, marketing, deportes o agentes.
               </p>
             </div>
             <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap">
@@ -103,7 +104,7 @@ export default function ModelsPage() {
           <div className="min-w-0 flex-1">
             <p className="mono mb-2 opacity-60 sm:mb-1">Nuevo · Agentes Meta</p>
             <p className="text-[14px] font-bold leading-relaxed sm:text-[15px] sm:leading-snug">
-              Atiende WhatsApp, Instagram y Messenger con MatuBot.
+              Atiende WhatsApp, Instagram y Messenger con MatuBot 3.5.
             </p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:w-auto md:justify-end md:gap-4">
