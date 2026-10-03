@@ -449,6 +449,7 @@ const forecastJobs = new Map();
 
 /** Pronósticos del día que se va a mostrar, antes de pintar las tarjetas. */
 export function ensureForecastsForDate(date, limit = 8) {
+  if (!config.sports.forecasts) return Promise.resolve(0);
   const key = String(date);
   const running = forecastJobs.get(key);
   if (running) return running;
@@ -488,8 +489,8 @@ export function ensureFixtureForecast(fixtureId) {
 }
 
 async function ensureFixtureForecastNow(fixtureId) {
-  if (!config.sports.enabled || !config.upstream.apiKey) {
-    throw new Error('El pronóstico no está disponible ahora');
+  if (!config.sports.forecasts || !config.sports.enabled || !config.upstream.apiKey) {
+    throw new Error('Los pronósticos están pausados por ahora.');
   }
   const { data, error } = await getDb()
     .from('sports_fixtures')

@@ -67,6 +67,13 @@ const CATALOG = [
     plans: ['free', 'pro', 'team'],
   },
   {
+    id: 'edu-creator',
+    name: 'EduCreator',
+    tagline: 'Cursos · clases · evaluaciones',
+    file: 'EduCreator.md',
+    plans: ['free', 'pro', 'team'],
+  },
+  {
     id: 'matu-bot-3-5',
     name: 'MatuBot 3.5',
     tagline: 'Chatbot ventas · WhatsApp · atención',
@@ -94,6 +101,7 @@ const ALWAYS_ON_FREE = new Set([
   'matu-commerce',
   'matu-marketing',
   'matu-sports-pro',
+  'edu-creator',
   'matu-bot-3-5',
 ]);
 

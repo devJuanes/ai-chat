@@ -200,6 +200,24 @@ export const MODELS_PUBLIC = [
     cta: 'chat',
   },
   {
+    id: 'edu-creator',
+    name: 'EduCreator',
+    tag: 'Educación',
+    niche: 'Cursos · aula',
+    body: 'Cursos que armas con IA y estudias tú, con quiz y certificado.',
+    search: ['crear cursos con IA', 'aprender con IA', 'EduCreator'],
+    color: '#b5c995',
+    ink: '#1a1a1a',
+    summary:
+      'Dices qué quieres aprender. EduCreator arma el curso y tú lo estudias hasta el certificado.',
+    points: [
+      'Módulos, lecciones, material y videos a partir de tu tema.',
+      'Quiz al cierre de cada módulo.',
+      'Aula para estudiar y certificado al terminar.',
+    ],
+    cta: 'edu',
+  },
+  {
     id: 'matu-bot-3-5',
     name: 'MatuBot 3.5',
     tag: 'Agentes',
@@ -323,7 +341,7 @@ export const TESTIMONIALS = [
 export const FAQ = [
   {
     q: '¿Qué es Matu AI?',
-    a: 'Matu AI es el chat de Matubyte: modelos propios para negocio, estrategia, diseño web, e-commerce, marketing, ingeniería y deportes, más MatuBot 3.5 para WhatsApp, Instagram y Messenger.',
+    a: 'Matu AI es el chat de Matubyte: modelos propios para negocio, estrategia, diseño web, e-commerce, marketing, ingeniería, deportes y educación, más MatuBot 3.5 para WhatsApp, Instagram y Messenger.',
   },
   {
     q: '¿Quién desarrolla Matu AI?',
@@ -331,7 +349,7 @@ export const FAQ = [
   },
   {
     q: '¿En qué se diferencia de un chat genérico?',
-    a: 'El catálogo es Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y MatuBot 3.5 para agentes de WhatsApp, Instagram y Messenger.',
+    a: 'El catálogo es Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro, EduCreator y MatuBot 3.5 para agentes de WhatsApp, Instagram y Messenger.',
   },
   {
     q: '¿Hay plan gratis?',

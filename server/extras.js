@@ -208,7 +208,7 @@ export function registerExtraRoutes(app) {
   app.post('/api/support/tickets', authMiddleware(true), async (req, res) => {
     try {
       const body = req.body || {};
-      const kind = body.kind === 'incident' ? 'incident' : 'ticket';
+      const kind = ['ticket', 'incident', 'pqr'].includes(body.kind) ? body.kind : 'ticket';
       const category = String(body.category || '').trim().slice(0, 80);
       const subject = String(body.subject || '').trim().slice(0, 160);
       const message = String(body.message || '').trim().slice(0, 4000);
@@ -249,7 +249,9 @@ export function registerExtraRoutes(app) {
         error: {
           message: missing
             ? 'El centro de ayuda aún no está activo. Ejecuta docs/migrations/support-tickets.sql en MatuDB.'
-            : 'No se pudo enviar la solicitud',
+            : /check|kind/i.test(err.message || '')
+              ? 'Para guardar un PQR, ejecuta el ALTER del final de docs/migrations/support-tickets.sql en MatuDB.'
+              : 'No se pudo enviar la solicitud',
         },
       });
     }

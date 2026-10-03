@@ -186,11 +186,36 @@ function transientMailError(err) {
   );
 }
 
-export async function sendAppMail({ to, subject, html, text }) {
-  return sendMail({ to, subject, html, text });
+export function certificateEmail({ name, courseTitle, code, issuedLabel }) {
+  const who = esc(name || 'hola');
+  const course = esc(courseTitle || 'tu curso');
+  const when = esc(issuedLabel || '');
+  const verify = `${publicBase()}/edu/validar/${encodeURIComponent(code || '')}`;
+  const html = layout({
+    title: 'Tu certificado ya está listo',
+    intro: `Hola <strong>${who}</strong>. Completaste <strong>${course}</strong> en EduCreator. El diploma va adjunto en PDF para que lo guardes, lo imprimas o lo compartas.`,
+    extra: `
+      <p style="margin:0 auto 8px;max-width:440px;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:0.14em;font-weight:800;color:#111111;">CÓDIGO</p>
+      <p style="margin:0 0 18px;font-family:Arial,Helvetica,sans-serif;font-size:22px;letter-spacing:2px;font-weight:800;color:#111111;">${esc(code)}</p>
+      <p style="margin:0 auto 28px;max-width:440px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#333333;">Lo emitió MatuAI Academy${when ? ` el ${when}` : ''}. Con el código se puede comprobar que el certificado es auténtico.</p>
+      <a href="${esc(verify)}" style="display:inline-block;background:#111111;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:800;letter-spacing:0.06em;text-decoration:none;padding:14px 28px;border-radius:8px;">VALIDAR CERTIFICADO</a>
+    `,
+  });
+  const plainCourse = String(courseTitle || 'tu curso').replace(/\s+/g, ' ').trim();
+  const text = `Hola ${name || ''}. Completaste ${plainCourse} en EduCreator. El diploma va adjunto en PDF. Código: ${code || ''}.${when ? ` Emitido el ${issuedLabel}.` : ''} Validar: ${verify}`;
+  const short = plainCourse.slice(0, 72);
+  return {
+    subject: `Tu certificado · ${short || 'EduCreator'}`,
+    html,
+    text,
+  };
 }
 
-async function sendMail({ to, subject, html, text }) {
+export async function sendAppMail({ to, subject, html, text, attachments }) {
+  return sendMail({ to, subject, html, text, attachments });
+}
+
+async function sendMail({ to, subject, html, text, attachments = [] }) {
   let last;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
@@ -206,7 +231,7 @@ async function sendMail({ to, subject, html, text }) {
           'Content-Language': 'es-CO',
           'Accept-Language': 'es-CO, es',
         },
-        attachments: bannerAttachments(),
+        attachments: [...bannerAttachments(), ...attachments],
       });
     } catch (err) {
       last = err;

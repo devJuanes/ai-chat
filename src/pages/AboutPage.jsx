@@ -64,8 +64,8 @@ export default function AboutPage() {
             <p className="mt-4 text-[15px] font-bold leading-snug opacity-85">
               Chat con contexto, proyectos, tablas exportables y preview HTML.
               El catálogo es Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu
-              Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y
-              MatuBot 3.5.
+              Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro,
+              EduCreator y MatuBot 3.5.
             </p>
           </article>
           <article

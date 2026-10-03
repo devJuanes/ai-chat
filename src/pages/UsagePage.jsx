@@ -14,6 +14,7 @@ const MODEL_LABELS = {
   'matu-commerce': 'Commerce',
   'matu-marketing': 'Marketing',
   'matu-sports-pro': 'Sports Pro',
+  'edu-creator': 'EduCreator',
   'matu-bot-3-5': 'MatuBot (Meta)',
 };
 

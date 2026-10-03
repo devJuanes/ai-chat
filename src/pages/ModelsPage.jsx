@@ -29,7 +29,7 @@ export default function ModelsPage() {
     <MarketingShell>
       <SeoHead
         title="Modelos de IA sectorizados"
-        description="Catálogo de Matu AI: Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y MatuBot 3.5."
+        description="Catálogo de Matu AI: Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro, EduCreator y MatuBot 3.5."
         path="/modelos"
         jsonLd={graphLd(
           buildOrganizationLd(),

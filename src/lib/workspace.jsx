@@ -45,6 +45,11 @@ const FALLBACK_MODELS = [
     name: 'MatuSports Pro',
     tagline: 'Analítica · pronósticos · valor esperado',
   },
+  {
+    id: 'edu-creator',
+    name: 'EduCreator',
+    tagline: 'Cursos · clases · evaluaciones',
+  },
 ];
 
 function parsePath(pathname) {

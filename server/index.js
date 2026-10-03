@@ -14,6 +14,9 @@ import {
 import { matudbLogin } from './matudb-auth.js';
 import { ensureEmailSchema, registerEmailRoutes } from './email-verify.js';
 import { ensureLiveSupportSchema, registerLiveSupportRoutes } from './live-support.js';
+import { registerEduRoutes } from './edu/routes.js';
+import { ensureEduSchema } from './edu/schema.js';
+import { startEduPulse } from './edu/hub.js';
 import { getDb, newId } from './db.js';
 import {
   listPublicModels,
@@ -50,16 +53,17 @@ import { zonedParts } from './sports/time.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
-app.use(
-  express.json({
-    limit: '4mb',
-    verify: (req, _res, buf) => {
-      if (req.originalUrl?.startsWith('/api/meta/webhook')) {
-        req.rawBody = buf;
-      }
-    },
-  })
-);
+const captureRawBody = (req, _res, buf) => {
+  if (req.originalUrl?.startsWith('/api/meta/webhook')) {
+    req.rawBody = buf;
+  }
+};
+const jsonSmall = express.json({ limit: '4mb', verify: captureRawBody });
+const jsonCertMail = express.json({ limit: '12mb', verify: captureRawBody });
+app.use((req, res, next) => {
+  if (req.originalUrl?.includes('/certificate/email')) return jsonCertMail(req, res, next);
+  return jsonSmall(req, res, next);
+});
 
 app.get('/api/sports/slate', authMiddleware(true), async (req, res) => {
   try {
@@ -122,6 +126,7 @@ registerMetaRoutes(app, { authMiddleware, ensureWorkspace });
 
 registerEmailRoutes(app, { authMiddleware, ensureWorkspace, verifyAccessToken });
 registerLiveSupportRoutes(app, { authMiddleware, ensureWorkspace });
+registerEduRoutes(app, { authMiddleware, ensureWorkspace });
 
 app.post('/api/auth/register', (_req, res) => {
   res.status(400).json({
@@ -822,6 +827,9 @@ const host = process.env.HOST || '127.0.0.1';
 ensureEmailSchema().catch((err) => {
   console.warn('[email] schema', err?.message || err);
 });
+ensureEduSchema()
+  .catch((err) => console.warn('[edu] schema', err?.message || err))
+  .finally(() => startEduPulse());
 ensureLiveSupportSchema().catch((err) => {
   console.warn('[live] schema', err?.message || err);
 });

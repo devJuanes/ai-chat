@@ -66,6 +66,12 @@ export const config = {
     ),
     alertTo: trim(process.env.SUPPORT_ALERT_EMAIL, 'contacto@devjuanes.com'),
   },
+  wompi: {
+    publicKey: trim(process.env.WOMPI_PUBLIC_KEY),
+    privateKey: trim(process.env.WOMPI_PRIVATE_KEY),
+    integrity: trim(process.env.WOMPI_INTEGRITY),
+    events: trim(process.env.WOMPI_EVENTS_SECRET),
+  },
   /** Meta platform (WhatsApp / Messenger / Instagram) */
   meta: {
     appId: trim(process.env.META_APP_ID),
@@ -76,11 +82,15 @@ export const config = {
     tokenEncryptionKey: trim(process.env.META_TOKEN_ENCRYPTION_KEY),
   },
   /** API-Sports: 100 req/día por deporte (fútbol, baloncesto, hockey, NBA). */
+  pexels: {
+    apiKey: trim(process.env.PEXELS_API_KEY),
+  },
   sports: {
     apiKey: trim(process.env.SPORTS_API_KEY),
     dailyLimit: Number(process.env.SPORTS_API_DAILY_LIMIT || 100),
     reserve: Number(process.env.SPORTS_API_RESERVE || 8),
     enabled: trim(process.env.SPORTS_SYNC_ENABLED, 'true') !== 'false',
+    forecasts: trim(process.env.SPORTS_FORECAST_ENABLED, 'false') === 'true',
     forecastCap: Number(process.env.SPORTS_FORECAST_DAILY_CAP || 36),
   },
 };

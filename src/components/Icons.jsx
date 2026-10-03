@@ -217,6 +217,15 @@ export function PlayIcon(props) {
   );
 }
 
+export function EduIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+      <path d="M6 12v5c1.2 1.4 3.4 2.5 6 2.5s4.8-1.1 6-2.5v-5" />
+    </svg>
+  );
+}
+
 /** Imagine — generación de video */
 export function FilmIcon(props) {
   return (

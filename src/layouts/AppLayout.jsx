@@ -11,6 +11,7 @@ import {
   ChatBubbleIcon,
   ChevronDownIcon,
   CompassIcon,
+  EduIcon,
   InboxIcon,
   // LibraryIcon,
   LogoutIcon,
@@ -28,6 +29,8 @@ import LoadingRing from '../components/LoadingRing';
 import VerifyEmailModal from '../components/VerifyEmailModal';
 import LiveSupportChat from '../components/LiveSupportChat';
 import { isSizorEmbed } from '../lib/sizorEmbed';
+import { SITE } from '../lib/site';
+import { applyPageTitle, appSectionTitle } from '../lib/pageTitle';
 
 const PROJECTS_PREVIEW = 6;
 
@@ -304,6 +307,18 @@ function ShellSidebar({
           <span>Imagine</span>
         </NavLink>
         */}
+        <a
+          href="/edu"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass(false)}
+          onClick={onCloseMobile}
+        >
+          <span className="fp-nav-ico">
+            <EduIcon />
+          </span>
+          <span>EduCreator</span>
+        </a>
         <NavLink
           to="/bots/agentes"
           className={({ isActive }) =>
@@ -743,6 +758,12 @@ function LayoutInner() {
   const [creatingProject, setCreatingProject] = useState(false);
   const [filter, setFilter] = useState('');
   const ws = useWorkspace();
+  const sectionTitle = appSectionTitle(pathname, ws);
+
+  useEffect(() => {
+    if (!sectionTitle) return;
+    applyPageTitle(sectionTitle, SITE.productName);
+  }, [sectionTitle]);
 
   useEffect(() => {
     if (embed) return undefined;

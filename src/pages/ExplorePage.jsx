@@ -80,6 +80,15 @@ const MODEL_META = {
     plans: 'Gratis · Pro · Team',
     color: 'fp-card-pitch',
   },
+  'edu-creator': {
+    power: 5,
+    bestFor: 'Cursos, clases y evaluaciones',
+    useCases:
+      'Planes de clase, módulos, guiones, quizzes, rúbricas y explicaciones por nivel',
+    speed: 'Equilibrado',
+    plans: 'Gratis · Pro · Team',
+    color: 'fp-card-matcha',
+  },
 };
 
 const SUGGESTIONS = [
@@ -122,6 +131,11 @@ const SUGGESTIONS = [
     title: 'Campaña de adquisición',
     body: 'Necesito un ángulo de ads + 3 variantes de copy + CTA para un SaaS de facturación B2B. Optimiza para leads calificados, no likes.',
     model: 'matu-marketing',
+  },
+  {
+    title: 'Curso de JavaScript',
+    body: 'Quiero aprender JavaScript desde cero para crear páginas interactivas.',
+    model: 'edu-creator',
   },
   {
     title: 'Valor esperado de un partido',
@@ -238,11 +252,15 @@ export default function ExplorePage() {
                       selected ? '!bg-[#f4ed36] !text-black' : ''
                     }`}
                     onClick={() => {
+                      if (m.id === 'edu-creator') {
+                        window.open('/edu', '_blank', 'noopener');
+                        return;
+                      }
                       ws.setModelId(m.id);
                       navigate('/c/new');
                     }}
                   >
-                    {selected ? 'Activo' : 'Usar'}
+                    {m.id === 'edu-creator' ? 'Abrir' : selected ? 'Activo' : 'Usar'}
                   </button>
                 </article>
               );
@@ -269,6 +287,14 @@ export default function ExplorePage() {
                     type="button"
                     className={`fp-card ${tones[i % tones.length]} p-5 text-left transition hover:-translate-y-0.5`}
                     onClick={() => {
+                      if (s.model === 'edu-creator') {
+                        window.open(
+                          `/edu/crear?tema=${encodeURIComponent(s.body || '')}`,
+                          '_blank',
+                          'noopener'
+                        );
+                        return;
+                      }
                       if (s.model) ws.setModelId(s.model);
                       navigate('/c/new', { state: { draft: s.body } });
                     }}

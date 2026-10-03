@@ -148,7 +148,7 @@ export function buildSoftwareLd() {
     publisher: { '@id': absoluteUrl('/#organization') },
     inLanguage: 'es',
     featureList: [
-      'Chat con modelos propios: Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing y MatuSports Pro',
+      'Chat con modelos propios: Matu, VO0, VO5, Matu Forge, Matu Dev 3.5, Matu Space Ultra, Matu Commerce, Matu Marketing, MatuSports Pro y EduCreator',
       'MatuBot 3.5 para WhatsApp, Instagram y Messenger',
       'Proyectos con contexto, tablas CSV/Excel y preview HTML',
       'Plan gratis, Pro y Team',

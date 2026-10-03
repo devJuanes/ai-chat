@@ -1,0 +1,15 @@
+Messenger
+
+pages_show_list
+pages_messaging
+pages_manage_metadata
+pages_read_engagement
+Instagram
+
+instagram_basic
+instagram_manage_messages
+WhatsApp
+
+business_management
+whatsapp_business_management
+whatsapp_business_messaging

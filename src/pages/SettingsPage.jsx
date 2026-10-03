@@ -231,7 +231,7 @@ export default function SettingsPage() {
                 <h2 className="fp-display text-[28px]">Modelos incluidos</h2>
                 <p className="mt-3 text-[14px] font-bold leading-relaxed">
                   {(plan?.models_allowed ||
-                    'matu,vo0,vo5,matu-apex,matu-dev-3-5,matu-space-ultra,matu-commerce,matu-marketing,matu-sports-pro')
+                    'matu,vo0,vo5,matu-apex,matu-dev-3-5,matu-space-ultra,matu-commerce,matu-marketing,matu-sports-pro,edu-creator')
                     .split(',')
                     .map((s) => s.trim())
                     .filter(Boolean)

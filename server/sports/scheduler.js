@@ -19,6 +19,7 @@ async function bootWhenReady() {
 /** Carga los partidos y, enseguida, el modelo escribe los pronósticos del día. */
 async function loadAndForecast({ refreshOnly = false, kind = 'ingest' } = {}) {
   await runSportsIngest({ refreshOnly, kind });
+  if (!config.sports.forecasts) return;
   const today = zonedParts().date;
   const todayWrote = await ensureForecastsForDate(today, 8);
   console.log(`[sports] pronósticos top ${today}: ${todayWrote}`);
@@ -84,5 +85,6 @@ export function startSportsScheduler() {
     });
   }, 8000);
 
-  setTimeout(forecastTick, 25000);
+  if (config.sports.forecasts) setTimeout(forecastTick, 25000);
+  else console.log('[sports] pronósticos desactivados');
 }

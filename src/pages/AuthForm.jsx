@@ -105,7 +105,8 @@ export default function AuthForm({ mode = 'login' }) {
           from.startsWith('/settings') ||
           from.startsWith('/usage') ||
           from.startsWith('/library') ||
-          from.startsWith('/search'))
+          from.startsWith('/search') ||
+          from.startsWith('/edu'))
           ? from
           : '/c/new';
       navigate(safeFrom, { replace: true });
@@ -400,6 +401,7 @@ export default function AuthForm({ mode = 'login' }) {
                   ¿Ya tienes cuenta?{' '}
                   <Link
                     to="/login"
+                    state={{ from }}
                     className="underline underline-offset-2"
                     style={{ color: 'var(--color-ink-black)' }}
                   >
@@ -411,6 +413,7 @@ export default function AuthForm({ mode = 'login' }) {
                   ¿Eres nuevo?{' '}
                   <Link
                     to="/register"
+                    state={{ from }}
                     className="underline underline-offset-2"
                     style={{ color: 'var(--color-ink-black)' }}
                   >

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
+import { applyPageTitle } from '../lib/pageTitle';
 import LoadingRing from '../components/LoadingRing';
 import {
   BotIcon,
@@ -106,6 +107,10 @@ export default function BotDetailPage() {
   const [error, setError] = useState(null);
   const [liveStep, setLiveStep] = useState(0);
   const [pulse, setPulse] = useState(true);
+
+  useEffect(() => {
+    applyPageTitle(bot?.name || 'Agente');
+  }, [bot?.name]);
 
   const load = useCallback(async () => {
     if (!token || !botId) return;

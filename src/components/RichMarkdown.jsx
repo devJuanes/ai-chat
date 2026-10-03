@@ -149,20 +149,18 @@ function MarkdownTable({ children, isUser }) {
   );
 }
 
-export default function RichMarkdown({ content, isUser = false }) {
+export default function RichMarkdown({ content, isUser = false, variant = 'chat' }) {
   if (!content?.trim()) return null;
+  const lesson = variant === 'lesson' && !isUser;
 
   const components = {
     p: ({ children }) => (
-      <p
-        className={`mb-2 last:mb-0 leading-relaxed ${
-          isUser ? 'text-pure-white' : 'text-graphite-ink'
-        }`}
-      >
+      <p className={lesson ? 'edu-md-p' : `mb-2 last:mb-0 leading-relaxed ${isUser ? 'text-pure-white' : 'text-graphite-ink'}`}>
         {children}
       </p>
     ),
     h1: ({ children }) => (
+      lesson ? <h2 className="edu-md-h">{children}</h2> : (
       <h3
         className={`mb-2 text-base font-semibold leading-snug ${
           isUser ? 'text-pure-white' : 'text-graphite-ink'
@@ -170,8 +168,10 @@ export default function RichMarkdown({ content, isUser = false }) {
       >
         {children}
       </h3>
+      )
     ),
     h2: ({ children }) => (
+      lesson ? <h2 className="edu-md-h">{children}</h2> : (
       <h3
         className={`mb-2 text-[15px] font-semibold ${
           isUser ? 'text-pure-white' : 'text-graphite-ink'
@@ -179,8 +179,10 @@ export default function RichMarkdown({ content, isUser = false }) {
       >
         {children}
       </h3>
+      )
     ),
     h3: ({ children }) => (
+      lesson ? <h3 className="edu-md-h edu-md-h3">{children}</h3> : (
       <h3
         className={`mb-1.5 text-sm font-semibold ${
           isUser ? 'text-pure-white' : 'text-graphite-ink'
@@ -188,6 +190,7 @@ export default function RichMarkdown({ content, isUser = false }) {
       >
         {children}
       </h3>
+      )
     ),
     ul: ({ children }) => (
       <ul className="mb-2 flex list-disc flex-col gap-1 pl-5 last:mb-0">
@@ -257,21 +260,24 @@ export default function RichMarkdown({ content, isUser = false }) {
       />
     ),
     code: ({ className, children }) => {
-      const isBlock = /language-/.test(className || '');
-      if (isBlock) return <code className={className}>{children}</code>;
+      if (/language-/.test(className || '')) return <code className={className}>{children}</code>;
       return (
         <code
-          className={`rounded-md border px-1.5 py-px font-mono text-[0.88em] ${
-            isUser
-              ? 'border-white/20 bg-black/20 text-pure-white'
-              : 'border-hairline bg-[#f0f0f0] text-graphite-ink'
-          }`}
+          className={
+            lesson
+              ? 'edu-md-code'
+              : `rounded-md border px-1.5 py-px font-mono text-[0.88em] ${
+                  isUser
+                    ? 'border-white/20 bg-black/20 text-pure-white'
+                    : 'border-hairline bg-[#f0f0f0] text-graphite-ink'
+                }`
+          }
         >
           {children}
         </code>
       );
     },
-    pre: ({ children }) => <>{children}</>,
+    pre: ({ children }) => (lesson ? <pre className="edu-code">{children}</pre> : <>{children}</>),
     table: ({ children }) => (
       <MarkdownTable isUser={isUser}>{children}</MarkdownTable>
     ),
@@ -295,7 +301,7 @@ export default function RichMarkdown({ content, isUser = false }) {
   };
 
   return (
-    <div className="rich-md text-[15px] leading-relaxed">
+    <div className={lesson ? 'rich-md edu-md' : 'rich-md text-[15px] leading-relaxed'}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>

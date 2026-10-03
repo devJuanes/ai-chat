@@ -23,18 +23,26 @@ export default function ModelDetailPage() {
       ? auth.user
         ? '/bots/agentes'
         : '/register'
-      : auth.user
-        ? '/c/new'
-        : '/register';
+      : model.cta === 'edu'
+        ? auth.user
+          ? '/edu'
+          : '/register'
+        : auth.user
+          ? '/c/new'
+          : '/register';
 
   const ctaLabel =
     model.cta === 'bots'
       ? auth.user
         ? 'Ver agentes'
         : 'Crear agente'
-      : auth.user
-        ? `Usar ${model.name}`
-        : 'Empezar gratis';
+      : model.cta === 'edu'
+        ? auth.user
+          ? 'Abrir EduCreator'
+          : 'Empezar gratis'
+        : auth.user
+          ? `Usar ${model.name}`
+          : 'Empezar gratis';
 
   return (
     <MarketingShell>
@@ -106,6 +114,8 @@ export default function ModelDetailPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             to={startTo}
+            target={model.cta === 'edu' ? '_blank' : undefined}
+            rel={model.cta === 'edu' ? 'noopener noreferrer' : undefined}
             className="btn-pill cta-label w-full justify-center sm:w-auto"
           >
             {ctaLabel}
