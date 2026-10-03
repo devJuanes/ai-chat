@@ -17,6 +17,18 @@ const STATEMENTS = [
   `ALTER TABLE edu_posts ADD COLUMN IF NOT EXISTS accepted_comment_id TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE edu_comments ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE edu_courses ADD COLUMN IF NOT EXISTS price_coins INT NOT NULL DEFAULT 0`,
+  `ALTER TABLE edu_courses ADD COLUMN IF NOT EXISTS cadence TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE edu_courses ADD COLUMN IF NOT EXISTS session_time TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE edu_courses ADD COLUMN IF NOT EXISTS session_weekday INT NOT NULL DEFAULT 1`,
+  `ALTER TABLE edu_courses ADD COLUMN IF NOT EXISTS session_minutes INT NOT NULL DEFAULT 45`,
+  `CREATE TABLE IF NOT EXISTS edu_session_reminders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    course_id TEXT NOT NULL,
+    session_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS edu_session_reminders_idx ON edu_session_reminders (user_id, course_id, session_at)`,
   `CREATE TABLE IF NOT EXISTS edu_post_reactions (
     id TEXT PRIMARY KEY,
     post_id TEXT NOT NULL,

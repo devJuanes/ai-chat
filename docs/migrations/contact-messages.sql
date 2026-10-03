@@ -1,5 +1,5 @@
--- Contact form submissions (landing /contacto)
--- Run on MatuDB project for Matu AI
+-- Mensajes del formulario de contacto (landing, /contacto y EduCreator /edu/acerca).
+-- Ejecutar en el proyecto MatuDB de Matu AI.
 
 CREATE TABLE IF NOT EXISTS contact_messages (
   id UUID PRIMARY KEY,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   subject TEXT NOT NULL DEFAULT '',
   message TEXT NOT NULL,
   source TEXT NOT NULL DEFAULT 'contacto'
-    CHECK (source IN ('landing', 'contacto', 'other')),
+    CHECK (source IN ('landing', 'contacto', 'educreator', 'other')),
   status TEXT NOT NULL DEFAULT 'new'
     CHECK (status IN ('new', 'read', 'replied', 'archived')),
   user_agent TEXT NOT NULL DEFAULT '',
@@ -26,3 +26,9 @@ CREATE INDEX IF NOT EXISTS contact_messages_status_idx
 
 CREATE INDEX IF NOT EXISTS contact_messages_email_idx
   ON contact_messages (email);
+
+-- Si la tabla ya existía, el CHECK viejo rechaza source = 'educreator'.
+ALTER TABLE contact_messages DROP CONSTRAINT IF EXISTS contact_messages_source_check;
+ALTER TABLE contact_messages
+  ADD CONSTRAINT contact_messages_source_check
+  CHECK (source IN ('landing', 'contacto', 'educreator', 'other'));

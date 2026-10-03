@@ -13,7 +13,7 @@ import {
   toggleForumLike,
   toggleForumSave,
 } from './community.js';
-import { REWARDS, attachGroupCourse, award, onLessonCompleted, registerHubRoutes, studyAllowed } from './hub.js';
+import { REWARDS, attachGroupCourse, award, onLessonCompleted, registerHubRoutes, saveCoursePlan, studyAllowed } from './hub.js';
 
 function parseJson(raw, fallback) {
   if (raw == null || raw === '') return fallback;
@@ -289,6 +289,10 @@ async function bundle(userId, course) {
       error: course.error || '',
       is_public: Number(course.is_public) === 1,
       price_coins: Number(course.price_coins) || 0,
+      cadence: course.cadence || '',
+      session_time: String(course.session_time || '').slice(0, 5),
+      session_weekday: Number(course.session_weekday) || 1,
+      session_minutes: Number(course.session_minutes) || 45,
       author_name: course.author_name || '',
       mine: course.user_id === userId,
       sources: parseJson(course.sources_json, []),
@@ -403,6 +407,13 @@ export function registerEduRoutes(app, deps) {
       const price = Math.max(0, Math.round(Number(req.body?.price_coins) || 0));
       if (price) {
         await db.from('edu_courses').eq('id', id).update({ price_coins: price });
+      }
+      if (req.body?.cadence) {
+        try {
+          await saveCoursePlan(db, id, req.body);
+        } catch (planErr) {
+          if (!/cadence|column/i.test(planErr.message || '')) throw planErr;
+        }
       }
       const groupId = String(req.body?.group_id || '').trim();
       if (groupId) {
@@ -700,6 +711,19 @@ export function registerEduRoutes(app, deps) {
       res.json({ ok: true, status: 'building' });
     } catch (err) {
       res.status(500).json({ error: { message: dbMessage(err) } });
+    }
+  });
+
+  app.post('/api/edu/courses/:id/plan', authMiddleware(true), async (req, res) => {
+    try {
+      const { profile } = await ensureWorkspace(req.user);
+      const course = await ownedCourse(profile.id, req.params.id);
+      if (!course) return res.status(404).json({ error: { message: 'Curso no encontrado' } });
+      const plan = await saveCoursePlan(getDb(), course.id, req.body);
+      res.json({ plan: { id: course.id, title: course.title || 'Curso', ...plan } });
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ error: { message: err.message || 'No se pudo guardar la constancia' } });
     }
   });
 

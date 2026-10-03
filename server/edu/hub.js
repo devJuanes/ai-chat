@@ -978,13 +978,139 @@ export async function activityOf(db, userId) {
   return items.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
 }
 
+const CADENCE = new Set(['', 'daily', 'weekdays', 'weekly']);
+
+function weekdayOf(day) {
+  const date = new Date(`${day}T12:00:00-05:00`);
+  const label = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', weekday: 'short' }).format(date);
+  return { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }[label] || 1;
+}
+
+function sessionOn(day, course) {
+  const cadence = String(course.cadence || '');
+  const time = String(course.session_time || '').slice(0, 5);
+  if (!cadence || !/^\d{2}:\d{2}$/.test(time)) return null;
+  const weekday = weekdayOf(day);
+  if (cadence === 'weekdays' && weekday > 5) return null;
+  if (cadence === 'weekly' && weekday !== (Number(course.session_weekday) || 1)) return null;
+  if (!CADENCE.has(cadence) || cadence === '') return null;
+  const start = new Date(`${day}T${time}:00-05:00`);
+  if (Number.isNaN(start.getTime())) return null;
+  const minutes = Math.min(180, Math.max(15, Number(course.session_minutes) || 45));
+  return {
+    starts_at: start.toISOString(),
+    ends_at: new Date(start.getTime() + minutes * 60 * 1000).toISOString(),
+  };
+}
+
+function planPayload(row) {
+  return {
+    id: row.id,
+    title: row.title || 'Curso',
+    cadence: row.cadence || '',
+    session_time: String(row.session_time || '').slice(0, 5),
+    session_weekday: Number(row.session_weekday) || 1,
+    session_minutes: Number(row.session_minutes) || 45,
+    href: `/edu/cursos/${row.id}`,
+  };
+}
+
+async function myCoursePlans(db, userId) {
+  const { data, error } = await db
+    .from('edu_courses')
+    .select('id, title, cadence, session_time, session_weekday, session_minutes, status')
+    .eq('user_id', userId)
+    .limit(40);
+  if (error) {
+    if (/cadence|column/i.test(error.message || '')) return [];
+    throw new Error(error.message);
+  }
+  return list(data).map(planPayload);
+}
+
+async function plannedCourses(db, userId) {
+  const fields = 'id, title, user_id, cadence, session_time, session_weekday, session_minutes, status';
+  const owned = await db.from('edu_courses').select(fields).eq('user_id', userId).limit(40);
+  if (owned.error) {
+    if (/cadence|column/i.test(owned.error.message || '')) return [];
+    throw new Error(owned.error.message);
+  }
+  const enroll = await db.from('edu_enrollments').select('course_id').eq('user_id', userId).limit(40);
+  const ids = list(enroll.data).map((row) => row.course_id).filter((id) => !list(owned.data).some((row) => row.id === id));
+  let extra = [];
+  if (ids.length) {
+    const found = await db.from('edu_courses').select(fields).in('id', ids);
+    if (found.error) throw new Error(found.error.message);
+    extra = list(found.data);
+  }
+  return [...list(owned.data), ...extra].filter((row) => row.cadence && row.session_time);
+}
+
+export function readCoursePlan(body) {
+  const cadence = String(body?.cadence || '');
+  if (!CADENCE.has(cadence)) throw new CommunityError('Esa constancia no existe.');
+  const time = String(body?.session_time || '').trim().slice(0, 5);
+  if (cadence && !/^\d{2}:\d{2}$/.test(time)) throw new CommunityError('Escribe la hora como 19:00.');
+  const [hour, minute] = time ? time.split(':').map(Number) : [0, 0];
+  if (cadence && (hour > 23 || minute > 59)) throw new CommunityError('Esa hora no es válida.');
+  const weekday = Math.min(7, Math.max(1, Math.round(Number(body?.session_weekday) || 1)));
+  const minutes = Math.min(180, Math.max(15, Math.round(Number(body?.session_minutes) || 45)));
+  return {
+    cadence,
+    session_time: cadence ? time : '',
+    session_weekday: weekday,
+    session_minutes: minutes,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function saveCoursePlan(db, courseId, body) {
+  const patch = readCoursePlan(body);
+  const { error } = await db.from('edu_courses').eq('id', courseId).update(patch);
+  if (error) {
+    if (/cadence|column/i.test(error.message || '')) {
+      throw new CommunityError('Falta la migración edu-calendar.sql en MatuDB.');
+    }
+    throw new Error(error.message);
+  }
+  return patch;
+}
+
+async function lessonHistory(db, userId) {
+  const progress = await db
+    .from('edu_progress')
+    .select('lesson_id, course_id, updated_at, completed')
+    .eq('user_id', userId)
+    .limit(160);
+  if (progress.error) return [];
+  const done = list(progress.data).filter((row) => Number(row.completed) === 1 && row.updated_at);
+  if (!done.length) return [];
+  const lessonIds = done.map((row) => row.lesson_id);
+  const lessons = await db.from('edu_lessons').select('id, title, course_id').in('id', lessonIds);
+  const byId = Object.fromEntries(list(lessons.data).map((row) => [row.id, row]));
+  return done.map((row) => {
+    const lesson = byId[row.lesson_id];
+    return {
+      id: `done-${row.lesson_id}`,
+      kind: 'leccion',
+      title: lesson?.title || 'Lección terminada',
+      starts_at: row.updated_at,
+      ends_at: row.updated_at,
+      href: `/edu/cursos/${row.course_id}?l=${row.lesson_id}`,
+    };
+  });
+}
+
 export async function calendarOf(db, userId) {
-  const [challenges, groups, tickets] = await Promise.all([
+  const [challenges, groups, tickets, courses, history, plans] = await Promise.all([
     listChallenges(db, userId),
     listGroups(db, userId),
     listTickets(db, userId),
+    plannedCourses(db, userId),
+    lessonHistory(db, userId),
+    myCoursePlans(db, userId),
   ]);
-  const items = [];
+  const items = [...history];
   for (const row of challenges) {
     if (!row.joined) continue;
     items.push({
@@ -1017,7 +1143,60 @@ export async function calendarOf(db, userId) {
       href: '/edu/eventos',
     });
   }
-  return items.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const today = bogotaDay();
+  for (const course of courses) {
+    for (let offset = -14; offset <= 45; offset += 1) {
+      const slot = sessionOn(shiftDay(today, offset), course);
+      if (!slot) continue;
+      items.push({
+        id: `${course.id}-${slot.starts_at}`,
+        kind: 'curso',
+        title: course.title || 'Curso',
+        starts_at: slot.starts_at,
+        ends_at: slot.ends_at,
+        href: `/edu/cursos/${course.id}`,
+      });
+    }
+  }
+  items.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  return { items, plans };
+}
+
+async function remindSessions(db) {
+  const courses = await db
+    .from('edu_courses')
+    .select('id, title, user_id, cadence, session_time, session_weekday, session_minutes')
+    .limit(200);
+  if (courses.error) return;
+  const today = bogotaDay();
+  const now = Date.now();
+  for (const course of list(courses.data)) {
+    const slot = sessionOn(today, course);
+    if (!slot) continue;
+    const left = new Date(slot.starts_at).getTime() - now;
+    if (left <= 0 || left > 15 * 60 * 1000) continue;
+    const enroll = await db.from('edu_enrollments').select('user_id').eq('course_id', course.id).limit(80);
+    const users = new Set([course.user_id, ...list(enroll.data).map((row) => row.user_id)].filter(Boolean));
+    for (const userId of users) {
+      const id = `${userId}:${course.id}:${slot.starts_at}`;
+      const mark = await db.from('edu_session_reminders').insert({
+        id,
+        user_id: userId,
+        course_id: course.id,
+        session_at: slot.starts_at,
+        created_at: new Date().toISOString(),
+      });
+      if (mark.error) continue;
+      await notify(db, {
+        userId,
+        title: 'Tu clase empieza en 15 minutos',
+        body: `${course.title || 'Tu curso'} es a las ${String(course.session_time).slice(0, 5)}.`,
+        href: `/edu/cursos/${course.id}`,
+        kind: 'reminder',
+        email: true,
+      });
+    }
+  }
 }
 
 export async function streakBoard(db, userId) {
@@ -1294,6 +1473,7 @@ export async function runEduPulse() {
     if (new Date(row.fire_at).getTime() > now) continue;
     await deliverMail(db, row);
   }
+  await remindSessions(db);
 }
 
 let pulseTimer = null;
@@ -1569,7 +1749,7 @@ export function registerHubRoutes(app, { authMiddleware, ensureWorkspace }) {
     res.json({ items: await activityOf(db, profile.id) });
   }));
   app.get('/api/edu/calendar', authMiddleware(true), guard(async (_req, res, { db, profile }) => {
-    res.json({ items: await calendarOf(db, profile.id) });
+    res.json(await calendarOf(db, profile.id));
   }));
   app.get('/api/edu/streaks', authMiddleware(true), guard(async (_req, res, { db, profile }) => {
     res.json(await streakBoard(db, profile.id));

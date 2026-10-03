@@ -112,7 +112,7 @@ export function registerExtraRoutes(app) {
       const subject = String(body.subject || '').trim().slice(0, 160);
       const message = String(body.message || '').trim().slice(0, 4000);
       let source = String(body.source || 'contacto').trim().toLowerCase();
-      if (!['landing', 'contacto', 'other'].includes(source)) {
+      if (!['landing', 'contacto', 'educreator', 'other'].includes(source)) {
         source = 'other';
       }
 

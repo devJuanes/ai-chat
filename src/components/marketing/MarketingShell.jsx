@@ -38,6 +38,9 @@ export function MarketingHeader({ onContact }) {
         >
           {SITE.domain}
         </a>
+        <Link to="/educreator" className="link-underline hidden sm:inline">
+          EduCreator
+        </Link>
         <Link to="/modelos" className="link-underline hidden sm:inline">
           Modelos
         </Link>
@@ -148,6 +151,11 @@ export function MarketingFooter() {
             <li>
               <Link to="/acerca" className="link-underline">
                 Acerca de Matubyte
+              </Link>
+            </li>
+            <li>
+              <Link to="/educreator" className="link-underline">
+                EduCreator
               </Link>
             </li>
             <li>

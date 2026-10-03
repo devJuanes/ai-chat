@@ -37,8 +37,12 @@ export default function EduHeader({ onMenu }) {
           <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       </button>
-      <Link to="/edu/crear" className="edu-head-search">
-        ¿Qué quieres aprender?
+      <Link to="/edu/crear" className="edu-head-search" aria-label="¿Qué quieres aprender?">
+        <svg className="edu-head-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="m16 16.5 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        <span>¿Qué quieres aprender?</span>
       </Link>
       <div className="edu-head-actions">
         {courseMenu?.ready ? (
@@ -50,7 +54,7 @@ export default function EduHeader({ onMenu }) {
             Temario
           </button>
         ) : null}
-        <Link to="/edu/monedas" className="edu-head-coins">
+        <Link to="/edu/monedas" className="edu-head-coins" aria-label={`${pulse.balance} Edu Coins`}>
           <img src="/edu-coin.png" alt="" />
           {pulse.balance}
           <span>Edu Coins</span>

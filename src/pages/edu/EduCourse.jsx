@@ -8,6 +8,7 @@ import LoadingRing from '../../components/LoadingRing';
 import EduStudio from './EduStudio';
 import EduPlayer from './EduPlayer';
 import PersonFace from './PersonFace';
+import CourseRhythm, { rhythmLabel } from './CourseRhythm';
 
 export default function EduCourse() {
   const { courseId } = useParams();
@@ -204,6 +205,7 @@ export default function EduCourse() {
   if (!studying) {
     return (
       <div className="edu-fill">
+        {data.course.mine ? <CourseRhythm course={data.course} onSaved={load} /> : null}
         <EduStudio
           data={data}
           onRetry={retry}
@@ -216,6 +218,11 @@ export default function EduCourse() {
 
   return (
     <div className="edu-fill">
+      {data.course.mine ? (
+        <CourseRhythm course={data.course} onSaved={load} />
+      ) : data.course.cadence ? (
+        <p className="edu-rhythm-banner">{rhythmLabel(data.course)}. Te avisamos 15 minutos antes.</p>
+      ) : null}
       {data.course.status === 'building' ? (
         <div className="edu-row edu-no-print" style={{ padding: '8px 12px', background: '#f4ed36' }}>
           <strong>El curso sigue armándose.</strong>

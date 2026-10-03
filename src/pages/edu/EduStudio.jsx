@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 const STEPS = [
   { id: 'investigando', label: 'Buscar fuentes' },
   { id: 'mapa', label: 'Armar el mapa' },
@@ -15,10 +17,25 @@ function stepState(phase, id) {
   return 'idle';
 }
 
+function useNarrow() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 860px)');
+    const apply = () => setNarrow(query.matches);
+    apply();
+    query.addEventListener('change', apply);
+    return () => query.removeEventListener('change', apply);
+  }, []);
+  return narrow;
+}
+
 export default function EduStudio({ data, onRetry, onOpen, onDelete }) {
   const course = data.course;
   const building = course.status === 'building';
   const log = Array.isArray(course.log) ? course.log : [];
+  const narrow = useNarrow();
+  const [logOpen, setLogOpen] = useState(false);
+  const shown = narrow && !logOpen ? log.slice(-2) : log;
 
   return (
     <div className="edu-studio">
@@ -42,8 +59,13 @@ export default function EduStudio({ data, onRetry, onOpen, onDelete }) {
             );
           })}
         </div>
+        {narrow && log.length > 2 ? (
+          <button type="button" className="edu-log-toggle" onClick={() => setLogOpen((value) => !value)}>
+            {logOpen ? 'Ocultar el registro' : `Ver el registro (${log.length})`}
+          </button>
+        ) : null}
         <ul className="edu-log">
-          {log.map((line, i) => (
+          {shown.map((line, i) => (
             <li key={`${line.at || i}-${i}`}>{line.text}</li>
           ))}
         </ul>

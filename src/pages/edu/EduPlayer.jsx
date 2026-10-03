@@ -418,42 +418,75 @@ export default function EduPlayer({
         </div>
       </section>
       <aside className={`edu-curriculum${menu ? ' open' : ''}`}>
-        <p className="edu-kicker">Tu aula</p>
-        <h1 className="edu-course-name">{course.title || 'Curso'}</h1>
-        <div className="edu-progress" aria-label={`${stats.pct}% completado`}>
-          <span style={{ width: `${stats.pct}%` }} />
-        </div>
-        <p style={{ fontSize: 13, fontWeight: 700 }}>
-          {stats.done} de {stats.total} · {stats.pct}%
-        </p>
-        {modules.map((mod, index) => {
-          const open = isModuleOpen(modules, index, progress);
-          return (
-            <div key={mod.id}>
-              <div className="edu-mod-label">Módulo {index + 1}</div>
-              <p className="edu-mod-name">{plainTitle(mod.title)}</p>
-              {mod.lessons.map((lesson) => {
-                const active = lesson.id === current.id;
-                const finished = progress[lesson.id]?.completed;
-                return (
-                  <button
-                    key={lesson.id}
-                    type="button"
-                    className={`edu-les${active ? ' on' : ''}${finished ? ' done' : ''}`}
-                    disabled={!open}
-                    onClick={() => {
-                      onSelect(lesson.id);
-                      courseMenu?.setOpen(false);
-                    }}
-                  >
-                    {lesson.title}
-                    <small>{lesson.kind === 'quiz' ? 'Quiz del módulo' : 'Lección'}</small>
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
+        <header className="edu-syllabus-head">
+          <div className="edu-syllabus-top">
+            <p className="edu-kicker">Temario</p>
+            <button
+              type="button"
+              className="edu-syllabus-close"
+              onClick={() => courseMenu?.setOpen(false)}
+            >
+              Cerrar
+            </button>
+          </div>
+          <h1 className="edu-course-name">{course.title || 'Curso'}</h1>
+          <div className="edu-progress" aria-label={`${stats.pct}% completado`}>
+            <span style={{ width: `${stats.pct}%` }} />
+          </div>
+          <p className="edu-syllabus-count">
+            {stats.done} de {stats.total} · {stats.pct}%
+          </p>
+        </header>
+        <ol className="edu-syllabus">
+          {modules.map((mod, index) => {
+            const open = isModuleOpen(modules, index, progress);
+            return (
+              <li key={mod.id} className={open ? 'edu-syllabus-mod' : 'edu-syllabus-mod is-locked'}>
+                <div className="edu-syllabus-mod-head">
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{plainTitle(mod.title)}</strong>
+                    <small>
+                      {open
+                        ? `${mod.lessons.length} partes`
+                        : 'Se abre al terminar el módulo anterior'}
+                    </small>
+                  </div>
+                </div>
+                <ol>
+                  {mod.lessons.map((lesson, lessonIndex) => {
+                    const active = lesson.id === current.id;
+                    const finished = progress[lesson.id]?.completed;
+                    const quiz = lesson.kind === 'quiz';
+                    return (
+                      <li key={lesson.id}>
+                        <button
+                          type="button"
+                          className={`edu-les${active ? ' on' : ''}${finished ? ' done' : ''}${quiz ? ' is-quiz' : ''}`}
+                          disabled={!open}
+                          onClick={() => {
+                            onSelect(lesson.id);
+                            courseMenu?.setOpen(false);
+                          }}
+                        >
+                          <span className="edu-syllabus-mark" aria-hidden="true">
+                            {finished ? '✓' : quiz ? 'Q' : lessonIndex + 1}
+                          </span>
+                          <span>
+                            {plainTitle(lesson.title)}
+                            <small>
+                              {active ? 'Estás aquí' : quiz ? 'Quiz del módulo' : finished ? 'Lista' : 'Lección'}
+                            </small>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </li>
+            );
+          })}
+        </ol>
         <div style={{ marginTop: 16 }} className="edu-row">
           {stats.ready ? (
             <Link className="edu-btn" to={`/edu/cursos/${course.id}/certificado`}>

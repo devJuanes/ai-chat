@@ -52,6 +52,9 @@ import EduEvents from './pages/edu/EduEvents';
 import EduCourse from './pages/edu/EduCourse';
 import EduCertificate from './pages/edu/EduCertificate';
 import EduSupport from './pages/edu/EduSupport';
+import EduAbout from './pages/edu/EduAbout';
+import EduCalendar from './pages/edu/EduCalendar';
+import EduLanding from './pages/EduLanding';
 import EduVerify from './pages/edu/EduVerify';
 import GoogleAnalytics from './components/seo/GoogleAnalytics';
 import ScrollToTop from './components/ScrollToTop';
@@ -90,6 +93,7 @@ export default function App() {
         <Route path="/conectar-sizor" element={<ConnectSizorPage />} />
         <Route path="/s/:token" element={<SharePage />} />
 
+        <Route path="/educreator" element={<EduLanding />} />
         <Route path="/edu/validar/:code?" element={<EduVerify />} />
         <Route path="/edu" element={<EduLayout />}>
           <Route index element={<EduHome />} />
@@ -118,6 +122,8 @@ export default function App() {
           <Route path="eventos" element={<EduEvents />} />
           <Route path="tutor" element={<Navigate to="/edu/crear" replace />} />
           <Route path="soporte" element={<EduSupport />} />
+          <Route path="acerca" element={<EduAbout />} />
+          <Route path="calendario" element={<EduCalendar />} />
           <Route path="cursos/:courseId" element={<EduCourse />} />
           <Route path="cursos/:courseId/certificado" element={<EduCertificate />} />
         </Route>

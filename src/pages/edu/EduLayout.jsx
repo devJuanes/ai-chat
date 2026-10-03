@@ -49,6 +49,22 @@ function MenuIcon({ name }) {
       </svg>
     );
   }
+  if (name === 'about') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 11v5M12 8h.01" />
+      </svg>
+    );
+  }
+  if (name === 'calendar') {
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="15" rx="2" />
+        <path d="M8 3.5v3M16 3.5v3M4 10h16" />
+      </svg>
+    );
+  }
   return (
     <svg {...common}>
       <circle cx="12" cy="9" r="4" />
@@ -83,12 +99,17 @@ const MAIN = [
   { to: '/edu', label: 'Inicio', end: true, icon: 'home' },
   { to: '/edu/crear', label: 'Crear', icon: 'plus' },
   { to: '/edu/comunidad', label: 'Comunidad', icon: 'people' },
+  // { to: '/edu/calendario', label: 'Calendario', icon: 'calendar' },
   { to: '/edu/soporte', label: 'Soporte', avatar: true },
 ];
 
 const PROGRESS = [
   { to: '/edu/rutas', label: 'Rutas', icon: 'folder' },
   { to: '/edu/certificados', label: 'Certificados', icon: 'badge' },
+];
+
+const COMPANY = [
+  { to: '/edu/acerca', label: 'Acerca de', icon: 'about' },
 ];
 
 export default function EduLayout() {
@@ -166,6 +187,13 @@ export default function EduLayout() {
           ))}
           <p className="edu-nav-label">Tu progreso</p>
           {PROGRESS.map((link) => (
+            <NavLink key={link.to} to={link.to} onClick={() => setOpen(false)}>
+              <MenuIcon name={link.icon} />
+              {link.label}
+            </NavLink>
+          ))}
+          <p className="edu-nav-label">Empresa</p>
+          {COMPANY.map((link) => (
             <NavLink key={link.to} to={link.to} onClick={() => setOpen(false)}>
               <MenuIcon name={link.icon} />
               {link.label}

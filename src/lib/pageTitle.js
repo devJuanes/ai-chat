@@ -13,7 +13,9 @@ const EDU_SECTIONS = [
   ['/edu/comunidad', 'Comunidad'],
   ['/edu/perfil', 'Perfil'],
   ['/edu/eventos', 'Eventos'],
+  ['/edu/calendario', 'Calendario'],
   ['/edu/soporte', 'Soporte'],
+  ['/edu/acerca', 'Acerca de'],
   ['/edu/validar', 'Validar certificado'],
 ];
 
