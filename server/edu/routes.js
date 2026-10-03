@@ -1,4 +1,5 @@
 import { getDb, newId } from '../db.js';
+import { ensureEduSchema } from './schema.js';
 import { certificateEmail, sendAppMail } from '../email-verify.js';
 import { isEduBuildRunning, kickoffEduBuild, fillLessonText, findVideo, fillMissingVideos, findCourseCover, coverNeedsPhoto } from './build.js';
 import { screenCoursePrompt } from './safety.js';
@@ -504,6 +505,7 @@ export function registerEduRoutes(app, deps) {
 
   app.post('/api/edu/forum/:id/comments', authMiddleware(true), async (req, res) => {
     try {
+      await ensureEduSchema();
       const { profile } = await ensureWorkspace(req.user);
       const db = getDb();
       const comment = await addForumComment(db, {
@@ -524,6 +526,7 @@ export function registerEduRoutes(app, deps) {
 
   app.post('/api/edu/forum/:id/like', authMiddleware(true), async (req, res) => {
     try {
+      await ensureEduSchema();
       const { profile } = await ensureWorkspace(req.user);
       res.json(await toggleForumLike(getDb(), { postId: req.params.id, userId: profile.id }));
     } catch (err) {

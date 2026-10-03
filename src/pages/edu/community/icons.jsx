@@ -134,6 +134,29 @@ export default function Icon({ name }) {
       </svg>
     );
   }
+  if (name === 'filter') {
+    return (
+      <svg {...common}>
+        <path d="M4 6h16M7 12h10M10 18h4" />
+      </svg>
+    );
+  }
+  if (name === 'plus') {
+    return (
+      <svg {...common}>
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+    );
+  }
+  if (name === 'image') {
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="14" rx="2" />
+        <circle cx="9" cy="10" r="1.4" />
+        <path d="m7 16 3.2-3.2a1 1 0 0 1 1.4 0L16 17" />
+      </svg>
+    );
+  }
   return (
     <svg {...common}>
       <path d="M8 11.2V19" />

@@ -1,11 +1,11 @@
 .edu-app {
-  --edu-ink: #1c2416;
-  --edu-paper: #f4efe4;
-  --edu-card: #fffdf8;
+  --edu-ink: #1a1a1a;
+  --edu-paper: #f9f5f2;
+  --edu-card: #ffffff;
   --edu-matcha: #b5c995;
-  --edu-deep: #243320;
+  --edu-deep: #8584bd;
   --edu-butter: #f4ed36;
-  --edu-muted: #5e6758;
+  --edu-muted: #1a1a1a;
   --edu-display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
   --edu-ui: 'DM Sans', system-ui, sans-serif;
   --edu-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -17,12 +17,12 @@
   color: var(--edu-ink);
   font-family: var(--edu-ui);
   scrollbar-width: thin;
-  scrollbar-color: #b5c995 #1c2416;
+  scrollbar-color: #b5c995 #f9f5f2;
 }
 
 .edu-app * {
   scrollbar-width: thin;
-  scrollbar-color: #6e8462 #1a2218;
+  scrollbar-color: #8584bd #efeaf6;
 }
 
 .edu-app *::-webkit-scrollbar {
@@ -31,12 +31,12 @@
 }
 
 .edu-app *::-webkit-scrollbar-track {
-  background: #1a2218;
+  background: #efeaf6;
 }
 
 .edu-app *::-webkit-scrollbar-thumb {
-  background: #4d6244;
-  border: 2px solid #1a2218;
+  background: #61609a;
+  border: 2px solid #1a1a1a;
   border-radius: 999px;
 }
 
@@ -51,8 +51,9 @@
   gap: 18px;
   overflow: auto;
   background: var(--edu-deep);
-  color: #f6f1e7;
+  color: #f9f5f2;
   padding: 22px 16px 16px;
+  border-right: 2.5px solid #000;
 }
 
 .edu-brand {
@@ -92,12 +93,13 @@
   letter-spacing: 0;
   line-height: 1.1;
   text-transform: none;
+  color: #f4ed36;
 }
 
 .edu-lema {
   display: block;
   margin: 0;
-  color: var(--edu-matcha);
+  color: rgba(249, 245, 242, 0.78);
   font-family: var(--edu-ui);
   font-size: 12px;
   font-weight: 600;
@@ -142,18 +144,18 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(246, 241, 231, 0.45);
+  color: rgba(249, 245, 242, 0.45);
 }
 
 .edu-nav a.on,
 .edu-nav a[aria-current='page'] {
-  background: rgba(246, 241, 231, 0.1);
-  color: #f6f1e7;
+  background: #f4ed36;
+  color: #1a1a1a;
 }
 
 .edu-nav a.on svg,
 .edu-nav a[aria-current='page'] svg {
-  color: var(--edu-matcha);
+  color: #1a1a1a;
 }
 
 .edu-nav a:hover {
@@ -162,7 +164,7 @@
 
 .edu-nav a.on:hover,
 .edu-nav a[aria-current='page']:hover {
-  background: rgba(246, 241, 231, 0.14);
+  background: #f4ed36;
 }
 
 .edu-aside-foot {
@@ -170,31 +172,91 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border-top: 1px solid rgba(246, 241, 231, 0.16);
+  border-top: 1px solid rgba(249, 245, 242, 0.16);
   padding-top: 14px;
 }
 
 .edu-aside-foot a,
 .edu-user {
-  color: rgba(246, 241, 231, 0.78);
+  color: rgba(249, 245, 242, 0.78);
   font-size: 13px;
   text-decoration: none;
 }
 
-.edu-user {
+.edu-signout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #f4ed36;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.edu-signout:hover {
+  background: #e10600;
+  color: #ffffff;
+}
+
+.edu-signout svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+a.edu-user {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 0 -10px;
   font-weight: 700;
-  color: #f6f1e7;
+  color: #f9f5f2;
 }
 
-.edu-user svg {
-  width: 18px;
-  height: 18px;
+a.edu-user:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+a.edu-user[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.edu-user-face {
+  display: grid;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
-  color: var(--edu-matcha);
+  place-items: center;
+  overflow: hidden;
+  border: 1.5px solid #f9f5f2;
+  border-radius: 50%;
+  background: rgba(249, 245, 242, 0.16);
+  color: #f9f5f2;
+}
+
+.edu-user-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edu-user svg,
+.edu-user-face svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: #f9f5f2;
 }
 
 .edu-user span {
@@ -252,8 +314,8 @@
   min-height: 0;
   height: 100%;
   flex-direction: column;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
 }
 
 .edu-head {
@@ -263,8 +325,8 @@
   height: 68px;
   flex-shrink: 0;
   padding: 0 22px;
-  background: #1c2416;
-  border-bottom: 1px solid rgba(246, 241, 231, 0.08);
+  background: #f9f5f2;
+  border-bottom: 2px solid #1a1a1a;
 }
 
 .edu-head-menu {
@@ -295,8 +357,8 @@
   height: 40px;
   overflow: hidden;
   border-radius: 10px;
-  background: #2a3324;
-  color: rgba(246, 241, 231, 0.62);
+  background: #ffffff;
+  color: rgba(26, 26, 26, 0.62);
   font-size: 14px;
   font-weight: 650;
   padding: 0 14px;
@@ -318,7 +380,7 @@
 }
 
 .edu-head-search:hover {
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-head-actions {
@@ -331,7 +393,7 @@
 .edu-head-ask,
 .edu-head-link,
 .edu-head-support {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 14px;
   font-weight: 800;
   text-decoration: none;
@@ -348,7 +410,7 @@
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-head-ask {
@@ -356,7 +418,7 @@
   align-items: center;
   gap: 8px;
   border-radius: 999px;
-  background: #2a3324;
+  background: #ffffff;
   padding: 4px 12px 4px 4px;
 }
 
@@ -381,14 +443,14 @@
   align-items: center;
   justify-content: center;
   height: 36px;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-head-coins {
   gap: 6px;
   padding: 0 10px;
   border-radius: 999px;
-  background: #2c3a28;
+  background: #f4ed36;
   font-weight: 700;
 }
 
@@ -430,7 +492,7 @@
   padding: 0 4px;
   border-radius: 999px;
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
   font-size: 10px;
   font-style: normal;
 }
@@ -445,7 +507,7 @@
 }
 
 .edu-note-menu span {
-  color: #c9d4c2;
+  color: #61609a;
   font-size: 13px;
 }
 
@@ -454,7 +516,7 @@
   width: 36px;
   height: 36px;
   place-items: center;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-head-ticket svg {
@@ -479,6 +541,7 @@
   font: inherit;
   font-size: 14px;
   font-weight: 800;
+  text-decoration: none;
   cursor: pointer;
   padding: 0;
 }
@@ -498,9 +561,10 @@
   min-width: 220px;
   gap: 2px;
   border-radius: 12px;
-  background: #2a3324;
+  background: #ffffff;
   padding: 8px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  border: 2px solid #1a1a1a;
 }
 
 .edu-menu p {
@@ -515,7 +579,7 @@
   margin: 0;
   border: 0;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -528,7 +592,7 @@
 
 .edu-menu a:hover,
 .edu-menu button:hover {
-  background: rgba(246, 241, 231, 0.08);
+  background: rgba(26, 26, 26, 0.08);
 }
 
 .edu-menu-out {
@@ -541,15 +605,16 @@
   max-width: 380px;
   overflow: hidden;
   border-radius: 18px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   text-decoration: none;
+  border: 2px solid #1a1a1a;
 }
 
 .edu-fan {
   position: relative;
   height: 210px;
-  background: #1a2218;
+  background: #efeaf6;
 }
 
 .edu-fan-card,
@@ -561,7 +626,7 @@
   height: 132px;
   border-radius: 14px;
   object-fit: cover;
-  background: #31402c;
+  background: #e6e3f4;
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
   transition: transform 0.22s ease;
 }
@@ -572,13 +637,19 @@
   font-weight: 800;
 }
 
-.edu-fan-card.n1 { z-index: 1; }
-.edu-fan-card.n2 { z-index: 2; }
-.edu-fan-card.n3 { z-index: 3; }
+.edu-fan-card.n1 { z-index: 1;;
+}
+.edu-fan-card.n2 { z-index: 2;;
+}
+.edu-fan-card.n3 { z-index: 3;;
+}
 
-.edu-mycard:hover .edu-fan-card.n1 { transform: translate(-28px, -6px) rotate(-7deg); }
-.edu-mycard:hover .edu-fan-card.n2 { transform: translate(0, -14px); }
-.edu-mycard:hover .edu-fan-card.n3 { transform: translate(28px, -6px) rotate(7deg); }
+.edu-mycard:hover .edu-fan-card.n1 { transform: translate(-28px, -6px) rotate(-7deg);;
+}
+.edu-mycard:hover .edu-fan-card.n2 { transform: translate(0, -14px);;
+}
+.edu-mycard:hover .edu-fan-card.n3 { transform: translate(28px, -6px) rotate(7deg);;
+}
 
 .edu-mycard-body {
   padding: 4px 16px 16px;
@@ -588,7 +659,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 750;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
 }
 
 .edu-mycard-body h2 {
@@ -633,9 +704,10 @@
   display: grid;
   overflow: hidden;
   border-radius: 16px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   text-decoration: none;
+  border: 2px solid #1a1a1a;
 }
 
 .edu-catalog-card h2 {
@@ -649,7 +721,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
 }
 
 .edu-catalog-card > div {
@@ -661,11 +733,11 @@
   width: 100%;
   height: 150px;
   object-fit: cover;
-  background: #31402c;
+  background: #e6e3f4;
 }
 
 .edu-cover-empty {
-  background: linear-gradient(145deg, #b5c995, #243320);
+  background: linear-gradient(145deg, #b5c995, #ffffff);
 }
 
 .edu-pending {
@@ -673,18 +745,18 @@
   height: 100%;
   min-height: 240px;
   place-items: center;
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-verify {
-  --edu-ink: #1c2416;
+  --edu-ink: #1a1a1a;
   --edu-butter: #f4ed36;
   min-height: 100%;
   display: grid;
   place-items: center;
   padding: 32px 16px;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 
@@ -694,7 +766,7 @@
 
 .edu-verify-lead {
   margin: 8px 0 18px;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-weight: 650;
 }
 
@@ -707,9 +779,9 @@
 .edu-verify-form input {
   min-width: 0;
   flex: 1;
-  border: 2px solid rgba(246, 241, 231, 0.28);
-  background: #243320;
-  color: #f6f1e7;
+  border: 2px solid rgba(26, 26, 26, 0.28);
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 16px;
   font-weight: 700;
@@ -718,7 +790,7 @@
 }
 
 .edu-verify .edu-btn {
-  border-color: var(--edu-butter);
+  border-color: #61609a;
   background: var(--edu-butter);
   color: var(--edu-ink);
 }
@@ -727,23 +799,24 @@
 .edu-verify-miss {
   margin-top: 18px;
   padding: 16px;
-  background: #243320;
+  background: #ffffff;
+  border: 2px solid #1a1a1a;
 }
 
 .edu-verify-ok h2,
 .edu-verify-miss strong {
   margin: 0;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-verify-ok p,
 .edu-verify-miss p {
   margin: 6px 0 0;
-  color: rgba(246, 241, 231, 0.78);
+  color: rgba(26, 26, 26, 0.78);
 }
 
 .edu-verify-ok p:first-child {
-  color: var(--edu-butter);
+  color: #61609a;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -753,7 +826,7 @@
 .edu-verify-back {
   display: inline-block;
   margin-top: 18px;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-weight: 700;
 }
 
@@ -766,7 +839,7 @@
 
 .edu-empty-panel p {
   margin: 0 0 8px;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-weight: 650;
 }
 
@@ -858,7 +931,7 @@
 
 .edu-create-kicker {
   margin: 0;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -874,7 +947,7 @@
   width: 36px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(246, 241, 231, 0.18);
+  background: rgba(26, 26, 26, 0.18);
 }
 
 .edu-create-steps span.on {
@@ -884,7 +957,7 @@
 .edu-create-note {
   margin: 0;
   max-width: 36em;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-weight: 650;
 }
 
@@ -898,10 +971,10 @@
 .edu-create-card textarea {
   width: 100%;
   min-height: 140px;
-  border: 2px solid rgba(246, 241, 231, 0.2);
+  border: 2px solid rgba(26, 26, 26, 0.2);
   border-radius: 14px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 16px;
   line-height: 1.45;
@@ -932,10 +1005,10 @@
 
 .edu-create textarea {
   min-height: 140px;
-  border: 2px solid rgba(246, 241, 231, 0.2);
+  border: 2px solid rgba(26, 26, 26, 0.2);
   border-radius: 14px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 16px;
   padding: 14px;
@@ -958,7 +1031,7 @@
 .edu-profile-side article {
   border: 1px solid rgba(181, 201, 149, 0.16);
   border-radius: 22px;
-  background: #182216;
+  background: #ffffff;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
 }
 
@@ -967,10 +1040,9 @@
   height: 156px;
   overflow: hidden;
   border-radius: 22px 22px 0 0;
-  background:
-    radial-gradient(140px 90px at 12% 90%, rgba(244, 237, 54, 0.16), transparent 70%),
-    radial-gradient(220px 140px at 78% 10%, rgba(120, 176, 72, 0.38), transparent 72%),
-    linear-gradient(150deg, #214628, #101910 62%, #1b3522);
+  background: radial-gradient(140px 90px at 12% 90%, rgba(244, 237, 54, 0.16), transparent 70%),
+    radial-gradient(220px 140px at 78% 10%, rgba(133, 132, 189, 0.38), transparent 72%),
+    linear-gradient(150deg, #8584bd, #61609a 62%, #61609a);
 }
 
 .edu-profile-cover img {
@@ -985,7 +1057,7 @@
   bottom: 16px;
   width: 78px;
   height: 78px;
-  color: rgba(214, 242, 92, 0.38);
+  color: rgba(244, 237, 54, 0.38);
 }
 
 .edu-profile-cover button {
@@ -999,8 +1071,8 @@
   padding: 0 12px;
   border: 0;
   border-radius: 999px;
-  background: rgba(12, 18, 11, 0.72);
-  color: #f6f1e7;
+  background: rgba(26, 26, 26, 0.72);
+  color: #f9f5f2;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -1021,9 +1093,9 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #243820;
-  color: #d6f25c;
-  box-shadow: 0 0 0 4px #182216, 0 0 0 7px #d6f25c, 0 0 22px rgba(214, 242, 92, 0.4);
+  background: #8584bd;
+  color: #f9f5f2;
+  box-shadow: 0 0 0 4px #ffffff, 0 0 0 7px #f4ed36, 0 0 22px rgba(244, 237, 54, 0.4);
   cursor: pointer;
 }
 
@@ -1047,9 +1119,9 @@
   height: 30px;
   place-items: center;
   border-radius: 50%;
-  background: #10180f;
-  color: #f6f1e7;
-  box-shadow: 0 0 0 3px #182216;
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 0 0 3px #ffffff;
 }
 
 .edu-profile-form {
@@ -1065,7 +1137,7 @@
 
 .edu-profile-field > span:not(.edu-profile-control),
 .edu-profile-interests > span {
-  color: rgba(246, 241, 231, 0.55);
+  color: rgba(26, 26, 26, 0.55);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1080,8 +1152,8 @@
   padding: 0 12px;
   border: 1px solid rgba(181, 201, 149, 0.18);
   border-radius: 14px;
-  background: #10180e;
-  color: rgba(246, 241, 231, 0.45);
+  background: #ffffff;
+  color: rgba(26, 26, 26, 0.45);
 }
 
 .edu-profile-control input,
@@ -1090,7 +1162,7 @@
   min-width: 0;
   border: 0;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -1119,7 +1191,7 @@
 .edu-profile-count {
   grid-column: 1 / -1;
   justify-self: end;
-  color: rgba(246, 241, 231, 0.4);
+  color: rgba(26, 26, 26, 0.4);
   font-size: 12px;
   font-style: normal;
   font-weight: 650;
@@ -1157,8 +1229,8 @@
   padding: 7px 12px;
   border: 1px solid rgba(181, 201, 149, 0.16);
   border-radius: 999px;
-  background: #10180e;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -1183,7 +1255,7 @@
   justify-content: center;
   gap: 8px;
   margin: 0;
-  color: rgba(246, 241, 231, 0.5);
+  color: rgba(26, 26, 26, 0.5);
   font-size: 12px;
   line-height: 1.45;
   text-align: center;
@@ -1206,10 +1278,10 @@
   gap: 8px;
   height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(246, 241, 231, 0.22);
+  border: 1px solid rgba(26, 26, 26, 0.22);
   border-radius: 999px;
-  background: #10180e;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -1226,7 +1298,7 @@
   padding: 6px;
   list-style: none;
   border-radius: 14px;
-  background: #243320;
+  background: #ffffff;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
 }
 
@@ -1238,7 +1310,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -1260,7 +1332,7 @@
 
 .edu-profile-public-bio {
   margin: 0;
-  color: rgba(246, 241, 231, 0.78);
+  color: rgba(26, 26, 26, 0.78);
   line-height: 1.5;
 }
 
@@ -1285,12 +1357,12 @@
 }
 
 .edu-profile-side h2 svg {
-  color: #f4ed36;
+  color: #61609a;
 }
 
 .edu-profile-side p {
   margin: 6px 0 0;
-  color: rgba(246, 241, 231, 0.66);
+  color: rgba(26, 26, 26, 0.66);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -1314,17 +1386,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #e7f0dc;
+  color: #61609a;
   font-size: 14px;
   font-weight: 650;
 }
 
 .edu-profile-checks li svg {
-  color: #c6e07a;
+  color: #8584bd;
 }
 
 .edu-profile-checks li.is-off {
-  color: rgba(246, 241, 231, 0.42);
+  color: rgba(26, 26, 26, 0.42);
 }
 
 .edu-profile-checks li.is-off svg {
@@ -1350,7 +1422,7 @@
   place-items: center;
   border-radius: 50%;
   background: rgba(181, 201, 149, 0.12);
-  color: #d5e2c4;
+  color: #61609a;
 }
 
 .edu-profile-stat b,
@@ -1363,13 +1435,13 @@
 }
 
 .edu-profile-stat small {
-  color: rgba(246, 241, 231, 0.48);
+  color: rgba(26, 26, 26, 0.48);
   font-size: 12px;
 }
 
 .edu-profile-stat strong {
   margin-left: auto;
-  color: #f4ed36;
+  color: #61609a;
   font-size: 14px;
 }
 
@@ -1389,7 +1461,7 @@
   place-items: center;
   border-radius: 50%;
   background: rgba(244, 237, 54, 0.12);
-  color: #f4ed36;
+  color: #61609a;
 }
 
 .edu-profile-tip a {
@@ -1399,7 +1471,7 @@
   place-items: center;
   border-radius: 50%;
   background: rgba(244, 237, 54, 0.12);
-  color: #f4ed36;
+  color: #61609a;
 }
 
 .edu-crop {
@@ -1409,7 +1481,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(8, 12, 7, 0.76);
+  background: rgba(26, 26, 26, 0.76);
 }
 
 .edu-crop-card {
@@ -1418,8 +1490,8 @@
   width: min(480px, 100%);
   padding: 16px;
   border-radius: 20px;
-  background: #182216;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
@@ -1430,7 +1502,7 @@
 
 .edu-crop-card p,
 .edu-crop-card .edu-error {
-  color: rgba(246, 241, 231, 0.66);
+  color: rgba(26, 26, 26, 0.66);
   font-size: 13px;
 }
 
@@ -1439,12 +1511,12 @@
   height: 340px;
   overflow: hidden;
   border-radius: 16px;
-  background: #0c120b;
+  background: #ffffff;
 }
 
 .edu-crop-card input[type='range'] {
   width: 100%;
-  accent-color: #f4ed36;
+  accent-color: #61609a;
 }
 
 .edu-crop-actions {
@@ -1454,9 +1526,9 @@
 }
 
 .edu-crop-actions .edu-btn-ghost {
-  border-color: rgba(246, 241, 231, 0.28);
+  border-color: rgba(26, 26, 26, 0.28);
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 @media (max-width: 860px) {
@@ -1464,11 +1536,11 @@
   .edu-profile-story,
   .edu-profile-tip {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-profile-art {
     justify-self: end;
-  }
+}
 }
 
 .edu-cm-post-who strong a,
@@ -1482,12 +1554,12 @@
 .edu-cm-post-who strong a:hover,
 .edu-forum-meta a:hover,
 .edu-live-meta a:hover {
-  color: #f4ed36;
+  color: #61609a;
 }
 
 a.edu-forum-avatar {
   overflow: hidden;
-  color: #1c2416;
+  color: #1a1a1a;
   text-decoration: none;
 }
 
@@ -1527,7 +1599,7 @@ a.edu-forum-avatar {
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-banner {
@@ -1538,7 +1610,7 @@ a.edu-forum-avatar {
   margin: 0 0 8px;
   padding: 8px 8px 8px 18px;
   border-radius: 14px;
-  background: #d7e4c8;
+  background: #b5c995;
   color: var(--edu-ink);
 }
 
@@ -1552,7 +1624,7 @@ a.edu-forum-avatar {
   border: 0;
   border-radius: 999px;
   background: var(--edu-ink);
-  color: #f6f1e7;
+  color: #f9f5f2;
   font: inherit;
   font-size: 14px;
   font-weight: 800;
@@ -1571,14 +1643,14 @@ a.edu-forum-avatar {
   flex: 1;
   min-height: 0;
   padding: 18px 28px 56px;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
 }
 
 .edu-home .edu-chip {
-  border-color: rgba(246, 241, 231, 0.28);
+  border-color: rgba(26, 26, 26, 0.28);
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-home .edu-chip[aria-pressed='true'] {
@@ -1588,7 +1660,7 @@ a.edu-forum-avatar {
 
 .edu-home .edu-check,
 .edu-home .edu-ideas button {
-  color: rgba(246, 241, 231, 0.82);
+  color: rgba(26, 26, 26, 0.82);
 }
 
 .edu-create-bar {
@@ -1619,7 +1691,7 @@ a.edu-forum-avatar {
   border: 0;
   border-radius: 999px;
   background: var(--edu-ink);
-  color: #f6f1e7;
+  color: #f9f5f2;
   font: inherit;
   font-size: 14px;
   font-weight: 800;
@@ -1641,7 +1713,7 @@ a.edu-forum-avatar {
   margin: 0;
   font-size: 15px;
   font-weight: 650;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
 }
 
 .edu-home-title {
@@ -1650,7 +1722,7 @@ a.edu-forum-avatar {
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-home-title-next {
@@ -1672,17 +1744,18 @@ a.edu-forum-avatar {
   display: grid;
   gap: 8px;
   border-radius: 16px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   padding: 14px 16px 12px;
   text-decoration: none;
+  border: 2px solid #1a1a1a;
 }
 
 .edu-forum-meta {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1693,9 +1766,10 @@ a.edu-forum-avatar {
   height: 32px;
   flex: none;
   place-items: center;
+  overflow: hidden;
   border-radius: 50%;
-  background: #b5c995;
-  color: #1c2416;
+  background: #8584bd;
+  color: #f9f5f2;
   font-size: 14px;
   font-weight: 800;
 }
@@ -1703,7 +1777,7 @@ a.edu-forum-avatar {
 .edu-forum-card p,
 .edu-forum-thread p {
   margin: 0;
-  color: rgba(246, 241, 231, 0.78);
+  color: rgba(26, 26, 26, 0.78);
   font-size: 15px;
   font-weight: 500;
   line-height: 1.45;
@@ -1711,7 +1785,7 @@ a.edu-forum-avatar {
 
 .edu-forum-card h2 {
   margin: 0;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -1721,11 +1795,11 @@ a.edu-forum-avatar {
 .edu-forum-count {
   font-size: 13px;
   font-weight: 750;
-  color: var(--edu-butter);
+  color: #61609a;
 }
 
 a.edu-forum-card:hover {
-  background: #2c3d27;
+  background: #f4f1ea;
 }
 
 .edu-forum-form {
@@ -1743,10 +1817,10 @@ a.edu-forum-card:hover {
 .edu-forum-form textarea {
   box-sizing: border-box;
   width: 100%;
-  border: 2px solid rgba(246, 241, 231, 0.2);
+  border: 2px solid rgba(26, 26, 26, 0.2);
   border-radius: 12px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 15px;
   padding: 12px 14px;
@@ -1754,7 +1828,7 @@ a.edu-forum-card:hover {
 
 .edu-forum-form input::placeholder,
 .edu-forum-form textarea::placeholder {
-  color: rgba(246, 241, 231, 0.45);
+  color: rgba(26, 26, 26, 0.45);
 }
 
 .edu-forum-form textarea {
@@ -1770,7 +1844,7 @@ a.edu-forum-card:hover {
   display: inline-flex;
   align-items: center;
   margin-bottom: 12px;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-weight: 750;
   text-decoration: none;
 }
@@ -1779,13 +1853,52 @@ a.edu-forum-card:hover {
   display: grid;
   gap: 8px;
   border-radius: 16px;
-  background: #243320;
+  background: #ffffff;
   padding: 16px;
+  border: 2px solid #1a1a1a;
+}
+
+@media (max-width: 900px) {
+  .edu-community.is-post {
+    width: 100%;
+  }
+
+  .edu-forum-thread {
+    gap: 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 8px 0 0;
+  }
+
+  .edu-forum-thread .edu-cm-post-top,
+  .edu-forum-thread h1,
+  .edu-forum-thread .edu-forum-body,
+  .edu-forum-thread .edu-cm-resolved-block,
+  .edu-forum-thread .edu-cm-tags,
+  .edu-forum-thread .edu-cm-actions,
+  .edu-cm-thread .edu-forum-replies,
+  .edu-cm-thread .edu-forum,
+  .edu-cm-thread .edu-cm-reply-dock {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .edu-forum-thread .edu-cm-post-image {
+    width: 100%;
+    max-height: 320px;
+    border-radius: 0;
+  }
+
+  .edu-forum-thread .edu-cm-actions {
+    order: 0;
+    margin-top: 4px;
+  }
 }
 
 .edu-forum-thread h1 {
   margin: 4px 0 0;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: clamp(24px, 4vw, 30px);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -1793,7 +1906,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-forum-body {
-  color: #f6f1e7 !important;
+  color: #1a1a1a !important;
   font-size: 16px;
   font-weight: 500;
   line-height: 1.5;
@@ -1802,7 +1915,7 @@ a.edu-forum-card:hover {
 
 .edu-forum-replies {
   margin: 18px 0 10px;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 16px;
   font-weight: 800;
 }
@@ -1823,7 +1936,7 @@ a.edu-forum-card:hover {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(12, 16, 10, 0.62);
+  background: rgba(26, 26, 26, 0.62);
 }
 
 .edu-forum-modal .edu-forum-dialog {
@@ -1835,16 +1948,16 @@ a.edu-forum-card:hover {
   max-height: min(680px, calc(100vh - 40px));
   overflow: auto;
   padding: 20px;
-  border: 2px solid rgba(246, 241, 231, 0.16);
+  border: 2px solid rgba(26, 26, 26, 0.16);
   border-radius: 16px;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
 }
 
 .edu-forum-dialog h2 {
   margin: 0;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -1858,15 +1971,15 @@ a.edu-forum-card:hover {
 }
 
 .edu-forum-dialog .edu-btn {
-  border-color: #f4ed36;
+  border-color: #61609a;
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
 }
 
 .edu-forum-dialog .edu-btn-ghost {
-  border-color: rgba(246, 241, 231, 0.28);
+  border-color: rgba(26, 26, 26, 0.28);
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-forum-dialog .edu-error {
@@ -1875,23 +1988,23 @@ a.edu-forum-card:hover {
 
 .edu-home-empty {
   margin: 0;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-weight: 650;
 }
 
 .edu-home .edu-route {
   border-color: transparent;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
 }
 
 .edu-home .edu-route-kicker,
 .edu-home .edu-route-meta {
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
 }
 
 .edu-home .edu-route-bar {
-  background: rgba(246, 241, 231, 0.12);
+  background: rgba(26, 26, 26, 0.12);
 }
 
 .edu-route-row {
@@ -1932,7 +2045,7 @@ a.edu-forum-card:hover {
   border-radius: 12px;
   background: rgba(255, 253, 248, 0.94);
   padding: 12px 12px 10px;
-  box-shadow: 0 10px 22px rgba(28, 36, 22, 0.16);
+  box-shadow: 0 10px 22px rgba(26, 26, 26, 0.16);
 }
 
 .edu-route-sheet span {
@@ -1987,7 +2100,7 @@ a.edu-forum-card:hover {
   height: 6px;
   overflow: hidden;
   border-radius: 99px;
-  background: #e7e1d4;
+  background: #e6e3f4;
 }
 
 .edu-route-bar span {
@@ -2010,40 +2123,41 @@ a.edu-forum-card:hover {
 @media (max-width: 980px) {
   .edu-route-row {
     grid-template-columns: 1fr 1fr;
-  }
+}
 }
 
 @media (max-width: 680px) {
   .edu-home {
     padding: 16px 14px 40px;
-  }
+}
 
   .edu-head {
     height: 60px;
     flex-wrap: nowrap;
     gap: 8px;
     padding: 0 12px;
-  }
+  border-bottom: 2px solid #1a1a1a;
+}
 
   .edu-head-search {
     max-width: none;
     flex: 1;
     min-width: 0;
-  }
+}
 
   .edu-banner {
     align-items: stretch;
     flex-direction: column;
-  }
+}
 
   .edu-create-bar {
     border-radius: 16px;
     padding: 8px;
-  }
+}
 
   .edu-route-row {
     grid-template-columns: 1fr;
-  }
+}
 }
 
 .edu-kicker {
@@ -2119,7 +2233,7 @@ a.edu-forum-card:hover {
 .edu-chip[aria-pressed='true'],
 .edu-btn {
   background: var(--edu-ink);
-  color: var(--edu-butter);
+  color: #f4ed36;
 }
 
 .edu-btn:disabled {
@@ -2131,7 +2245,7 @@ a.edu-forum-card:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-color: var(--edu-butter);
+  border-color: #61609a;
   background: var(--edu-butter);
   color: var(--edu-ink);
   text-decoration: none;
@@ -2140,7 +2254,7 @@ a.edu-forum-card:hover {
 @media (max-width: 900px) {
   .edu-catalog {
     grid-template-columns: 1fr;
-  }
+}
 }
 
 .edu-btn-ghost {
@@ -2155,7 +2269,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-ideas button {
-  border: 1.5px dashed rgba(28, 36, 22, 0.35);
+  border: 1.5px dashed rgba(26, 26, 26, 0.35);
   background: transparent;
   color: var(--edu-muted);
   font: inherit;
@@ -2169,7 +2283,7 @@ a.edu-forum-card:hover {
 .edu-ideas button:hover {
   border-style: solid;
   color: inherit;
-  background: rgba(246, 241, 231, 0.08);
+  background: rgba(26, 26, 26, 0.08);
 }
 
 .edu-chat .edu-ideas button,
@@ -2275,8 +2389,8 @@ a.edu-forum-card:hover {
 
 .edu-studio-log {
   border-right: 2px solid var(--edu-ink);
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   padding: 22px 18px;
 }
 
@@ -2360,14 +2474,14 @@ a.edu-forum-card:hover {
 
 .edu-log li {
   padding: 6px 0;
-  border-top: 1px solid rgba(246, 241, 231, 0.12);
+  border-top: 1px solid rgba(26, 26, 26, 0.12);
 }
 
 .edu-log-toggle {
   margin-top: 14px;
   border: 0;
   background: transparent;
-  color: #f4ed36;
+  color: #61609a;
   font: inherit;
   font-size: 13px;
   font-weight: 800;
@@ -2418,7 +2532,7 @@ a.edu-forum-card:hover {
   align-items: center;
   gap: 8px;
   margin-top: 8px;
-  border-top: 1px solid rgba(28, 36, 22, 0.12);
+  border-top: 1px solid rgba(26, 26, 26, 0.12);
   padding-top: 8px;
   font-size: 14px;
   font-weight: 650;
@@ -2428,7 +2542,7 @@ a.edu-forum-card:hover {
   height: 14px;
   margin-top: 10px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #efe8dc 0%, #fff 50%, #efe8dc 100%);
+  background: linear-gradient(90deg, #f9f5f2 0%, #fff 50%, #f9f5f2 100%);
   background-size: 200% 100%;
   animation: edu-shine 1.1s linear infinite;
 }
@@ -2439,7 +2553,7 @@ a.edu-forum-card:hover {
 
 .edu-curriculum {
   border-right: 2px solid var(--edu-ink);
-  background: #fffdf8;
+  background: #ffffff;
   padding: 16px 12px 24px;
 }
 
@@ -2467,7 +2581,7 @@ a.edu-forum-card:hover {
   z-index: 1;
   margin: -16px -12px 0;
   padding: 16px 12px 10px;
-  background: #fffdf8;
+  background: #ffffff;
 }
 
 .edu-syllabus-top {
@@ -2484,7 +2598,7 @@ a.edu-forum-card:hover {
 .edu-curriculum .edu-syllabus-close {
   display: none;
   width: auto;
-  border: 1.5px solid #1c2416;
+  border: 1.5px solid #1a1a1a;
   border-radius: 999px;
   background: #fff;
   padding: 6px 12px;
@@ -2509,7 +2623,7 @@ a.edu-forum-card:hover {
 
 .edu-syllabus-mod {
   overflow: hidden;
-  border: 1.5px solid rgba(28, 36, 22, 0.14);
+  border: 1.5px solid rgba(26, 26, 26, 0.14);
   border-radius: 14px;
   background: #fff;
 }
@@ -2523,8 +2637,8 @@ a.edu-forum-card:hover {
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
 }
 
 .edu-syllabus-mod-head > span {
@@ -2535,7 +2649,7 @@ a.edu-forum-card:hover {
   place-items: center;
   border-radius: 8px;
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
   font-size: 14px;
   font-weight: 800;
 }
@@ -2552,7 +2666,7 @@ a.edu-forum-card:hover {
 
 .edu-syllabus-mod-head small {
   margin-top: 2px;
-  color: #c5d0bc;
+  color: #61609a;
   font-size: 12px;
   font-weight: 650;
 }
@@ -2604,7 +2718,7 @@ a.edu-forum-card:hover {
   width: 28px;
   height: 28px;
   place-items: center;
-  border: 1.5px solid rgba(28, 36, 22, 0.28);
+  border: 1.5px solid rgba(26, 26, 26, 0.28);
   border-radius: 50%;
   font-size: 12px;
   font-weight: 800;
@@ -2650,7 +2764,7 @@ a.edu-forum-card:hover {
 .edu-md-code {
   padding: 0 0.28em;
   border-radius: 4px;
-  background: #efe8d6;
+  background: #f9f5f2;
   font-family: var(--edu-mono);
   font-size: 0.92em;
 }
@@ -2659,9 +2773,9 @@ a.edu-forum-card:hover {
   margin: 0.4em 0 1.2em;
   padding: 14px 16px;
   overflow: auto;
-  background: #1c2416;
-  color: #f6f1e7;
-  border: 2px solid #1c2416;
+  background: #f9f5f2;
+  color: #1a1a1a;
+  border: 2px solid #1a1a1a;
   font-family: var(--edu-mono);
   font-size: 14px;
   line-height: 1.6;
@@ -2717,7 +2831,7 @@ a.edu-forum-card:hover {
 .edu-practice {
   margin-top: 28px;
   border: 2px solid var(--edu-ink);
-  background: #fffdf8;
+  background: #ffffff;
   padding: 16px 16px 18px;
 }
 
@@ -2734,8 +2848,8 @@ a.edu-forum-card:hover {
   min-height: 150px;
   margin-top: 8px;
   border: 2px solid var(--edu-ink);
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
   font-family: var(--edu-mono);
   font-size: 14px;
   line-height: 1.55;
@@ -2767,15 +2881,15 @@ a.edu-forum-card:hover {
 }
 
 .edu-les.on .edu-syllabus-mark {
-  border-color: #1c2416;
-  background: #1c2416;
-  color: #f4ed36;
+  border-color: #1a1a1a;
+  background: #f9f5f2;
+  color: #61609a;
 }
 
 .edu-les.done .edu-syllabus-mark {
-  border-color: #6e8462;
+  border-color: #1a1a1a;
   background: #b5c995;
-  color: #1c2416;
+  color: #1a1a1a;
 }
 
 .edu-les.is-quiz .edu-syllabus-mark {
@@ -2877,7 +2991,7 @@ a.edu-forum-card:hover {
   justify-content: center;
   gap: 16px;
   padding: 28px 16px 36px;
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-cert.edu-cert-sheet {
@@ -2888,12 +3002,10 @@ a.edu-forum-card:hover {
   overflow: hidden;
   border: 0;
   background-color: #f9f5f2;
-  background-image:
-    radial-gradient(90% 70% at 50% 42%, rgba(255, 253, 248, 0.92), rgba(249, 245, 242, 0) 62%),
+  background-image: radial-gradient(90% 70% at 50% 42%, rgba(255, 253, 248, 0.92), rgba(249, 245, 242, 0) 62%),
     repeating-linear-gradient(0deg, rgba(26, 26, 26, 0.015) 0 1px, transparent 1px 6px),
     linear-gradient(165deg, #f9f5f2 0%, #f9f5f2 100%);
-  box-shadow:
-    0 18px 42px rgba(26, 26, 26, 0.18),
+  box-shadow: 0 18px 42px rgba(26, 26, 26, 0.18),
     inset 0 0 0 1px rgba(255, 253, 248, 0.8);
   color: #1a1a1a;
   text-align: center;
@@ -2964,8 +3076,7 @@ a.edu-forum-card:hover {
 .edu-cert-fillet {
   inset: 24px;
   border: 4px solid #8584bd;
-  box-shadow:
-    inset 0 0 0 1px #f4ed36,
+  box-shadow: inset 0 0 0 1px #f4ed36,
     0 0 0 1px #f9cc73;
 }
 
@@ -3178,18 +3289,18 @@ a.edu-forum-card:hover {
 
 .edu-cert-mail p {
   margin: 0;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 15px;
   font-weight: 600;
   line-height: 1.45;
 }
 
 .edu-cert-mail strong {
-  color: #f4ed36;
+  color: #61609a;
 }
 
 .edu-cert-actions .edu-btn {
-  border-color: var(--edu-butter);
+  border-color: #61609a;
   background: var(--edu-butter);
   color: var(--edu-ink);
 }
@@ -3198,37 +3309,37 @@ a.edu-forum-card:hover {
   .edu-cert.edu-cert-sheet {
     aspect-ratio: auto;
     min-height: 0;
-  }
+}
 
   .edu-cert-inner {
     height: auto;
     padding: 78px 28px 32px;
-  }
+}
 
   .edu-cert-flourish {
     width: 52px;
     height: 52px;
-  }
+}
 
   .edu-cert-flourish-tl,
   .edu-cert-flourish-tr {
     top: 20px;
-  }
+}
 
   .edu-cert-flourish-bl,
   .edu-cert-flourish-br {
     bottom: 16px;
-  }
+}
 
   .edu-cert-flourish-tl,
   .edu-cert-flourish-bl {
     left: 18px;
-  }
+}
 
   .edu-cert-flourish-tr,
   .edu-cert-flourish-br {
     right: 18px;
-  }
+}
 
   .edu-cert-seal {
     position: relative;
@@ -3237,17 +3348,17 @@ a.edu-forum-card:hover {
     width: 104px;
     height: 104px;
     margin: 16px auto 0;
-  }
+}
 
   .edu-cert-sign {
     margin-top: 20px;
-  }
+}
 
   .edu-cert-bookmark {
     right: 28px;
     width: 26px;
     height: 46px;
-  }
+}
 }
 
 .edu-chat {
@@ -3278,7 +3389,7 @@ a.edu-forum-card:hover {
 .edu-bubble.me {
   margin-left: auto;
   background: var(--edu-ink);
-  color: #f6f1e7;
+  color: #f9f5f2;
 }
 
 .edu-chat form {
@@ -3303,8 +3414,8 @@ a.edu-forum-card:hover {
   width: 100%;
   max-width: none;
   margin: 0;
-  background: #1c2416;
-  color: #1c2416;
+  background: #f9f5f2;
+  color: #1a1a1a;
 }
 
 .edu-desk {
@@ -3324,9 +3435,9 @@ a.edu-forum-card:hover {
 .edu-desk-card,
 .edu-desk-shortcuts a {
   border-radius: 16px;
-  background: #fffdf8;
-  color: #1c2416;
-  box-shadow: 0 1px 2px rgba(28, 36, 22, 0.06);
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.06);
 }
 
 .edu-desk-hero {
@@ -3341,7 +3452,7 @@ a.edu-forum-card:hover {
 .edu-desk-shortcuts strong,
 .edu-desk-guides strong {
   margin: 0;
-  color: #1c2416;
+  color: #1a1a1a;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -3357,7 +3468,7 @@ a.edu-forum-card:hover {
 .edu-desk-intro p,
 .edu-desk-contact p {
   margin: 2px 0 0;
-  color: #5e6758;
+  color: #61609a;
   font-size: 14px;
   line-height: 1.4;
 }
@@ -3374,18 +3485,18 @@ a.edu-forum-card:hover {
   border: 0;
   border-radius: 999px;
   background: #fff;
-  color: #1c2416;
+  color: #1a1a1a;
   padding: 8px 14px;
   font: inherit;
   font-size: 14px;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(28, 36, 22, 0.06);
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.06);
 }
 
 .edu-desk-tabs button.is-on {
   background: var(--edu-butter);
-  color: #1c2416;
+  color: #1a1a1a;
 }
 
 .edu-desk-mark {
@@ -3396,7 +3507,7 @@ a.edu-forum-card:hover {
   place-items: center;
   border-radius: 12px;
   background: #b5c995;
-  color: #1c2416;
+  color: #1a1a1a;
   font-size: 18px;
   font-weight: 800;
 }
@@ -3450,14 +3561,14 @@ a.edu-forum-card:hover {
 }
 
 .edu-desk-faq article + article {
-  border-top: 1px solid rgba(28, 36, 22, 0.08);
+  border-top: 1px solid rgba(26, 26, 26, 0.08);
 }
 
 .edu-desk-faq button {
   width: 100%;
   border: 0;
   background: transparent;
-  color: #1c2416;
+  color: #1a1a1a;
   padding: 12px 0;
   font: inherit;
   font-size: 15px;
@@ -3468,7 +3579,7 @@ a.edu-forum-card:hover {
 
 .edu-desk-faq p {
   margin: 0 0 12px;
-  color: #3d4636;
+  color: #1a1a1a;
   font-size: 14px;
   line-height: 1.45;
 }
@@ -3479,7 +3590,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-desk-contact a {
-  color: #243320;
+  color: #1a1a1a;
   font-weight: 750;
 }
 
@@ -3495,16 +3606,16 @@ a.edu-forum-card:hover {
   padding: 12px 0;
   color: inherit;
   text-decoration: none;
-  border-top: 1px solid rgba(28, 36, 22, 0.08);
+  border-top: 1px solid rgba(26, 26, 26, 0.08);
 }
 
 .edu-desk-guides a:hover strong {
-  color: #243320;
+  color: #1a1a1a;
 }
 
 .edu-desk-empty {
   margin: 8px 0 4px;
-  color: #5e6758;
+  color: #61609a;
 }
 
 .edu-desk-table-wrap {
@@ -3519,7 +3630,7 @@ a.edu-forum-card:hover {
 
 .edu-desk-table th {
   padding: 8px 10px 10px 0;
-  color: #5e6758;
+  color: #61609a;
   font-size: 12px;
   font-weight: 750;
   text-align: left;
@@ -3527,8 +3638,8 @@ a.edu-forum-card:hover {
 
 .edu-desk-table td {
   padding: 12px 10px 12px 0;
-  border-top: 1px solid rgba(28, 36, 22, 0.08);
-  color: #1c2416;
+  border-top: 1px solid rgba(26, 26, 26, 0.08);
+  color: #1a1a1a;
   vertical-align: top;
 }
 
@@ -3536,7 +3647,7 @@ a.edu-forum-card:hover {
   display: inline-flex;
   border-radius: 999px;
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
   padding: 3px 8px;
   font-size: 12px;
   font-weight: 800;
@@ -3544,13 +3655,13 @@ a.edu-forum-card:hover {
 
 .edu-desk-status.is-seen,
 .edu-desk-status.is-review {
-  background: #d7e4c8;
-  color: #243320;
+  background: #b5c995;
+  color: #1a1a1a;
 }
 
 .edu-desk-status.is-closed {
-  background: #efeae0;
-  color: #5e6758;
+  background: #f3f0ea;
+  color: #61609a;
 }
 
 .edu-fab {
@@ -3563,7 +3674,7 @@ a.edu-forum-card:hover {
   border: 0;
   border-radius: 50%;
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
   font-size: 32px;
   font-weight: 500;
   line-height: 1;
@@ -3581,8 +3692,8 @@ a.edu-forum-card:hover {
   width: 100%;
   border: 0;
   border-radius: 14px;
-  background: #f4efe4;
-  color: #1c2416;
+  background: #f9f5f2;
+  color: #1a1a1a;
   padding: 14px;
   font: inherit;
   text-align: left;
@@ -3594,20 +3705,20 @@ a.edu-forum-card:hover {
 }
 
 .edu-desk-picker > button span {
-  color: #5e6758;
+  color: #61609a;
   font-size: 13px;
   font-weight: 600;
 }
 
 .edu-home.edu-desk .edu-forum-dialog {
-  background: #fffdf8;
-  color: #1c2416;
-  border-color: rgba(28, 36, 22, 0.08);
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: rgba(26, 26, 26, 0.08);
 }
 
 .edu-home.edu-desk .edu-forum-dialog h2,
 .edu-home.edu-desk .edu-help-form label {
-  color: #1c2416;
+  color: #1a1a1a;
 }
 
 .edu-home.edu-desk .edu-help-form {
@@ -3619,8 +3730,8 @@ a.edu-forum-card:hover {
 .edu-home.edu-desk .edu-help-form select,
 .edu-home.edu-desk .edu-help-form textarea {
   background: #fff;
-  color: #1c2416;
-  border-color: rgba(28, 36, 22, 0.12);
+  color: #1a1a1a;
+  border-color: rgba(26, 26, 26, 0.12);
 }
 
 .edu-desk-picker > .edu-btn-ghost {
@@ -3638,8 +3749,8 @@ a.edu-forum-card:hover {
 .edu-hd-tabs button {
   border: 1px solid rgba(214, 239, 74, 0.28);
   border-radius: 999px;
-  background: #1a2618;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   padding: 8px 14px;
   font: inherit;
   font-size: 13px;
@@ -3648,9 +3759,9 @@ a.edu-forum-card:hover {
 }
 
 .edu-hd-tabs button.is-on {
-  border-color: #d4ef3c;
-  background: #d4ef3c;
-  color: #1c2416;
+  border-color: #61609a;
+  background: #f4ed36;
+  color: #1a1a1a;
 }
 
 .edu-hd-stack {
@@ -3663,10 +3774,10 @@ a.edu-forum-card:hover {
 .edu-hd-shortcuts button,
 .edu-hd-panel,
 .edu-hd .edu-desk-card {
-  border: 1px solid rgba(214, 239, 74, 0.16);
+  border: 2px solid #1a1a1a;
   border-radius: 18px;
-  background: #182216;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   box-shadow: none;
 }
 
@@ -3688,14 +3799,14 @@ a.edu-forum-card:hover {
 .edu-hd-panel h2,
 .edu-hd .edu-desk-card h2 {
   margin: 0;
-  color: #f7f4ea;
+  color: #1a1a1a;
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .edu-hd-hero h1 span {
-  color: #d4ef3c;
+  color: #61609a;
 }
 
 .edu-hd-hero-copy > p,
@@ -3703,7 +3814,7 @@ a.edu-forum-card:hover {
 .edu-hd .edu-desk-card-head p,
 .edu-hd .edu-desk-empty {
   margin: 8px 0 0;
-  color: rgba(246, 241, 231, 0.62);
+  color: #1a1a1a;
   font-size: 14px;
   line-height: 1.45;
 }
@@ -3718,13 +3829,17 @@ a.edu-forum-card:hover {
   color: #fff;
 }
 
-.edu-hd-badge.is-green { background: #3d9a32; }
-.edu-hd-badge.is-blue { background: #3b6fe0; }
-.edu-hd-badge.is-purple { background: #7a4de0; }
-.edu-hd-badge.is-orange { background: #e8882a; }
+.edu-hd-badge.is-green { background: #3d9a32;;
+}
+.edu-hd-badge.is-blue { background: #3b6fe0;;
+}
+.edu-hd-badge.is-purple { background: #7a4de0;;
+}
+.edu-hd-badge.is-orange { background: #e8882a;;
+}
 .edu-hd-badge.is-line {
   background: transparent;
-  color: #d4ef3c;
+  color: #61609a;
   border: 1px solid rgba(214, 239, 74, 0.35);
 }
 
@@ -3733,11 +3848,11 @@ a.edu-forum-card:hover {
   align-items: center;
   gap: 8px;
   margin-top: 16px;
-  border: 1px solid rgba(246, 241, 231, 0.14);
+  border: 2px solid #1a1a1a;
   border-radius: 999px;
-  background: #121910;
+  background: #ffffff;
   padding: 6px 6px 6px 14px;
-  color: rgba(246, 241, 231, 0.45);
+  color: #1a1a1a;
 }
 
 .edu-hd-search input {
@@ -3745,14 +3860,14 @@ a.edu-forum-card:hover {
   min-width: 0;
   border: 0;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font: inherit;
   font-size: 14px;
   outline: none;
 }
 
 .edu-hd-search input::placeholder {
-  color: rgba(246, 241, 231, 0.4);
+  color: #5d5d5d;
 }
 
 .edu-hd-search button {
@@ -3763,15 +3878,15 @@ a.edu-forum-card:hover {
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: #d4ef3c;
-  color: #1c2416;
+  background: #f4ed36;
+  color: #1a1a1a;
   cursor: pointer;
 }
 
 .edu-hd-buoy {
   position: relative;
   justify-self: end;
-  color: #d4ef3c;
+  color: #61609a;
 }
 
 .edu-hd-buoy > span {
@@ -3783,8 +3898,8 @@ a.edu-forum-card:hover {
   height: 36px;
   place-items: center;
   border-radius: 50%;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   box-shadow: 0 0 0 4px rgba(212, 239, 60, 0.25);
 }
 
@@ -3810,7 +3925,7 @@ a.edu-forum-card:hover {
 .edu-hd-shortcuts a > span:nth-child(2),
 .edu-hd-shortcuts button > span:nth-child(2) {
   flex: 1;
-  color: rgba(246, 241, 231, 0.58);
+  color: #1a1a1a;
   font-size: 13px;
   line-height: 1.35;
 }
@@ -3818,14 +3933,14 @@ a.edu-forum-card:hover {
 .edu-hd-shortcuts strong {
   display: block;
   margin-bottom: 2px;
-  color: #f7f4ea;
+  color: #1a1a1a;
   font-size: 16px;
 }
 
 .edu-hd-shortcuts > a > svg,
 .edu-hd-shortcuts > button > svg {
   flex: none;
-  color: rgba(246, 241, 231, 0.7);
+  color: rgba(26, 26, 26, 0.7);
 }
 
 .edu-hd-split {
@@ -3851,7 +3966,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-hd-faq article + article {
-  border-top: 1px solid rgba(246, 241, 231, 0.08);
+  border-top: 1px solid rgba(26, 26, 26, 0.08);
 }
 
 .edu-hd-faq button {
@@ -3862,7 +3977,7 @@ a.edu-forum-card:hover {
   gap: 12px;
   border: 0;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   padding: 13px 4px;
   font: inherit;
   font-size: 14px;
@@ -3883,7 +3998,7 @@ a.edu-forum-card:hover {
 .edu-hd-faq p,
 .edu-hd-none {
   margin: 0 0 12px;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -3899,16 +4014,17 @@ a.edu-forum-card:hover {
   align-items: center;
   gap: 10px;
   border-radius: 12px;
-  background: #121910;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   padding: 10px 12px;
   text-decoration: none;
 }
 
 .edu-hd-row small {
   display: block;
-  color: rgba(246, 241, 231, 0.5);
+  color: #1a1a1a;
   font-size: 12px;
+  font-weight: 650;
 }
 
 .edu-hd-row .edu-hd-badge {
@@ -3923,10 +4039,10 @@ a.edu-forum-card:hover {
   justify-content: center;
   gap: 8px;
   margin-top: 4px;
-  border: 1px solid #d4ef3c;
+  border: 2px solid #1a1a1a;
   border-radius: 999px;
-  background: transparent;
-  color: #d4ef3c;
+  background: #f4ed36;
+  color: #1a1a1a;
   padding: 12px 16px;
   font: inherit;
   font-size: 14px;
@@ -3934,17 +4050,22 @@ a.edu-forum-card:hover {
   cursor: pointer;
 }
 
+.edu-hd-ticket:hover {
+  background: #1a1a1a;
+  color: #f4ed36;
+}
+
 .edu-hd .edu-desk-card {
   padding: 16px 18px;
 }
 
 .edu-hd .edu-desk-table th {
-  color: rgba(246, 241, 231, 0.5);
+  color: #1a1a1a;
 }
 
 .edu-hd .edu-desk-table td {
-  border-top-color: rgba(246, 241, 231, 0.08);
-  color: #f6f1e7;
+  border-top-color: rgba(26, 26, 26, 0.08);
+  color: #1a1a1a;
 }
 
 @media (max-width: 900px) {
@@ -3952,28 +4073,28 @@ a.edu-forum-card:hover {
   .edu-hd-shortcuts,
   .edu-hd-split {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-hd-buoy {
     display: none;
-  }
+}
 }
 
 @media (max-width: 860px) {
   .edu-desk-hero {
     flex-wrap: wrap;
-  }
+}
 
   .edu-desk-tabs {
     width: 100%;
     margin-left: 0;
     justify-content: flex-start;
-  }
+}
 
   .edu-desk-shortcuts,
   .edu-desk-split {
     grid-template-columns: 1fr;
-  }
+}
 }
 
 .edu-help {
@@ -3983,7 +4104,7 @@ a.edu-forum-card:hover {
 
 .edu-help-lead {
   margin: 8px 0 16px;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 16px;
   line-height: 1.45;
 }
@@ -3998,8 +4119,8 @@ a.edu-forum-card:hover {
 .edu-help-nav button {
   border: 0;
   border-radius: 999px;
-  background: #243320;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   padding: 8px 14px;
   font: inherit;
   font-size: 14px;
@@ -4009,7 +4130,7 @@ a.edu-forum-card:hover {
 
 .edu-help-nav button.is-on {
   background: var(--edu-butter);
-  color: #1c2416;
+  color: #1a1a1a;
 }
 
 .edu-help-faq {
@@ -4019,7 +4140,7 @@ a.edu-forum-card:hover {
 
 .edu-help-faq article {
   border-radius: 14px;
-  background: #243320;
+  background: #ffffff;
   overflow: hidden;
 }
 
@@ -4027,7 +4148,7 @@ a.edu-forum-card:hover {
   width: 100%;
   border: 0;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   padding: 14px 16px;
   font: inherit;
   font-size: 15px;
@@ -4040,7 +4161,7 @@ a.edu-forum-card:hover {
 .edu-help-account p,
 .edu-help-account li {
   margin: 0;
-  color: rgba(246, 241, 231, 0.78);
+  color: rgba(26, 26, 26, 0.78);
   font-size: 15px;
   line-height: 1.45;
 }
@@ -4053,7 +4174,7 @@ a.edu-forum-card:hover {
   display: grid;
   gap: 12px;
   border-radius: 16px;
-  background: #243320;
+  background: #ffffff;
   padding: 16px;
 }
 
@@ -4068,14 +4189,14 @@ a.edu-forum-card:hover {
   display: grid;
   gap: 12px;
   border-radius: 16px;
-  background: #243320;
+  background: #ffffff;
   padding: 16px;
 }
 
 .edu-help-form label {
   display: grid;
   gap: 6px;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-size: 13px;
   font-weight: 750;
 }
@@ -4085,10 +4206,10 @@ a.edu-forum-card:hover {
 .edu-help-form textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 2px solid rgba(246, 241, 231, 0.2);
+  border: 2px solid rgba(26, 26, 26, 0.2);
   border-radius: 12px;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
   font: inherit;
   font-size: 15px;
   font-weight: 500;
@@ -4106,7 +4227,7 @@ a.edu-forum-card:hover {
 
 .edu-help-done {
   margin: 0;
-  color: #b5c995;
+  color: #61609a;
   font-weight: 700;
 }
 
@@ -4141,23 +4262,28 @@ a.edu-forum-card:hover {
 }
 
 @keyframes edu-pulse {
-  50% { opacity: 0.35; }
+  50% { opacity: 0.35;;
+}
 }
 
 @keyframes edu-shine {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
+  from { background-position: 100% 0;;
+}
+  to { background-position: -100% 0;;
+}
 }
 
 @keyframes edu-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translateY(8px);;
+}
+  to { opacity: 1; transform: none;;
+}
 }
 
 @media (max-width: 860px) {
   .edu-app {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-aside {
     position: fixed;
@@ -4166,11 +4292,12 @@ a.edu-forum-card:hover {
     width: min(84vw, 280px);
     transform: translateX(-105%);
     transition: transform 0.2s ease;
-  }
+  border-right: 2.5px solid #000;
+}
 
   .edu-aside.open {
     transform: none;
-  }
+}
 
   .edu-scrim {
     position: fixed;
@@ -4178,106 +4305,107 @@ a.edu-forum-card:hover {
     z-index: 20;
     border: 0;
     background: rgba(0, 0, 0, 0.45);
-  }
+}
 
   .edu-topbar {
     display: none;
-  }
+}
 
   .edu-head-menu {
     display: grid;
-  }
+}
 
   .edu-head {
     height: 60px;
     flex-wrap: nowrap;
     gap: 8px;
     padding: 0 12px;
-  }
+  border-bottom: 2px solid #1a1a1a;
+}
 
   .edu-head-actions {
     flex: none;
     gap: 2px;
-  }
+}
 
   .edu-head-search {
     max-width: none;
     font-size: 13px;
     padding: 0 12px;
-  }
+}
 
   .edu-head-coins {
     gap: 4px;
     padding: 0 8px 0 6px;
-  }
+}
 
   .edu-head-bell > button,
   .edu-head-ticket,
   .edu-head-avatar {
     width: 34px;
     height: 34px;
-  }
+}
 
   .edu-menu {
     max-width: calc(100vw - 24px);
-  }
+}
 
   .edu-mycard {
     width: 100%;
     max-width: none;
-  }
+}
 
   .edu-studio,
   .edu-lms {
     grid-template-columns: 1fr;
     height: auto;
-  }
+}
 
   .edu-fill:has(> .edu-studio) {
     overflow: auto;
-  }
+}
 
   .edu-fill > .edu-studio {
     flex: none;
     height: auto;
     overflow: visible;
-  }
+}
 
   .edu-studio {
     height: auto;
     overflow: visible;
-  }
+}
 
   .edu-studio-log,
   .edu-studio .edu-stage {
     max-height: none;
     overflow: visible;
-  }
+}
 
   .edu-studio-log {
     border-right: 0;
     border-bottom: 2px solid var(--edu-ink);
-  }
+}
 
   .edu-module header {
     flex-direction: column;
     align-items: flex-start;
-  }
+}
 
   .edu-studio-log .edu-row .edu-btn,
   .edu-studio-log .edu-row .edu-btn-ghost {
     flex: 1 1 140px;
-  }
+}
 
   .edu-fill > .edu-watch.edu-lms {
     height: 100%;
     overflow: hidden;
-  }
+}
 
   .edu-curriculum {
     border-right: 0;
     border-bottom: 0;
-  }
+}
 
   .edu-watch .edu-curriculum {
     position: fixed;
@@ -4294,23 +4422,23 @@ a.edu-forum-card:hover {
     box-shadow: none;
     transform: translateX(105%);
     transition: transform 0.2s ease;
-  }
+}
 
   .edu-watch .edu-curriculum.open {
     transform: none;
-  }
+}
 
   .edu-watch:has(.edu-curriculum.open) .edu-watch-main {
     overflow: hidden;
-  }
+}
 
   .edu-page {
     padding: 22px 16px 48px;
-  }
+}
 
   .edu-read {
     padding: 20px 16px 48px;
-  }
+}
 }
 
 @page edu-certificate {
@@ -4323,7 +4451,7 @@ a.edu-forum-card:hover {
     height: auto !important;
     overflow: visible !important;
     background: #fff !important;
-  }
+}
 
   .edu-aside,
   .edu-topbar,
@@ -4331,20 +4459,20 @@ a.edu-forum-card:hover {
   .edu-scrim,
   .edu-no-print {
     display: none !important;
-  }
+}
 
   .edu-app,
   .edu-main,
   .edu-main-body {
     display: block !important;
-  }
+}
 
   .edu-cert-wrap {
     display: block;
     min-height: 0;
     overflow: visible;
     padding: 0;
-  }
+}
 
   .edu-cert.edu-cert-sheet {
     width: 100%;
@@ -4354,12 +4482,12 @@ a.edu-forum-card:hover {
     box-shadow: none;
     break-inside: avoid;
     page-break-inside: avoid;
-  }
+}
 
   .edu-cert-inner {
     height: 100%;
     padding: 44px 196px 36px 116px;
-  }
+}
 
   .edu-cert-seal {
     position: absolute;
@@ -4368,11 +4496,11 @@ a.edu-forum-card:hover {
     width: 118px;
     height: 118px;
     margin: 0;
-  }
+}
 
   .edu-cert-sign {
     margin-top: auto;
-  }
+}
 
   .edu-cert-ribbon,
   .edu-cert-bookmark,
@@ -4383,18 +4511,18 @@ a.edu-forum-card:hover {
   .edu-cert-seal {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
+}
 }
 
 .edu-watch {
   grid-template-columns: minmax(0, 1fr) 320px;
-  background: #f7f4ee;
+  background: #f9f5f2;
 }
 
 .edu-watch-main {
   min-width: 0;
   overflow: auto;
-  background: #fffdf8;
+  background: #ffffff;
 }
 
 .edu-watch-body {
@@ -4410,7 +4538,7 @@ a.edu-forum-card:hover {
 
 .edu-screen {
   background: #1a1a1a;
-  color: #f6f1e7;
+  color: #f9f5f2;
 }
 
 .edu-screen.wide {
@@ -4465,7 +4593,7 @@ a.edu-forum-card:hover {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 12px;
-  background: #1c2416;
+  background: #f9f5f2;
   font-size: 13px;
   font-weight: 700;
 }
@@ -4478,7 +4606,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-screen-bar button {
-  border: 2px solid #f6f1e7;
+  border: 2px solid #1a1a1a;
   background: var(--edu-butter);
   color: var(--edu-ink);
   font: inherit;
@@ -4526,7 +4654,7 @@ a.edu-forum-card:hover {
 .edu-resource iframe {
   width: 100%;
   border: 0;
-  background: #f4efe4;
+  background: #f9f5f2;
 }
 
 .edu-resource iframe {
@@ -4547,7 +4675,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-resource-link:hover {
-  background: #f4efe4;
+  background: #f9f5f2;
 }
 
 .edu-check {
@@ -4585,18 +4713,18 @@ a.edu-forum-card:hover {
 @media (max-width: 860px) {
   .edu-watch {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-curriculum .edu-syllabus-close {
     display: inline-flex;
     align-items: center;
     min-height: 36px;
-  }
+}
 
   .edu-watch-main {
     height: 100%;
     overflow: auto;
-  }
+}
 
   .edu-head .edu-temario {
     display: inline-flex;
@@ -4613,7 +4741,7 @@ a.edu-forum-card:hover {
     padding: 0 12px;
     cursor: pointer;
     white-space: nowrap;
-  }
+}
 
   .edu-temario-scrim {
     display: block;
@@ -4622,7 +4750,7 @@ a.edu-forum-card:hover {
     z-index: 35;
     border: 0;
     background: rgba(0, 0, 0, 0.45);
-  }
+}
 
 }
 
@@ -4634,33 +4762,33 @@ a.edu-forum-card:hover {
 @media (max-width: 720px) {
   .edu-app {
     overflow-x: hidden;
-  }
+}
 
   .edu-home {
     padding: 16px 14px 40px;
-  }
+}
 
   .edu-home-title {
     font-size: 26px;
-  }
+}
 
   .edu-cert-actions,
   .edu-create-nav {
     align-items: stretch;
     flex-direction: column;
-  }
+}
 
   .edu-page-head {
     align-items: center;
     flex-direction: row;
     gap: 10px;
-  }
+}
 
   .edu-page-head .edu-btn {
     width: auto;
     min-height: 40px;
     padding: 8px 14px;
-  }
+}
 
   .edu-cert-actions .edu-btn,
   .edu-cert-actions .edu-btn-ghost,
@@ -4669,40 +4797,40 @@ a.edu-forum-card:hover {
     width: 100%;
     justify-content: center;
     text-align: center;
-  }
+}
 
   .edu-create-choices {
     width: 100%;
-  }
+}
 
   .edu-create-choices .edu-chip {
     min-height: 44px;
     flex: 1 1 140px;
-  }
+}
 
   .edu-catalog,
   .edu-cert-list {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-chat-log,
   .edu-support-log {
     padding: 16px 14px;
-  }
+}
 
   .edu-chat form {
     padding: 10px;
-  }
+}
 
   .edu-cert-wrap {
     padding: 16px 10px 28px;
-  }
+}
 
   .edu-cert-name,
   .edu-cert .name,
   .edu-cert-sign-name {
     font-size: 28px;
-  }
+}
 }
 
 .edu-cert-list {
@@ -4723,8 +4851,7 @@ a.edu-forum-card:hover {
   padding: 36px 58px 20px 28px;
   border: 0;
   background-color: #f9f5f2;
-  background-image:
-    repeating-linear-gradient(0deg, rgba(26, 26, 26, 0.02) 0 1px, transparent 1px 6px),
+  background-image: repeating-linear-gradient(0deg, rgba(26, 26, 26, 0.02) 0 1px, transparent 1px 6px),
     linear-gradient(165deg, #f9f5f2 0%, #f9f5f2 100%);
   box-shadow: 0 10px 24px rgba(26, 26, 26, 0.16);
   color: #1a1a1a;
@@ -4734,9 +4861,8 @@ a.edu-forum-card:hover {
 
 .edu-cert-preview:hover {
   background-color: #f9f5f2;
-  background-image:
-    repeating-linear-gradient(0deg, rgba(26, 26, 26, 0.02) 0 1px, transparent 1px 6px),
-    linear-gradient(165deg, #fffdf8 0%, #f9f5f2 100%);
+  background-image: repeating-linear-gradient(0deg, rgba(26, 26, 26, 0.02) 0 1px, transparent 1px 6px),
+    linear-gradient(165deg, #ffffff 0%, #f9f5f2 100%);
 }
 
 .edu-cert-preview-frame {
@@ -4744,8 +4870,7 @@ a.edu-forum-card:hover {
   z-index: 2;
   inset: 8px;
   border: 1.5px solid #1a1a1a;
-  box-shadow:
-    inset 0 0 0 3px #f9f5f2,
+  box-shadow: inset 0 0 0 3px #f9f5f2,
     inset 0 0 0 4px #61609a,
     inset 0 0 0 7px #8584bd,
     inset 0 0 0 8px #f4ed36;
@@ -4924,7 +5049,10 @@ a.edu-forum-card:hover {
 
 .edu-community {
   width: min(1120px, 100%);
+  max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
+  contain: inline-size;
 }
 
 .edu-community button:focus-visible,
@@ -4970,7 +5098,7 @@ a.edu-forum-card:hover {
 .edu-cm-head p {
   margin: 6px 0 0;
   max-width: 48ch;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 15px;
   font-weight: 600;
   line-height: 1.4;
@@ -4998,15 +5126,15 @@ a.edu-forum-card:hover {
   flex: none;
   border-radius: 999px;
   padding: 8px 12px;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 14px;
   font-weight: 750;
   text-decoration: none;
 }
 
 .edu-cm-nav a:hover {
-  background: rgba(246, 241, 231, 0.06);
-  color: #f6f1e7;
+  background: rgba(26, 26, 26, 0.06);
+  color: #1a1a1a;
 }
 
 .edu-cm-nav a[aria-current='page'],
@@ -5020,12 +5148,21 @@ a.edu-forum-card:hover {
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 22px;
   align-items: start;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .edu-cm-main,
 .edu-cm-thread,
-.edu-cm-section {
+.edu-cm-section,
+.edu-cm-feed,
+.edu-cm-head,
+.edu-cm-nav,
+.edu-cm-tools,
+.edu-cm-side,
+.edu-cm-post {
   min-width: 0;
+  max-width: 100%;
 }
 
 .edu-cm-side {
@@ -5040,13 +5177,13 @@ a.edu-forum-card:hover {
   flex-wrap: wrap;
   gap: 8px 18px;
   margin-bottom: 14px;
-  color: rgba(246, 241, 231, 0.66);
+  color: rgba(26, 26, 26, 0.66);
   font-size: 13px;
   font-weight: 700;
 }
 
 .edu-cm-pulse strong {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 15px;
 }
 
@@ -5067,7 +5204,7 @@ a.edu-forum-card:hover {
 .edu-cm-filters button {
   border: 0;
   background: transparent;
-  color: rgba(246, 241, 231, 0.58);
+  color: rgba(26, 26, 26, 0.58);
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -5076,11 +5213,11 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-filters button:hover {
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-cm-filters button[aria-pressed='true'] {
-  color: var(--edu-butter);
+  color: #61609a;
 }
 
 .edu-cm-sort {
@@ -5090,8 +5227,8 @@ a.edu-forum-card:hover {
 .edu-cm-sort select {
   border: 0;
   background: transparent;
-  color: #f6f1e7;
-  color-scheme: dark;
+  color: #1a1a1a;
+  color-scheme: light;
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -5111,7 +5248,8 @@ a.edu-forum-card:hover {
 .edu-cm-widget {
   min-width: 0;
   border-radius: 16px;
-  background: #243320;
+  background: #ffffff;
+  border: 2px solid #1a1a1a;
 }
 
 .edu-cm-post {
@@ -5122,7 +5260,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-post:hover {
-  background: #2c3d27;
+  background: #f4f1ea;
 }
 
 .edu-cm-post.is-new {
@@ -5158,21 +5296,21 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-post-who span {
-  color: rgba(246, 241, 231, 0.55);
+  color: #1a1a1a;
   font-size: 12px;
   font-weight: 700;
 }
 
 .edu-cm-kind {
   flex: none;
-  color: #d7e4c8;
+  color: #1a1a1a;
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .edu-cm-post-title {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -5183,7 +5321,7 @@ a.edu-forum-card:hover {
 .edu-cm-post-excerpt {
   display: -webkit-box;
   overflow: hidden;
-  color: rgba(246, 241, 231, 0.74);
+  color: rgba(26, 26, 26, 0.74);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.45;
@@ -5197,7 +5335,7 @@ a.edu-forum-card:hover {
   max-height: 220px;
   object-fit: cover;
   border-radius: 12px;
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-cm-tags {
@@ -5211,7 +5349,7 @@ a.edu-forum-card:hover {
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(181, 201, 149, 0.16);
-  color: #d7e4c8;
+  color: #61609a;
   font-size: 12px;
   font-weight: 750;
 }
@@ -5232,7 +5370,7 @@ a.edu-forum-card:hover {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -5243,12 +5381,12 @@ a.edu-forum-card:hover {
 
 .edu-cm-actions button:hover,
 .edu-cm-actions a:hover {
-  background: rgba(246, 241, 231, 0.06);
-  color: #f6f1e7;
+  background: rgba(26, 26, 26, 0.06);
+  color: #1a1a1a;
 }
 
 .edu-cm-actions button.is-on {
-  color: var(--edu-butter);
+  color: #61609a;
 }
 
 .edu-cm-actions svg,
@@ -5261,7 +5399,7 @@ a.edu-forum-card:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #b5c995;
+  color: #61609a;
   font-size: 13px;
   font-weight: 800;
 }
@@ -5283,7 +5421,7 @@ a.edu-forum-card:hover {
 
 .edu-cm-widget h2 {
   margin: 0;
-  color: rgba(246, 241, 231, 0.48);
+  color: #1a1a1a;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -5293,7 +5431,7 @@ a.edu-forum-card:hover {
 .edu-cm-widget p,
 .edu-cm-quiet {
   margin: 0;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 14px;
   font-weight: 550;
   line-height: 1.45;
@@ -5330,7 +5468,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-stats dt {
-  color: rgba(246, 241, 231, 0.45);
+  color: #1a1a1a;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -5348,26 +5486,26 @@ a.edu-forum-card:hover {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-size: 13px;
   font-weight: 700;
 }
 
 .edu-cm-meta span {
   margin-left: auto;
-  color: var(--edu-butter);
+  color: #61609a;
   font-weight: 800;
 }
 
 .edu-cm-feature > a {
-  color: rgba(246, 241, 231, 0.7);
+  color: rgba(26, 26, 26, 0.7);
   font-size: 13px;
   font-weight: 750;
   text-decoration: none;
 }
 
 .edu-cm-feature > a:hover {
-  color: #f6f1e7;
+  color: #1a1a1a;
 }
 
 .edu-cm-feature .edu-btn {
@@ -5392,19 +5530,19 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-activity span {
-  color: rgba(246, 241, 231, 0.78);
+  color: rgba(26, 26, 26, 0.78);
   font-size: 13px;
   line-height: 1.35;
 }
 
 .edu-cm-activity time {
-  color: rgba(246, 241, 231, 0.45);
+  color: #1a1a1a;
   font-size: 12px;
   font-weight: 700;
 }
 
 .edu-cm-activity a:hover strong {
-  color: var(--edu-butter);
+  color: #1a1a1a;
 }
 
 .edu-cm-section-head {
@@ -5430,7 +5568,7 @@ a.edu-forum-card:hover {
 .edu-cm-section-head p {
   margin: 6px 0 0;
   max-width: 62ch;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-weight: 600;
   line-height: 1.4;
 }
@@ -5468,7 +5606,7 @@ a.edu-forum-card:hover {
 .edu-cm-card p,
 .edu-cm-event p {
   margin: 0;
-  color: rgba(246, 241, 231, 0.76);
+  color: rgba(26, 26, 26, 0.76);
   font-weight: 550;
   line-height: 1.45;
 }
@@ -5482,13 +5620,13 @@ a.edu-forum-card:hover {
 
 .edu-cm-state {
   flex: none;
-  color: rgba(246, 241, 231, 0.5);
+  color: rgba(26, 26, 26, 0.5);
   font-size: 12px;
   font-weight: 800;
 }
 
 .edu-cm-state.is-on {
-  color: #b5c995;
+  color: #61609a;
 }
 
 .edu-cm-card.is-done {
@@ -5522,7 +5660,7 @@ a.edu-forum-card:hover {
 
 .edu-cm-project p {
   margin: 0;
-  color: rgba(246, 241, 231, 0.58);
+  color: rgba(26, 26, 26, 0.58);
   font-size: 12px;
   font-weight: 700;
 }
@@ -5530,7 +5668,7 @@ a.edu-forum-card:hover {
 .edu-cm-project span {
   display: -webkit-box;
   overflow: hidden;
-  color: rgba(246, 241, 231, 0.74);
+  color: rgba(26, 26, 26, 0.74);
   font-size: 13px;
   line-height: 1.4;
   -webkit-box-orient: vertical;
@@ -5538,7 +5676,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-project em {
-  color: #d7e4c8;
+  color: #61609a;
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
@@ -5586,7 +5724,7 @@ a.edu-forum-card:hover {
 .edu-cm-empty p {
   margin: 0;
   max-width: 42ch;
-  color: rgba(246, 241, 231, 0.68);
+  color: rgba(26, 26, 26, 0.68);
   font-weight: 600;
 }
 
@@ -5600,9 +5738,9 @@ a.edu-forum-card:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-color: rgba(246, 241, 231, 0.28);
+  border-color: rgba(26, 26, 26, 0.28);
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   text-decoration: none;
 }
 
@@ -5620,8 +5758,8 @@ a.edu-forum-card:hover {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #2c3d27;
-  color: #f6f1e7;
+  background: #f4f1ea;
+  color: #1a1a1a;
   font-size: 14px;
   font-weight: 650;
 }
@@ -5629,17 +5767,28 @@ a.edu-forum-card:hover {
 .edu-cm-notice button {
   border: 0;
   background: transparent;
-  color: var(--edu-butter);
+  color: #61609a;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
 }
 
 .edu-cm-skel {
+  position: relative;
+  overflow: hidden;
   height: 148px;
+  border: 2px solid #1a1a1a;
   border-radius: 16px;
-  background: #243320;
-  animation: edu-cm-pulse 1.15s ease infinite;
+  background: #e6e3f4;
+}
+
+.edu-cm-skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(249, 245, 242, 0.92), transparent);
+  transform: translateX(-100%);
+  animation: edu-cm-shine 1.15s ease infinite;
 }
 
 .edu-cm-skel.is-short {
@@ -5677,8 +5826,8 @@ a.edu-forum-card:hover {
   overflow: auto;
   padding: 12px;
   border-radius: 12px;
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
   font-family: var(--edu-mono);
   font-size: 13px;
   line-height: 1.45;
@@ -5692,10 +5841,10 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-kinds button {
-  border: 1px solid rgba(246, 241, 231, 0.22);
+  border: 1px solid rgba(26, 26, 26, 0.22);
   border-radius: 999px;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -5704,14 +5853,14 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-kinds button.is-on {
-  border-color: var(--edu-butter);
+  border-color: #61609a;
   background: var(--edu-butter);
   color: var(--edu-ink);
 }
 
 .edu-cm-hint {
   margin: 0;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-size: 13px;
   font-weight: 650;
 }
@@ -5728,7 +5877,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-more summary {
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
@@ -5749,20 +5898,24 @@ a.edu-forum-card:hover {
   50% { opacity: 0.55; }
 }
 
+@keyframes edu-cm-shine {
+  to { transform: translateX(100%); }
+}
+
 @media (max-width: 1080px) and (min-width: 861px) {
   .edu-cm-grid {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-cm-side {
     position: static;
-  }
+}
 }
 
 @media (max-width: 1080px) {
   .edu-cm-projects {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+}
 }
 
 @media (max-width: 720px) {
@@ -5771,21 +5924,21 @@ a.edu-forum-card:hover {
   .edu-cm-projects,
   .edu-cm-pair {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-cm-side {
     position: static;
-  }
+}
 
   .edu-cm-event,
   .edu-cm-section-head {
     align-items: stretch;
     flex-direction: column;
-  }
+}
 
   .edu-cm-head p {
     font-size: 14px;
-  }
+}
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5794,11 +5947,11 @@ a.edu-forum-card:hover {
   .edu-cm-skel {
     animation: none;
     transition: none;
-  }
+}
 }
 
 .edu-home:has(.edu-community) {
-  background: #121a14;
+  background: #f9f5f2;
 }
 
 .edu-cm-brand {
@@ -5814,8 +5967,8 @@ a.edu-forum-card:hover {
   flex: none;
   place-items: center;
   border-radius: 14px;
-  background: #2a4630;
-  color: #d7e4c8;
+  background: #61609a;
+  color: #f9f5f2;
 }
 
 .edu-cm-mark svg {
@@ -5847,8 +6000,8 @@ a.edu-forum-card:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(246, 241, 231, 0.14);
-  background: rgba(246, 241, 231, 0.03);
+  border: 1px solid rgba(26, 26, 26, 0.14);
+  background: rgba(26, 26, 26, 0.03);
   padding: 8px 14px;
 }
 
@@ -5858,13 +6011,13 @@ a.edu-forum-card:hover {
 }
 
 .edu-community .edu-cm-nav a:hover:not([aria-current='page']):not(.is-on) {
-  background: rgba(246, 241, 231, 0.07);
-  color: #f6f1e7;
+  background: rgba(26, 26, 26, 0.07);
+  color: #1a1a1a;
 }
 
 .edu-community .edu-cm-nav a[aria-current='page'],
 .edu-community .edu-cm-nav a.is-on {
-  border-color: var(--edu-butter);
+  border-color: #61609a;
   background: var(--edu-butter);
   color: var(--edu-ink);
 }
@@ -5879,7 +6032,7 @@ a.edu-forum-card:hover {
   align-items: baseline;
   gap: 6px;
   padding: 0 14px;
-  border-right: 1px solid rgba(246, 241, 231, 0.16);
+  border-right: 1px solid rgba(26, 26, 26, 0.16);
 }
 
 .edu-cm-pulse > span:first-child {
@@ -5896,20 +6049,20 @@ a.edu-forum-card:hover {
 }
 
 .edu-community .edu-cm-filters button {
-  border: 1px solid rgba(246, 241, 231, 0.16);
+  border: 1px solid rgba(26, 26, 26, 0.16);
   border-radius: 999px;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   padding: 7px 12px;
 }
 
 .edu-community .edu-cm-filters button:hover {
-  background: rgba(246, 241, 231, 0.06);
-  color: #f6f1e7;
+  background: rgba(26, 26, 26, 0.06);
+  color: #1a1a1a;
 }
 
 .edu-community .edu-cm-filters button[aria-pressed='true'] {
-  border-color: var(--edu-butter);
+  border-color: #61609a;
   background: var(--edu-butter);
   color: var(--edu-ink);
 }
@@ -5922,7 +6075,7 @@ a.edu-forum-card:hover {
 
 .edu-cm-sort select {
   appearance: none;
-  border: 1px solid rgba(246, 241, 231, 0.16);
+  border: 1px solid rgba(26, 26, 26, 0.16);
   border-radius: 999px;
   background: transparent;
   padding: 7px 32px 7px 12px;
@@ -5933,7 +6086,7 @@ a.edu-forum-card:hover {
   right: 10px;
   width: 14px;
   height: 14px;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   pointer-events: none;
   transform: rotate(90deg);
 }
@@ -5944,8 +6097,8 @@ a.edu-forum-card:hover {
 
 .edu-cm-post,
 .edu-cm-widget {
-  border: 1px solid rgba(246, 241, 231, 0.08);
-  background: #203028;
+  border: 2px solid #1a1a1a;
+  background: #ffffff;
 }
 
 .edu-cm-post {
@@ -5971,10 +6124,10 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-kind {
-  border: 1px solid rgba(246, 241, 231, 0.16);
+  border: 1px solid rgba(26, 26, 26, 0.16);
   border-radius: 999px;
-  background: rgba(246, 241, 231, 0.04);
-  color: rgba(246, 241, 231, 0.82);
+  background: rgba(26, 26, 26, 0.04);
+  color: rgba(26, 26, 26, 0.82);
   padding: 3px 8px;
   font-size: 11px;
   font-weight: 750;
@@ -5989,7 +6142,7 @@ a.edu-forum-card:hover {
   height: 96px;
   border-radius: 12px;
   object-fit: cover;
-  background: #152018;
+  background: #ffffff;
 }
 
 .edu-cm-media-mark {
@@ -5997,11 +6150,11 @@ a.edu-forum-card:hover {
   flex-direction: column;
   justify-content: space-between;
   padding: 10px;
-  border: 1px solid rgba(246, 241, 231, 0.08);
+  border: 1px solid rgba(26, 26, 26, 0.08);
 }
 
 .edu-cm-media-mark strong {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.25;
@@ -6016,12 +6169,12 @@ a.edu-forum-card:hover {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(246, 241, 231, 0.28);
+  background: rgba(26, 26, 26, 0.28);
 }
 
 .edu-cm-media-mark.is-proyecto strong,
 .edu-cm-media-mark.is-logro strong {
-  color: var(--edu-butter);
+  color: #1a1a1a;
 }
 
 .edu-cm-widget-head {
@@ -6033,7 +6186,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-widget-head h2 {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-size: 14px;
   font-weight: 750;
   letter-spacing: 0;
@@ -6048,12 +6201,12 @@ a.edu-forum-card:hover {
   place-items: center;
   border-radius: 8px;
   background: rgba(181, 201, 149, 0.16);
-  color: #d7e4c8;
+  color: #61609a;
 }
 
 .edu-cm-widget-icon.is-trophy {
   background: rgba(244, 237, 54, 0.12);
-  color: var(--edu-butter);
+  color: #61609a;
 }
 
 .edu-cm-widget-icon.is-bolt {
@@ -6069,7 +6222,7 @@ a.edu-forum-card:hover {
 
 .edu-cm-widget-head > svg {
   margin-left: auto;
-  color: rgba(246, 241, 231, 0.4);
+  color: rgba(26, 26, 26, 0.4);
 }
 
 .edu-cm-progress {
@@ -6098,11 +6251,11 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-ring .track {
-  stroke: rgba(246, 241, 231, 0.12);
+  stroke: rgba(26, 26, 26, 0.12);
 }
 
 .edu-cm-ring .value {
-  stroke: #a8c97a;
+  stroke: #b5c995;
   stroke-linecap: round;
 }
 
@@ -6124,7 +6277,7 @@ a.edu-forum-card:hover {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  color: rgba(246, 241, 231, 0.62);
+  color: rgba(26, 26, 26, 0.62);
   font-size: 12px;
   font-weight: 700;
 }
@@ -6134,7 +6287,7 @@ a.edu-forum-card:hover {
   align-items: center;
   gap: 6px;
   margin: 0;
-  color: var(--edu-butter);
+  color: #61609a;
   font-size: 14px;
   font-weight: 800;
 }
@@ -6162,7 +6315,7 @@ a.edu-forum-card:hover {
   border: 1.5px solid rgba(244, 237, 54, 0.85);
   border-radius: 999px;
   padding: 10px 14px;
-  color: var(--edu-butter);
+  color: #61609a;
   font-size: 14px;
   font-weight: 800;
   text-decoration: none;
@@ -6183,14 +6336,13 @@ a.edu-forum-card:hover {
   gap: 10px;
 }
 
-.edu-cm-act-icon {
-  display: grid;
+.edu-cm-act-face {
+  overflow: hidden;
   width: 32px;
   height: 32px;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(181, 201, 149, 0.18);
-  color: #d7e4c8;
+  border: 1.5px solid #1a1a1a;
+  background: #8584bd;
+  color: #f9f5f2;
 }
 
 .edu-cm-act-icon.is-project {
@@ -6216,7 +6368,7 @@ a.edu-forum-card:hover {
 
 .edu-cm-act-copy em {
   overflow: hidden;
-  color: rgba(246, 241, 231, 0.72);
+  color: rgba(26, 26, 26, 0.72);
   font-size: 13px;
   font-style: normal;
   font-weight: 650;
@@ -6228,25 +6380,249 @@ a.edu-forum-card:hover {
   white-space: nowrap;
 }
 
-@media (max-width: 720px) {
-  .edu-cm-post {
+@media (max-width: 900px) {
+  .edu-home:has(.edu-community) {
+    overflow-x: clip;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .edu-community,
+  .edu-cm-grid,
+  .edu-cm-main,
+  .edu-cm-feed,
+  .edu-cm-head,
+  .edu-cm-side {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .edu-cm-head,
+  .edu-community .edu-cm-nav,
+  .edu-cm-notice,
+  .edu-cm-pulse,
+  .edu-cm-tools,
+  .edu-cm-empty,
+  .edu-cm-side,
+  .edu-community .edu-live {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .edu-cm-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+    box-sizing: border-box;
+  }
+
+  .edu-cm-head > div,
+  .edu-cm-brand,
+  .edu-cm-brand > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .edu-cm-brand h1,
+  .edu-cm-brand p {
+    overflow-wrap: anywhere;
+  }
+
+  .edu-cm-head h1 {
+    font-size: 26px;
+  }
+
+  .edu-cm-brand {
+    gap: 10px;
+  }
+
+  .edu-cm-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .edu-cm-brand p {
+    font-size: 13px;
+  }
+
+  .edu-community .edu-cm-nav {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-right: 0;
+    margin-left: 0;
+    padding-bottom: 2px;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  }
+
+  .edu-community .edu-cm-nav a {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .edu-cm-grid,
+  .edu-cm-cards,
+  .edu-cm-projects,
+  .edu-cm-pair {
     grid-template-columns: 1fr;
+  }
+
+  .edu-cm-side {
+    position: static;
+  }
+
+  .edu-cm-pulse {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 10px;
+    margin-bottom: 12px;
+  }
+
+  .edu-cm-pulse > span {
+    display: block;
+    min-width: 0;
+    border-right: 0;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .edu-cm-pulse strong {
+    display: block;
+    font-size: 18px;
+  }
+
+  .edu-cm-tools {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .edu-community .edu-cm-filters {
+    flex: none;
+    flex-wrap: nowrap;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+
+  .edu-cm-sort,
+  .edu-cm-sort select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .edu-community .edu-cm-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .edu-cm-sort {
+    margin-left: 0;
+  }
+
+  .edu-cm-feed {
+    gap: 8px;
+  }
+
+  .edu-cm-post {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    margin: 0 12px;
+    overflow: hidden;
+    border: 2px solid #1a1a1a;
+    border-radius: 16px;
+    padding: 0;
+  }
+
+  .edu-cm-create,
+  .edu-community .edu-cm-nav {
+    display: none;
+  }
+
+  .edu-home:has(.edu-community) {
+    padding-bottom: 96px;
+  }
+
+  .edu-community img,
+  .edu-community video {
+    max-width: 100%;
+  }
+
+  .edu-cm-post-copy {
+    display: contents;
+  }
+
+  .edu-cm-post .edu-cm-post-top {
+    order: 1;
+    padding: 12px 14px 0;
+  }
+
+  .edu-cm-post .edu-cm-post-title {
+    order: 2;
+    padding: 8px 14px 0;
+  }
+
+  .edu-cm-post .edu-cm-post-excerpt {
+    order: 3;
+    padding: 6px 14px 0;
   }
 
   .edu-cm-media,
   .edu-cm-media-mark {
+    order: 4;
+    display: block;
     width: 100%;
-    height: 120px;
+    max-width: 100%;
+    min-width: 0;
+    height: 200px;
+    margin-top: 10px;
+    border-radius: 0;
+    object-fit: cover;
   }
 
-  .edu-cm-pulse > span {
-    padding: 0 10px;
+  .edu-cm-post .edu-cm-actions {
+    order: 5;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    border-top: 1px solid rgba(26, 26, 26, 0.1);
+    padding: 4px;
+  }
+
+  .edu-cm-actions button,
+  .edu-cm-actions a {
+    justify-content: center;
+    min-height: 40px;
   }
 }
 
 .edu-main:has(.edu-coins),
 .edu-main-body:has(.edu-coins) {
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-coins {
@@ -6262,8 +6638,7 @@ a.edu-forum-card:hover {
 .edu-coin-panel {
   border: 1px solid rgba(181, 201, 149, 0.16);
   border-radius: 22px;
-  background:
-    linear-gradient(180deg, rgba(46, 64, 40, 0.72), rgba(24, 32, 22, 0.88));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(249, 245, 242, 0.88));
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
 }
 
@@ -6295,7 +6670,7 @@ a.edu-forum-card:hover {
   flex: none;
   border-radius: 14px;
   background: rgba(181, 201, 149, 0.14);
-  color: #d5e2c4;
+  color: #61609a;
 }
 
 .edu-coin-mark {
@@ -6344,7 +6719,7 @@ a.edu-forum-card:hover {
 .edu-coin-custom p,
 .edu-coin-note {
   margin: 8px 0 0;
-  color: #c5d0bc;
+  color: #61609a;
   line-height: 1.45;
 }
 
@@ -6368,15 +6743,15 @@ a.edu-forum-card:hover {
   padding: 6px 10px;
   border: 1px solid rgba(181, 201, 149, 0.2);
   border-radius: 999px;
-  background: rgba(18, 26, 16, 0.35);
-  color: #e7f0dc;
+  background: rgba(26, 26, 26, 0.35);
+  color: #61609a;
   font-size: 13px;
 }
 
 .edu-coin-pills svg {
   width: 14px;
   height: 14px;
-  color: #f4ed36;
+  color: #61609a;
 }
 
 .edu-coin-balance {
@@ -6389,9 +6764,8 @@ a.edu-forum-card:hover {
   padding: 18px;
   overflow: hidden;
   border-radius: 18px;
-  background:
-    radial-gradient(120px 80px at 80% 20%, rgba(244, 237, 54, 0.16), transparent 70%),
-    #182116;
+  background: radial-gradient(120px 80px at 80% 20%, rgba(244, 237, 54, 0.16), transparent 70%),
+    #ffffff;
   box-shadow: inset 0 0 0 1px rgba(244, 237, 54, 0.12);
 }
 
@@ -6405,7 +6779,7 @@ a.edu-forum-card:hover {
 .edu-coin-balance span,
 .edu-coin-balance small {
   display: block;
-  color: #c5d0bc;
+  color: #61609a;
 }
 
 .edu-coin-balance span {
@@ -6442,13 +6816,13 @@ a.edu-forum-card:hover {
 
 .edu-coin-art ellipse {
   fill: #f4ed36;
-  stroke: #1c2416;
+  stroke: #f9f5f2;
   stroke-width: 1.4;
 }
 
 .edu-coin-art path {
   fill: none;
-  stroke: #1c2416;
+  stroke: #f9f5f2;
   stroke-width: 1.6;
   stroke-linejoin: round;
 }
@@ -6487,7 +6861,7 @@ a.edu-forum-card:hover {
   padding: 12px;
   border: 1px solid rgba(181, 201, 149, 0.12);
   border-radius: 16px;
-  background: rgba(18, 26, 16, 0.28);
+  background: rgba(26, 26, 26, 0.28);
 }
 
 .edu-coin-ways article:hover,
@@ -6511,7 +6885,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-coin-ways em {
-  color: #f4ed36;
+  color: #61609a;
   font-style: normal;
   font-weight: 800;
 }
@@ -6528,7 +6902,7 @@ a.edu-forum-card:hover {
   padding: 18px;
   border: 1px solid rgba(181, 201, 149, 0.14);
   border-radius: 18px;
-  background: rgba(18, 26, 16, 0.34);
+  background: rgba(26, 26, 26, 0.34);
 }
 
 .edu-coin-packs article.is-featured {
@@ -6540,7 +6914,7 @@ a.edu-forum-card:hover {
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(244, 237, 54, 0.16);
-  color: #f4ed36;
+  color: #61609a;
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
@@ -6548,7 +6922,7 @@ a.edu-forum-card:hover {
 
 .edu-coin-badge.is-quiet {
   background: rgba(181, 201, 149, 0.12);
-  color: #d5e2c4;
+  color: #61609a;
 }
 
 .edu-coin-packs strong {
@@ -6560,7 +6934,7 @@ a.edu-forum-card:hover {
 
 .edu-coin-packs small,
 .edu-coin-usd {
-  color: #c5d0bc;
+  color: #61609a;
 }
 
 .edu-coin-packs p {
@@ -6581,7 +6955,7 @@ a.edu-forum-card:hover {
 .edu-coin-usd-btn {
   border: 1px solid rgba(244, 237, 54, 0.45);
   background: transparent;
-  color: #f4ed36;
+  color: #61609a;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -6602,14 +6976,14 @@ a.edu-forum-card:hover {
   padding: 16px;
   border: 1px dashed rgba(181, 201, 149, 0.24);
   border-radius: 18px;
-  background: rgba(18, 26, 16, 0.22);
+  background: rgba(26, 26, 26, 0.22);
 }
 
 .edu-coin-custom label {
   display: grid;
   gap: 6px;
   min-width: 0;
-  color: #d5e2c4;
+  color: #61609a;
   font-size: 13px;
   font-weight: 700;
 }
@@ -6621,8 +6995,8 @@ a.edu-forum-card:hover {
   height: 44px;
   border: 1px solid rgba(181, 201, 149, 0.24);
   border-radius: 12px;
-  background: #141c12;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 16px;
   padding: 0 12px;
@@ -6636,7 +7010,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-coin-quote span {
-  color: #f4ed36;
+  color: #61609a;
   font-weight: 800;
 }
 
@@ -6666,7 +7040,7 @@ a.edu-forum-card:hover {
   padding: 12px;
   border: 1px solid rgba(181, 201, 149, 0.1);
   border-radius: 16px;
-  background: rgba(18, 26, 16, 0.28);
+  background: rgba(26, 26, 26, 0.28);
 }
 
 .edu-coin-ledger li.is-empty {
@@ -6680,7 +7054,7 @@ a.edu-forum-card:hover {
 
 .edu-coin-ledger li.is-in strong,
 .edu-coin-ledger li.is-in .edu-coin-move-icon {
-  color: #b5c995;
+  color: #61609a;
 }
 
 .edu-coin-ledger li.is-out strong,
@@ -6690,7 +7064,7 @@ a.edu-forum-card:hover {
 
 .edu-coin-ledger small,
 .edu-coin-ledger time {
-  color: #c5d0bc;
+  color: #61609a;
   font-size: 13px;
 }
 
@@ -6702,147 +7076,146 @@ a.edu-forum-card:hover {
   .edu-coin-hero,
   .edu-coin-custom {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-coin-custom {
     align-items: stretch;
-  }
+}
 
   .edu-coin-ways {
     grid-template-columns: 1fr 1fr;
-  }
+}
 
   .edu-coin-packs {
     grid-template-columns: 1fr 1fr;
-  }
+}
 
   .edu-coin-pay-actions {
     grid-template-columns: 1fr 1fr;
-  }
+}
 }
 
 @media (max-width: 720px) {
   .edu-coins {
     gap: 14px;
-  }
+}
 
   .edu-coin-hero,
   .edu-coin-panel {
     border-radius: 18px;
-  }
+}
 
   .edu-coin-hero {
     gap: 14px;
     padding: 16px;
-  }
+}
 
   .edu-coin-intro {
     gap: 12px;
-  }
+}
 
   .edu-coin-mark {
     width: 44px;
     height: 44px;
-  }
+}
 
   .edu-coin-intro h1 {
     font-size: 28px;
-  }
+}
 
   .edu-coin-intro p,
   .edu-coin-panel-head p,
   .edu-coin-custom p {
     font-size: 14px;
-  }
+}
 
   .edu-coin-pills li {
     min-width: 0;
     font-size: 12px;
     line-height: 1.25;
-  }
+}
 
   .edu-coin-balance {
     grid-template-columns: 64px minmax(0, 1fr);
     min-height: 0;
     padding: 14px;
-  }
+}
 
   .edu-coin-balance strong {
     font-size: 36px;
-  }
+}
 
   .edu-coin-art,
   .edu-coin-art svg,
   .edu-coin-art img {
     width: 64px;
     height: 64px;
-  }
+}
 
   .edu-coin-panel {
     padding: 16px;
-  }
+}
 
   .edu-coin-panel h2,
   .edu-coin-custom h3 {
     font-size: 20px;
-  }
+}
 
   .edu-coin-ways,
   .edu-coin-packs {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-coin-ways article {
     min-height: 0;
-  }
+}
 
   .edu-coin-packs article {
     padding: 16px;
-  }
+}
 
   .edu-coin-packs strong {
     font-size: 28px;
-  }
+}
 
   .edu-coin-custom {
     gap: 12px;
     padding: 14px;
-  }
+}
 
   .edu-coin-pay-actions .edu-btn,
   .edu-coin-usd-btn,
   .edu-coin-packs .edu-btn {
     min-height: 44px;
-  }
+}
 
   .edu-coin-ledger li:not(.is-empty) {
     grid-template-columns: 40px minmax(0, 1fr) auto;
-    grid-template-areas:
-      "icon body amount"
+    grid-template-areas: "icon body amount"
       "icon when amount";
     column-gap: 10px;
     row-gap: 0;
     align-items: center;
-  }
+}
 
   .edu-coin-ledger li:not(.is-empty) .edu-coin-move-icon {
     grid-area: icon;
-  }
+}
 
   .edu-coin-ledger li:not(.is-empty) > div {
     grid-area: body;
     min-width: 0;
-  }
+}
 
   .edu-coin-ledger li:not(.is-empty) > strong {
     grid-area: amount;
     justify-self: end;
-  }
+}
 
   .edu-coin-ledger li:not(.is-empty) time {
     grid-area: when;
     white-space: nowrap;
-  }
+}
 
   .edu-coin-ledger b,
   .edu-coin-ledger small {
@@ -6850,13 +7223,13 @@ a.edu-forum-card:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
+}
 }
 
 @media (max-width: 480px) {
   .edu-head-coins span {
     display: none;
-  }
+}
 }
 
 @media (max-width: 360px) {
@@ -6865,15 +7238,19 @@ a.edu-forum-card:hover {
     width: 40px;
     justify-content: center;
     padding: 0;
-  }
+}
 
   .edu-head-search span {
     display: none;
-  }
+}
 
   .edu-head-search-icon {
     display: block;
-  }
+}
+}
+
+.edu-cm-head > .edu-cm-create {
+  flex: none;
 }
 
 .edu-cm-create {
@@ -6890,14 +7267,14 @@ a.edu-forum-card:hover {
   padding: 6px;
   border: 1px solid rgba(244, 237, 54, 0.18);
   border-radius: 16px;
-  background: #203028;
+  background: #ffffff;
 }
 
 .edu-cm-create-menu button {
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #f6f1e7;
+  color: #1a1a1a;
   font: inherit;
   text-align: left;
   padding: 10px 12px;
@@ -6916,7 +7293,7 @@ a.edu-forum-card:hover {
 .edu-live-head p,
 .edu-live-meta,
 .edu-live-card p {
-  color: #c9d4c2;
+  color: #61609a;
 }
 
 .edu-live-list {
@@ -6929,9 +7306,9 @@ a.edu-forum-card:hover {
   grid-template-columns: 1fr 148px;
   gap: 16px;
   padding: 16px;
-  border: 1px solid rgba(246, 241, 231, 0.08);
+  border: 1px solid rgba(26, 26, 26, 0.08);
   border-radius: 18px;
-  background: #203028;
+  background: #ffffff;
 }
 
 .edu-live-card img {
@@ -6958,7 +7335,7 @@ a.edu-forum-card:hover {
   display: flex;
   gap: 8px;
   align-items: center;
-  color: #f4ed36;
+  color: #61609a;
   cursor: pointer;
 }
 
@@ -6984,7 +7361,7 @@ a.edu-forum-card:hover {
   align-items: center;
   padding: 12px;
   border-radius: 14px;
-  background: #203028;
+  background: #ffffff;
 }
 
 .edu-live-rank li.is-mine {
@@ -7002,7 +7379,7 @@ a.edu-forum-card:hover {
   gap: 8px;
   padding: 14px;
   border-radius: 16px;
-  background: #203028;
+  background: #ffffff;
 }
 
 .edu-cal-bar,
@@ -7019,8 +7396,8 @@ a.edu-forum-card:hover {
 .edu-cal-bar button,
 .edu-cal-day {
   border: 0;
-  background: #203028;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   cursor: pointer;
 }
@@ -7043,7 +7420,7 @@ a.edu-forum-card:hover {
 
 .edu-cal-day.is-on {
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
 }
 
 .edu-cal-day i {
@@ -7066,8 +7443,358 @@ a.edu-forum-card:hover {
 }
 
 .edu-cm-reply-dock {
-  position: sticky;
-  top: 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+  border: 2px solid #1a1a1a;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.edu-cm-reply-dock textarea {
+  min-height: 40px;
+  height: 40px;
+  flex: 1;
+  resize: none;
+  border: 0;
+  padding: 8px 4px;
+}
+
+.edu-cm-photo {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 2px solid #1a1a1a;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.edu-cm-photo input {
+  display: none;
+}
+
+.edu-cm-photo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.edu-cm-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid #1a1a1a;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.edu-cm-filter-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.edu-cm-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(26, 26, 26, 0.45);
+}
+
+.edu-cm-sheet-card {
+  display: grid;
+  gap: 8px;
+  width: min(440px, 100%);
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  border: 2px solid #1a1a1a;
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: #ffffff;
+  padding: 16px 16px 24px;
+}
+
+.edu-cm-sheet-grab {
+  width: 42px;
+  height: 5px;
+  justify-self: center;
+  border-radius: 999px;
+  background: #1a1a1a;
+}
+
+.edu-cm-sheet-lead {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.edu-cm-create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.edu-cm-create-pick {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 132px;
+  border: 2px solid #1a1a1a;
+  border-radius: 18px;
+  padding: 12px;
+  color: #1a1a1a;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.edu-cm-create-pick.is-hilo { background: #f4ed36; }
+.edu-cm-create-pick.is-reto { background: #8584bd; color: #f9f5f2; }
+.edu-cm-create-pick.is-proyecto { background: #b5c995; }
+.edu-cm-create-pick.is-grupo { background: #f8c1ba; }
+.edu-cm-create-pick.is-evento {
+  grid-column: 1 / -1;
+  min-height: 0;
+  background: #f9cc73;
+}
+
+.edu-cm-create-pick.is-sesion { background: #f9cc73; }
+.edu-cm-create-pick.is-racha { background: #d5d4ef; }
+
+.edu-cm-create-pick:hover {
+  transform: translateY(-2px);
+}
+
+.edu-cm-create-ico {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 2px solid #1a1a1a;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.edu-cm-create-ico svg {
+  width: 18px;
+  height: 18px;
+}
+
+.edu-cm-create-pick strong {
+  font-size: 16px;
+}
+
+.edu-cm-create-pick small {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.edu-cm-sheet-card strong {
+  font-size: 22px;
+}
+
+.edu-cm-sheet-card .edu-cm-create-pick strong {
+  font-size: 16px;
+}
+
+.edu-cm-sheet-card > button,
+.edu-cm-sheet-card > a {
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  text-align: left;
+  text-decoration: none;
+  padding: 12px 4px;
+  cursor: pointer;
+}
+
+.edu-cm-sheet-card > .edu-btn {
+  text-align: center;
+  margin-top: 6px;
+}
+
+.edu-cm-sheet-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.edu-cm-sheet-picks button {
+  border: 2px solid #1a1a1a;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1a1a1a;
+  font: inherit;
+  font-weight: 750;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.edu-cm-sheet-picks button[aria-pressed='true'] {
+  background: #f4ed36;
+}
+
+.edu-cm-dock {
+  display: none;
+}
+
+.edu-streak-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edu-streak-podium li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  border: 2px solid #1a1a1a;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 10px 6px;
+  text-align: center;
+}
+
+.edu-streak-podium li.is-first {
+  background: #f4ed36;
+  padding-top: 16px;
+  padding-bottom: 14px;
+}
+
+.edu-streak-podium strong,
+.edu-streak-podium em {
+  max-width: 100%;
+  overflow: hidden;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edu-live-card .edu-forum-avatar {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #1a1a1a;
+}
+
+.edu-live-card .edu-forum-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.edu-live-actions .edu-btn {
+  width: fit-content;
+  border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+  .edu-cm-dock {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    gap: 2px;
+    border-top: 2px solid #1a1a1a;
+    background: #f9f5f2;
+    padding: 6px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .edu-cm-dock a,
+  .edu-cm-dock > button:not(.edu-cm-dock-plus) {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    border: 0;
+    background: transparent;
+    color: #1a1a1a;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 750;
+    text-decoration: none;
+    padding: 4px 0;
+    cursor: pointer;
+  }
+
+  .edu-cm-dock svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .edu-cm-dock a[aria-current='page'] {
+    color: #1a1a1a;
+  }
+
+  .edu-cm-dock-plus {
+    display: grid;
+    width: 56px;
+    height: 56px;
+    justify-self: center;
+    place-items: center;
+    margin-top: -22px;
+    border: 2px solid #1a1a1a;
+    border-radius: 50%;
+    background: #f4ed36;
+    color: #1a1a1a;
+    cursor: pointer;
+  }
+
+  .edu-cm-dock-plus svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .edu-live-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    border: 2px solid #1a1a1a;
+    padding: 0 0 14px;
+  }
+
+  .edu-live-card > img {
+    order: -1;
+    width: 100%;
+    height: 180px;
+    border-radius: 0;
+  }
+
+  .edu-live-card > div {
+    padding: 0 14px;
+  }
 }
 
 @media (max-width: 860px) {
@@ -7075,17 +7802,16 @@ a.edu-forum-card:hover {
   .edu-live-packs,
   .edu-cm-thread-layout {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-live-card img {
     width: 100%;
     height: 160px;
-  }
+}
 
   .edu-cm-reply-dock {
     position: static;
-    order: -1;
-  }
+}
 }
 
 .edu-about {
@@ -7102,7 +7828,7 @@ a.edu-forum-card:hover {
 .edu-about-block > p,
 .edu-about-card p {
   margin: 0;
-  color: #c5d0bc;
+  color: #1a1a1a;
   line-height: 1.5;
 }
 
@@ -7130,9 +7856,9 @@ a.edu-forum-card:hover {
 .edu-about-form,
 .edu-about-sent {
   min-width: 0;
-  border: 1px solid rgba(181, 201, 149, 0.16);
+  border: 2px solid #1a1a1a;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(46, 64, 40, 0.72), rgba(24, 32, 22, 0.88));
+  background: #ffffff;
 }
 
 .edu-about-card,
@@ -7150,7 +7876,8 @@ a.edu-forum-card:hover {
 
 .edu-about-card a,
 .edu-about-block > p a {
-  color: #f4ed36;
+  color: #1a1a1a;
+  font-weight: 700;
 }
 
 .edu-about-contact {
@@ -7164,9 +7891,9 @@ a.edu-forum-card:hover {
 }
 
 .edu-about-contact small {
-  color: #c5d0bc;
+  color: #1a1a1a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .edu-about-contact strong {
@@ -7175,7 +7902,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-about-contact:hover {
-  border-color: rgba(244, 237, 54, 0.4);
+  background: #f4ed36;
 }
 
 .edu-about-form,
@@ -7187,7 +7914,7 @@ a.edu-forum-card:hover {
 
 .edu-about-sent p {
   margin: 0;
-  color: #c5d0bc;
+  color: #1a1a1a;
 }
 
 .edu-about-row {
@@ -7200,9 +7927,9 @@ a.edu-forum-card:hover {
   display: grid;
   gap: 6px;
   min-width: 0;
-  color: #d5e2c4;
+  color: #1a1a1a;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .edu-about-form input,
@@ -7211,10 +7938,10 @@ a.edu-forum-card:hover {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  border: 1px solid rgba(181, 201, 149, 0.24);
+  border: 2px solid #1a1a1a;
   border-radius: 12px;
-  background: #141c12;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 16px;
   padding: 12px;
@@ -7223,6 +7950,11 @@ a.edu-forum-card:hover {
 .edu-about-form textarea {
   min-height: 120px;
   resize: vertical;
+}
+
+.edu-about-form input::placeholder,
+.edu-about-form textarea::placeholder {
+  color: #5d5d5d;
 }
 
 .edu-about-form .edu-btn {
@@ -7236,12 +7968,12 @@ a.edu-forum-card:hover {
   .edu-about-contacts,
   .edu-about-row {
     grid-template-columns: 1fr;
-  }
+}
 
   .edu-about-form .edu-btn {
     justify-self: stretch;
     width: 100%;
-  }
+}
 }
 
 .edu-agenda {
@@ -7259,7 +7991,7 @@ a.edu-forum-card:hover {
 
 .edu-agenda .edu-cal-label {
   font-size: 12px;
-  color: #b5c995;
+  color: #61609a;
 }
 
 .edu-agenda .edu-cal-day {
@@ -7276,7 +8008,7 @@ a.edu-forum-card:hover {
   padding: 1px 4px;
   border-radius: 999px;
   background: #f4ed36;
-  color: #1c2416;
+  color: #1a1a1a;
   font-style: normal;
   font-size: 10px;
   font-weight: 800;
@@ -7284,7 +8016,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-agenda .edu-cal-day.is-on i {
-  background: #1c2416;
+  background: #1a1a1a;
   color: #f4ed36;
 }
 
@@ -7294,7 +8026,8 @@ a.edu-forum-card:hover {
   gap: 10px;
   padding: 14px;
   border-radius: 16px;
-  background: #203028;
+  background: #ffffff;
+  border: 2px solid #1a1a1a;
 }
 
 .edu-agenda-day h2,
@@ -7318,25 +8051,25 @@ a.edu-forum-card:hover {
   align-items: center;
   padding: 10px;
   border-radius: 12px;
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-agenda-day li span {
   grid-row: span 2;
-  color: #f4ed36;
+  color: #61609a;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .edu-agenda-day li a {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-weight: 700;
   text-decoration: none;
 }
 
 .edu-agenda-day time {
-  color: #b5c995;
+  color: #61609a;
   font-size: 13px;
 }
 
@@ -7354,7 +8087,7 @@ a.edu-forum-card:hover {
 }
 
 .edu-agenda-plans a {
-  color: #f6f1e7;
+  color: #1a1a1a;
   font-weight: 800;
   text-decoration: none;
 }
@@ -7366,8 +8099,8 @@ a.edu-forum-card:hover {
 
 .edu-rhythm {
   border-bottom: 1px solid rgba(181, 201, 149, 0.24);
-  background: #1c2416;
-  color: #f6f1e7;
+  background: #f9f5f2;
+  color: #1a1a1a;
 }
 
 .edu-rhythm summary {
@@ -7382,14 +8115,14 @@ a.edu-forum-card:hover {
 
 .edu-rhythm summary span,
 .edu-rhythm-banner {
-  color: #b5c995;
+  color: #61609a;
   font-size: 13px;
 }
 
 .edu-rhythm-banner {
   margin: 0;
   padding: 10px 14px;
-  background: #1c2416;
+  background: #f9f5f2;
 }
 
 .edu-rhythm form {
@@ -7404,7 +8137,7 @@ a.edu-forum-card:hover {
 .edu-rhythm-note {
   grid-column: 1 / -1;
   margin: 0;
-  color: #d5e2c4;
+  color: #61609a;
   font-size: 13px;
 }
 
@@ -7424,8 +8157,8 @@ a.edu-forum-card:hover {
   min-height: 44px;
   border: 1px solid rgba(181, 201, 149, 0.24);
   border-radius: 12px;
-  background: #141c12;
-  color: #f6f1e7;
+  background: #ffffff;
+  color: #1a1a1a;
   font: inherit;
   font-size: 16px;
   padding: 8px 10px;
@@ -7442,17 +8175,17 @@ a.edu-forum-card:hover {
 @media (max-width: 860px) {
   .edu-agenda {
     padding-bottom: 28px;
-  }
+}
 
   .edu-cal-label {
     font-size: 11px;
-  }
+}
 
   .edu-rhythm form {
     grid-template-columns: 1fr 1fr;
-  }
+}
 
   .edu-rhythm .edu-btn {
     grid-column: 1 / -1;
-  }
+}
 }

@@ -31,11 +31,11 @@ const BIO_MAX = 300;
 function CardArt() {
   return (
     <svg className="edu-profile-art" viewBox="0 0 92 92" aria-hidden="true">
-      <rect x="18" y="16" width="52" height="64" rx="8" fill="#d6f25c" />
-      <rect x="28" y="28" width="32" height="22" rx="6" fill="#182216" />
-      <circle cx="44" cy="36" r="5" fill="#d6f25c" />
-      <path d="M34 46c2-3 4-4 10-4s8 1 10 4" fill="none" stroke="#d6f25c" strokeWidth="2" />
-      <path d="M62 58l12 8-8 2 2 10-8-8-6 4 8-16z" fill="#f6f1e7" />
+      <rect x="18" y="16" width="52" height="64" rx="8" fill="#f4ed36" />
+      <rect x="28" y="28" width="32" height="22" rx="6" fill="#8584bd" />
+      <circle cx="44" cy="36" r="5" fill="#f4ed36" />
+      <path d="M34 46c2-3 4-4 10-4s8 1 10 4" fill="none" stroke="#1a1a1a" strokeWidth="2" />
+      <path d="M62 58l12 8-8 2 2 10-8-8-6 4 8-16z" fill="#f9f5f2" />
     </svg>
   );
 }

@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { uploadImage } from './live';
+import Icon from './icons';
 
 export function LiveState({ ready, error, empty, children }) {
-  if (!ready) return <div className="edu-cm-skel is-tall" />;
+  if (!ready) {
+    return (
+      <div className="edu-cm-feed" aria-busy="true" aria-label="Cargando">
+        <div className="edu-cm-skel" />
+        <div className="edu-cm-skel is-short" />
+      </div>
+    );
+  }
   return (
     <>
       {error ? <div className="edu-error">{error}</div> : null}
@@ -39,10 +47,10 @@ export function ImageField({ onUrl, token }) {
   };
 
   return (
-    <label className="edu-live-file">
-      {busy ? 'Subiendo…' : 'Subir imagen'}
+    <label className="edu-cm-photo" aria-label={busy ? 'Subiendo imagen' : 'Subir imagen'}>
+      <Icon name="image" />
       <input type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} />
-      {note ? <span>{note}</span> : null}
+      {note ? <span className="edu-sr">{note}</span> : null}
     </label>
   );
 }

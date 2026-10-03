@@ -13,7 +13,6 @@ function givenNames(name) {
 export default function EduHeader({ onMenu }) {
   const auth = useAuth();
   const courseMenu = useCourseMenu();
-  const [open, setOpen] = useState(false);
   const [bell, setBell] = useState(false);
   const pulse = useEduPulse();
   const full = auth.user?.name || auth.user?.email?.split('@')[0] || 'Estudiante';
@@ -21,14 +20,11 @@ export default function EduHeader({ onMenu }) {
   const initial = name.slice(0, 1).toUpperCase();
 
   useEffect(() => {
-    if (!open && !bell) return undefined;
-    const close = () => {
-      setOpen(false);
-      setBell(false);
-    };
+    if (!bell) return undefined;
+    const close = () => setBell(false);
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
-  }, [open, bell]);
+  }, [bell]);
 
   return (
     <header className="edu-head">
@@ -67,7 +63,6 @@ export default function EduHeader({ onMenu }) {
             onClick={(event) => {
               event.stopPropagation();
               setBell((value) => !value);
-              setOpen(false);
             }}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -118,35 +113,9 @@ export default function EduHeader({ onMenu }) {
             <path d="M12 7.5v9" stroke="currentColor" strokeWidth="1.7" strokeDasharray="2 2" />
           </svg>
         </Link>
-        <div className="edu-head-user">
-          <button
-            type="button"
-            className="edu-head-avatar"
-            aria-expanded={open}
-            aria-label="Tu cuenta"
-            onClick={(event) => {
-              event.stopPropagation();
-              setOpen((value) => !value);
-            }}
-          >
-            {pulse.avatar ? <img src={pulse.avatar} alt="" /> : initial}
-          </button>
-          {open ? (
-            <div className="edu-menu" onClick={(event) => event.stopPropagation()}>
-              <p>Hola {name}</p>
-              <Link to="/edu/perfil" onClick={() => setOpen(false)}>
-                Ver mi perfil
-              </Link>
-              <button
-                type="button"
-                className="edu-menu-out"
-                onClick={() => auth.signOut({ redirectTo: '/login' })}
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          ) : null}
-        </div>
+        <Link to="/edu/perfil" className="edu-head-avatar" aria-label="Tu perfil">
+          {pulse.avatar ? <img src={pulse.avatar} alt="" /> : initial}
+        </Link>
       </div>
     </header>
   );

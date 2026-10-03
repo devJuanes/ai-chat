@@ -6,7 +6,8 @@ import Icon from './icons';
 
 function Skeleton() {
   return (
-    <div className="edu-cm-feed" aria-hidden="true">
+    <div className="edu-cm-feed" aria-busy="true" aria-label="Cargando comunidad">
+      <div className="edu-cm-skel is-line" />
       <div className="edu-cm-skel" />
       <div className="edu-cm-skel" />
       <div className="edu-cm-skel is-short" />
@@ -18,37 +19,63 @@ export default function Feed() {
   const { posts, ready, error, reload, openCompose } = useCommunity();
   const [kind, setKind] = useState('todos');
   const [sort, setSort] = useState('recent');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const visible = useMemo(() => sortPosts(filterPosts(posts, kind), sort), [posts, kind, sort]);
+  const sortLabel = SORTS.find((item) => item.id === sort)?.label || 'Más recientes';
+  const kindLabel = FILTERS.find((item) => item.id === kind)?.label || 'Todos';
 
   if (!ready) return <Skeleton />;
 
   return (
     <div className="edu-cm-feed">
       <div className="edu-cm-tools">
-        <div className="edu-cm-filters" role="toolbar" aria-label="Filtrar publicaciones">
-          {FILTERS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={kind === item.id}
-              onClick={() => setKind(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <label className="edu-cm-sort">
-          <span className="edu-sr">Ordenar</span>
-          <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Ordenar publicaciones">
-            {SORTS.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <Icon name="chevron" />
-        </label>
+        <button type="button" className="edu-cm-filter-btn" onClick={() => setFiltersOpen(true)}>
+          <Icon name="filter" />
+          {kindLabel} · {sortLabel}
+        </button>
       </div>
+      {filtersOpen ? (
+        <div className="edu-cm-sheet" role="presentation" onClick={() => setFiltersOpen(false)}>
+          <div
+            className="edu-cm-sheet-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filtros"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <strong>Filtros</strong>
+            <p>Tipo</p>
+            <div className="edu-cm-sheet-picks">
+              {FILTERS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={kind === item.id}
+                  onClick={() => setKind(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <p>Orden</p>
+            <div className="edu-cm-sheet-picks">
+              {SORTS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={sort === item.id}
+                  onClick={() => setSort(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="edu-btn" onClick={() => setFiltersOpen(false)}>
+              Listo
+            </button>
+          </div>
+        </div>
+      ) : null}
       {error ? (
         <div className="edu-error">
           {error}

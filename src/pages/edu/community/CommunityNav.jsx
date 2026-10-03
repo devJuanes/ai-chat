@@ -11,7 +11,6 @@ const LINKS = [
   { to: '/edu/comunidad/grupos', label: 'Grupos', icon: 'users' },
   { to: '/edu/comunidad/eventos', label: 'Eventos', icon: 'calendar' },
   { to: '/edu/comunidad/actividad', label: 'Actividad', icon: 'bolt' },
-  { to: '/edu/comunidad/calendario', label: 'Calendario', icon: 'calendar' },
   { to: '/edu/comunidad/rachas', label: 'Rachas', icon: 'chart' },
 ];
 

@@ -40,7 +40,7 @@ export default function EduStudio({ data, onRetry, onOpen, onDelete }) {
   return (
     <div className="edu-studio">
       <aside className="edu-studio-log">
-        <p className="edu-kicker" style={{ color: '#b5c995' }}>
+        <p className="edu-kicker" style={{ color: '#61609a' }}>
           Creación en vivo
         </p>
         <h1>{course.title || 'Tu curso'}</h1>

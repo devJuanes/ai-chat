@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ago, excerpt, kindLabel } from './format';
+import { ago, excerpt, kindLabel, shortName } from './format';
 import { useCommunity } from './CommunityContext';
 import Icon from './icons';
 import PersonFace from '../PersonFace';
@@ -47,9 +47,9 @@ export default function PostCard({ post }) {
           <div className="edu-cm-post-who">
             <strong>
               {post.user_id ? (
-                <Link to={`/edu/perfil/${post.user_id}`}>{post.author_name}</Link>
+                <Link to={`/edu/perfil/${post.user_id}`}>{shortName(post.author_name)}</Link>
               ) : (
-                post.author_name
+                shortName(post.author_name)
               )}
             </strong>
             <span>{ago(post.created_at)}</span>

@@ -21,6 +21,11 @@ export const SORTS = [
   { id: 'popular', label: 'Más populares' },
 ];
 
+export function shortName(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).join(' ') || 'Estudiante';
+}
+
 export function kindLabel(kind) {
   return KINDS.find((item) => item.id === kind)?.label || 'Debate';
 }
@@ -103,6 +108,8 @@ export function buildActivity(posts, replies, courses) {
       at: post.created_at,
       href: `/edu/comunidad/${post.slug || post.id}`,
       title: post.title,
+      author: post.author_name || '',
+      avatar: post.avatar_url || '',
       ...meta,
     });
   }
@@ -113,6 +120,8 @@ export function buildActivity(posts, replies, courses) {
       at: reply.created_at,
       href: `/edu/comunidad/${reply.post_slug || reply.post_id}`,
       title: reply.post_title,
+      author: reply.author_name || '',
+      avatar: reply.avatar_url || '',
       ...meta,
     });
   }
@@ -124,6 +133,8 @@ export function buildActivity(posts, replies, courses) {
       at: course.created_at,
       href: `/edu/cursos/${course.id}`,
       title: course.title || 'Curso',
+      author: course.author_name || '',
+      avatar: course.avatar_url || '',
       ...meta,
     });
   }

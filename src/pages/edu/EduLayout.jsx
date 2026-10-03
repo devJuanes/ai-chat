@@ -1,11 +1,13 @@
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth';
+import { LogoutIcon } from '../../components/Icons';
 import LoadingRing from '../../components/LoadingRing';
 import BrandLogo from '../../components/BrandLogo';
 import { applyPageTitle, eduSectionTitle } from '../../lib/pageTitle';
 import EduHeader from './EduHeader';
 import { CourseMenuProvider } from './courseMenu';
+import { useEduPulse } from './pulse';
 import './edu.css';
 
 function MenuIcon({ name }) {
@@ -115,6 +117,7 @@ const COMPANY = [
 export default function EduLayout() {
   const auth = useAuth();
   const location = useLocation();
+  const pulse = useEduPulse();
   const [open, setOpen] = useState(false);
   const section = eduSectionTitle(location.pathname);
 
@@ -201,10 +204,20 @@ export default function EduLayout() {
           ))}
         </nav>
         <div className="edu-aside-foot">
-          <div className="edu-user">
-            <UserIcon />
+          <button
+            type="button"
+            className="edu-signout"
+            onClick={() => auth.signOut({ redirectTo: '/login' })}
+          >
+            <LogoutIcon />
+            <span>Cerrar sesión</span>
+          </button>
+          <NavLink to="/edu/perfil" end className="edu-user" onClick={() => setOpen(false)}>
+            <span className="edu-user-face">
+              {pulse.avatar ? <img src={pulse.avatar} alt="" /> : <UserIcon />}
+            </span>
             <span>{name}</span>
-          </div>
+          </NavLink>
         </div>
       </aside>
       <CourseMenuProvider>

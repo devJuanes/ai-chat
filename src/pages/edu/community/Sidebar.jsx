@@ -3,6 +3,7 @@ import { ago, buildActivity, summarizeProgress } from './format';
 import { useEduPulse } from '../pulse';
 import { useCommunity } from './CommunityContext';
 import Icon from './icons';
+import PersonFace from '../PersonFace';
 
 function Ring({ value }) {
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
@@ -60,7 +61,7 @@ export default function Sidebar() {
       <section className="edu-cm-widget">
         <WidgetHead icon="chart" title="Mi progreso" to="/edu/rutas" />
         {!ready ? (
-          <div className="edu-cm-skel is-line" />
+          <div className="edu-cm-skel is-short" />
         ) : (
           <>
             <div className="edu-cm-progress">
@@ -104,6 +105,8 @@ export default function Sidebar() {
               <Icon name="chevron" />
             </Link>
           </>
+        ) : !ready ? (
+          <div className="edu-cm-skel is-line" />
         ) : (
           <p className="edu-cm-quiet">Cuando alguien cree un reto, queda aquí.</p>
         )}
@@ -111,16 +114,18 @@ export default function Sidebar() {
 
       <section className="edu-cm-widget">
         <WidgetHead icon="bolt" title="Actividad reciente" to="/edu/comunidad/foro" />
-        {!ready ? <div className="edu-cm-skel is-line" /> : null}
+        {!ready ? <div className="edu-cm-skel is-short" /> : null}
         {ready && activity.length === 0 ? (
           <p className="edu-cm-quiet">Cuando alguien publique, la actividad va a aparecer aquí.</p>
         ) : (
           <div className="edu-cm-activity">
             {activity.map((item) => (
               <Link key={item.id} to={item.href}>
-                <span className={`edu-cm-act-icon is-${item.tone}`}>
-                  <Icon name={item.tone === 'project' ? 'code' : 'chat'} />
-                </span>
+                <PersonFace
+                  name={item.author}
+                  src={item.avatar}
+                  className="edu-forum-avatar edu-cm-act-face"
+                />
                 <span className="edu-cm-act-copy">
                   <strong>{item.label}</strong>
                   <em>{item.title}</em>

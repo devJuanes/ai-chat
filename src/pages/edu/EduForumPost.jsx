@@ -4,7 +4,7 @@ import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { refreshPulse } from './pulse';
 import { applyPageTitle } from '../../lib/pageTitle';
-import { ago, kindLabel } from './community/format';
+import { ago, kindLabel, shortName } from './community/format';
 import { ImageField } from './community/liveui';
 import { useCommunity } from './community/CommunityContext';
 import Icon from './community/icons';
@@ -22,7 +22,6 @@ export default function EduForumPost() {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [accepting, setAccepting] = useState('');
 
   useEffect(() => {
     applyPageTitle(post?.title || 'Publicación', 'EduCreator');
@@ -105,37 +104,10 @@ export default function EduForumPost() {
     }
   };
 
-  const accept = async (commentId) => {
-    if (accepting) return;
-    setAccepting(commentId);
-    setError('');
-    try {
-      const json = await api(`/api/edu/forum/${postId}/accept`, {
-        method: 'POST',
-        token: auth.getToken(),
-        body: { comment_id: commentId },
-      });
-      setPost((prev) => ({ ...prev, ...json.post }));
-      setComments((prev) => prev.map((item) => ({ ...item, accepted: item.id === commentId })));
-      community.upsert(json.post);
-    } catch (err) {
-      setError(err.message || 'No se pudo aceptar la respuesta');
-    } finally {
-      setAccepting('');
-    }
-  };
-
-  const ordered = [...comments].sort((a, b) => {
-    if (a.accepted === b.accepted) return new Date(a.created_at) - new Date(b.created_at);
-    return a.accepted ? -1 : 1;
-  });
-  const canAccept = Boolean(view?.mine && (view.kind === 'pregunta' || view.kind === 'ayuda'));
+  const ordered = [...comments].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
   return (
     <div className="edu-cm-thread">
-      <Link className="edu-forum-back" to="/edu/comunidad/foro">
-        Volver al foro
-      </Link>
       {!ready ? (
         <div className="edu-cm-feed" aria-hidden="true">
           <div className="edu-cm-skel is-tall" />
@@ -164,9 +136,9 @@ export default function EduForumPost() {
               <div className="edu-cm-post-who">
                 <strong>
                   {view.user_id ? (
-                    <Link to={`/edu/perfil/${view.user_id}`}>{view.author_name}</Link>
+                    <Link to={`/edu/perfil/${view.user_id}`}>{shortName(view.author_name)}</Link>
                   ) : (
-                    view.author_name
+                    shortName(view.author_name)
                   )}
                 </strong>
                 <span>{ago(view.created_at)}</span>
@@ -234,43 +206,32 @@ export default function EduForumPost() {
                   />
                   <span>
                     {comment.user_id ? (
-                      <Link to={`/edu/perfil/${comment.user_id}`}>{comment.author_name}</Link>
+                      <Link to={`/edu/perfil/${comment.user_id}`}>{shortName(comment.author_name)}</Link>
                     ) : (
-                      comment.author_name
+                      shortName(comment.author_name)
                     )}
                     {' · '}
                     {ago(comment.created_at)}
                   </span>
-                  {comment.accepted ? <span className="edu-cm-resolved">Respuesta aceptada</span> : null}
                 </header>
                 <p className="edu-forum-body">{comment.body}</p>
                 {comment.image_url ? <img className="edu-cm-post-image" src={comment.image_url} alt="" /> : null}
-                {canAccept && !comment.accepted ? (
-                  <button
-                    type="button"
-                    className="edu-btn-ghost"
-                    disabled={Boolean(accepting)}
-                    onClick={() => accept(comment.id)}
-                  >
-                    {accepting === comment.id ? 'Aceptando…' : 'Aceptar respuesta'}
-                  </button>
-                ) : null}
               </article>
             ))}
           </div>
           </div>
           <form className="edu-forum-form edu-cm-reply-dock" onSubmit={reply}>
-            <h2>Responder</h2>
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Escribe una respuesta"
+              placeholder="Escribe un comentario"
               maxLength={2000}
-              aria-label="Respuesta"
+              rows={1}
+              aria-label="Comentario"
             />
             <ImageField token={auth.getToken()} onUrl={setImageUrl} />
             <button className="edu-btn" type="submit" disabled={busy || (draft.trim().length < 2 && !imageUrl)}>
-              {busy ? 'Enviando…' : 'Responder'}
+              {busy ? '…' : 'Publicar'}
             </button>
           </form>
         </div>

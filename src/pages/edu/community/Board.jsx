@@ -5,9 +5,10 @@ import { api } from '../../../lib/api';
 import { postAction, useCollection, whenLabel } from './live';
 import { LiveState } from './liveui';
 import PersonFace from '../PersonFace';
+import { shortName } from './format';
 
 function Author({ id, name, avatar }) {
-  const label = name || 'Estudiante';
+  const label = shortName(name);
   return (
     <span className="edu-author-inline">
       <PersonFace name={label} src={avatar} href={id ? `/edu/perfil/${id}` : ''} />
@@ -339,7 +340,7 @@ export function GroupDetail() {
                         src={person.avatar_url}
                         href={person.user_id ? `/edu/perfil/${person.user_id}` : ''}
                       />
-                      {person.user_id ? <Link to={`/edu/perfil/${person.user_id}`}>{person.name}</Link> : person.name}
+                      {person.user_id ? <Link to={`/edu/perfil/${person.user_id}`}>{shortName(person.name)}</Link> : shortName(person.name)}
                       {person.role === 'owner' ? ' · organiza' : ''}
                     </li>
                   ))}
@@ -557,24 +558,9 @@ export function CalendarView() {
 }
 
 export function StreaksView() {
-  const auth = useAuth();
-  const { extra, error, ready, reload, setError } = useCollection('/api/edu/streaks', 'board');
+  const { extra, error, ready } = useCollection('/api/edu/streaks', 'board');
   const board = extra.board || [];
   const mine = extra.mine;
-
-  const share = async () => {
-    setError('');
-    try {
-      await api('/api/edu/streaks/share', {
-        method: 'POST',
-        token: auth.getToken(),
-        body: { show: !mine?.show_progress },
-      });
-      await reload();
-    } catch (err) {
-      setError(err.message || 'No se pudo actualizar');
-    }
-  };
 
   return (
     <section className="edu-live">
@@ -583,37 +569,50 @@ export function StreaksView() {
         <p>Sube cuando terminas una lección en el día. Si pasa un día sin estudiar, vuelve a cero.</p>
       </header>
       <LiveState ready={ready} error={error} empty="">
-        <div className="edu-live-actions">
-          <strong>
-            Tu racha: {mine?.current || 0} · mejor {mine?.best || 0}
-          </strong>
-          <button type="button" className="edu-btn-ghost" onClick={share}>
-            {mine?.show_progress ? 'Ocultar mi avance' : 'Mostrar mi avance'}
-          </button>
-        </div>
-        <ol className="edu-live-rank">
-          {board.length ? (
-            board.map((row, index) => (
-              <li key={row.user_id || `${row.name}-${index}`} className={row.mine ? 'is-mine' : undefined}>
-                <span>{index + 1}</span>
-                <strong className="edu-rank-who">
-                  <PersonFace
-                    name={row.name}
-                    src={row.avatar_url}
-                    href={row.user_id ? `/edu/perfil/${row.user_id}` : ''}
-                  />
-                  {row.user_id ? <Link to={`/edu/perfil/${row.user_id}`}>{row.name}</Link> : row.name}
-                </strong>
-                <em>{row.current} días</em>
-                {row.lessons != null ? <small>{row.lessons} lecciones</small> : null}
-              </li>
-            ))
-          ) : (
-            <li>
-              <strong>Todavía no hay rachas. Termina una lección hoy.</strong>
-            </li>
-          )}
-        </ol>
+        <p className="edu-live-meta">
+          Tu racha: {mine?.current || 0} días · mejor {mine?.best || 0}
+        </p>
+        {board.length ? (
+          <>
+            <ol className="edu-streak-podium">
+              {[board[1], board[0], board[2]].filter(Boolean).map((row) => {
+                const place = board.indexOf(row) + 1;
+                return (
+                  <li key={row.user_id || row.name} className={place === 1 ? 'is-first' : undefined}>
+                    <span>{place}</span>
+                    <PersonFace
+                      name={row.name}
+                      src={row.avatar_url}
+                      href={row.user_id ? `/edu/perfil/${row.user_id}` : ''}
+                    />
+                    <strong>{shortName(row.name)}</strong>
+                    <em>{row.current} días</em>
+                  </li>
+                );
+              })}
+            </ol>
+            {board.length > 3 ? (
+              <ol className="edu-live-rank">
+                {board.slice(3).map((row, index) => (
+                  <li key={row.user_id || `${row.name}-${index}`} className={row.mine ? 'is-mine' : undefined}>
+                    <span>{index + 4}</span>
+                    <strong className="edu-rank-who">
+                      <PersonFace
+                        name={row.name}
+                        src={row.avatar_url}
+                        href={row.user_id ? `/edu/perfil/${row.user_id}` : ''}
+                      />
+                      {row.user_id ? <Link to={`/edu/perfil/${row.user_id}`}>{shortName(row.name)}</Link> : shortName(row.name)}
+                    </strong>
+                    <em>{row.current} días</em>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </>
+        ) : (
+          <p className="edu-live-meta">Todavía no hay rachas. Termina una lección hoy.</p>
+        )}
       </LiveState>
     </section>
   );

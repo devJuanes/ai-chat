@@ -282,11 +282,18 @@ export async function listForum(db, userId) {
   }));
 
   let replies = [];
-  const recent = await db
+  let recent = await db
     .from('edu_comments')
-    .select('id, post_id, author_name, created_at')
+    .select('id, post_id, user_id, author_name, created_at')
     .order('created_at', { ascending: false })
     .limit(8);
+  if (recent.error && /user_id|column/i.test(recent.error.message || '')) {
+    recent = await db
+      .from('edu_comments')
+      .select('id, post_id, author_name, created_at')
+      .order('created_at', { ascending: false })
+      .limit(8);
+  }
   if (!recent.error) {
     const byId = Object.fromEntries(posts.map((post) => [post.id, post]));
     const missing = [...new Set((recent.data || []).map((row) => row.post_id).filter((id) => !byId[id]))];
@@ -305,6 +312,7 @@ export async function listForum(db, userId) {
           id: row.id,
           post_id: row.post_id,
           post_slug: post.slug || '',
+          user_id: row.user_id || '',
           author_name: row.author_name || 'Estudiante',
           created_at: row.created_at,
           post_title: post.title,
@@ -312,6 +320,8 @@ export async function listForum(db, userId) {
         };
       })
       .filter(Boolean);
+    const replyFaces = await avatarMap(db, replies.map((row) => row.user_id));
+    replies = replies.map((row) => ({ ...row, avatar_url: replyFaces[row.user_id] || '' }));
   }
 
   return {
@@ -444,8 +454,14 @@ export async function addForumComment(db, { postId, userId, authorName, body, im
   };
   let { error } = await db.from('edu_comments').insert(row);
   if (error && schemaMiss(error)) {
-    delete row.image_url;
-    ({ error } = await db.from('edu_comments').insert(row));
+    const slim = {
+      id: row.id,
+      post_id: row.post_id,
+      author_name: row.author_name,
+      body: row.body,
+      created_at: row.created_at,
+    };
+    ({ error } = await db.from('edu_comments').insert(slim));
   }
   if (error) throw new Error(error.message);
   const faces = await avatarMap(db, [userId]);
